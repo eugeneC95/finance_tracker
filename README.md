@@ -52,6 +52,12 @@ Your data syncs automatically every time you add or edit anything.
 
 ---
 
+## Password
+
+The app is password-protected. The default password is stored as a SHA-256 hash in `lock.html` — the raw password is never visible in the source code.
+
+To change the password: compute the SHA-256 hash of your new password (use any online SHA-256 tool), replace the `HASH` value in `lock.html`, and re-upload the file to GitHub.
+
 ## Notes
 
 - **Offline support**: The app works without internet. Data saves locally. Syncs when connection returns.

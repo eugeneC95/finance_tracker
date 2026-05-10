@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script>
+// Redirect to lock screen if not authenticated this session
+(function(){
+  try { if(sessionStorage.getItem('ft-unlocked')!=='1') window.location.replace('./lock.html'); }
+  catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -1010,121 +1017,166 @@ body.dark .fs-btn.active { color: #000; }
 .report-total { display:flex; justify-content:space-between; padding:12px 0 0; margin-top:8px; border-top:2px solid var(--line); font-weight:700; font-size:var(--f-lg); }
 
 
-/* ── PWA / Mobile overrides ────────────────────────────── */
 
-/* Safe area for iPhone notch / home bar */
-.sb    { padding-bottom: env(safe-area-inset-bottom); }
-.main  { padding-bottom: env(safe-area-inset-bottom); }
 
-/* On narrow screens: collapse sidebar into bottom nav */
-@media (max-width: 640px) {
-  body { flex-direction: column-reverse; }
+/* ══════════════════════════════════════════════════════════
+   PWA RESPONSIVE — MOBILE FIRST
+   ══════════════════════════════════════════════════════════ */
 
+/* ── Bottom nav bar (mobile) ── */
+@media (max-width: 680px) {
+
+  /* Flip layout: nav goes to bottom */
+  body { flex-direction: column; }
+
+  /* Sidebar becomes fixed bottom bar */
   .sb {
     width: 100%;
     height: auto;
     min-height: 0;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
     flex-direction: row;
-    padding: 0 0 env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Hide desktop-only sidebar elements */
   .sb-brand  { display: none; }
   .sb-month  { display: none; }
   .nav-spacer{ display: none; }
 
+  /* Nav items in a row */
   .sb-nav {
     flex-direction: row;
-    padding: 4px 0 0;
+    padding: 4px 2px 0;
     gap: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    flex: 1;
   }
   .sb-nav::-webkit-scrollbar { display: none; }
 
   .nav-item {
     flex-direction: column;
-    gap: 2px;
-    padding: 6px 4px 8px;
-    border-radius: 0;
+    gap: 1px;
+    padding: 5px 2px 7px;
+    border-radius: 8px;
     font-size: 9px;
-    min-width: 52px;
-    flex-shrink: 0;
-    color: rgba(255,255,255,.5);
+    min-width: 48px;
+    flex: 1;
+    color: rgba(255,255,255,.45);
+    white-space: nowrap;
+    overflow: hidden;
   }
-  .nav-item .icon { font-size: 20px; width: auto; }
-  .nav-item.active { background: rgba(255,255,255,.12); color: #fff; border-radius: 10px; }
+  .nav-item .icon { font-size: 19px; width: auto; }
+  .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
 
-  .main {
-    padding-bottom: 72px; /* space for bottom nav */
+  /* Main area: add bottom padding for the fixed nav bar */
+  .main { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Page spacing */
+  .page-header { padding: 14px 14px 0; }
+  .page-header h2 { font-size: var(--f-xl); }
+  .page-header .sub { font-size: var(--f-xs); }
+  .page-body { padding: 12px 14px 20px; }
+
+  /* Month nav strip */
+  .month-controls { display: flex !important; }
+
+  /* Stat cards: 2 columns on small phones */
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
   }
+  /* 3rd card: full width */
+  .stat-row .stat-card:nth-child(3) { grid-column: 1 / -1; }
 
-  /* Month nav — show as floating pill at top */
-  .month-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 16px 0;
-    margin-bottom: -8px;
-  }
+  /* Net grid: 2 columns */
+  .net-grid { grid-template-columns: repeat(2,1fr); gap: 8px; }
 
-  /* Wider cards on mobile */
-  .stat-row { grid-template-columns: repeat(3,1fr); gap: 8px; }
-  .cols-2   { grid-template-columns: 1fr; }
-  .net-grid { grid-template-columns: repeat(2,1fr); }
+  /* Stack two-column layouts */
+  .cols-2        { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
 
-  .page-header { padding: 12px 16px 0; }
-  .page-header h2 { font-size: var(--f-xl); }
-  .page-body  { padding: 12px 16px 20px; }
+  /* Add expense form: stack on mobile */
+  .add-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+  .add-row > div:nth-child(1) { grid-column: 1 / -1; } /* description full width */
+  .add-row > div:last-child   { grid-column: 1 / -1; } /* button full width */
+  .add-row .btn { width: 100%; height: 50px; font-size: var(--f-lg); }
 
-  /* Add form stacks on mobile */
-  .add-row { grid-template-columns: 1fr 1fr !important; }
-  .add-row > div:last-child { grid-column: 1 / -1; }
-  .add-row .btn { width: 100%; height: 48px; font-size: var(--f-lg); }
+  /* Income form */
+  #page-income .add-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  #page-income .add-row > div:nth-child(1) { grid-column: 1 / -1; }
+  #page-income .add-row > div:last-child   { grid-column: 1 / -1; }
 
-  /* Larger touch targets */
-  input, select { height: 46px; font-size: 16px !important; } /* 16px prevents iOS zoom */
-  .btn  { height: 46px; }
-  .pill { padding: 5px 14px; font-size: var(--f-xs); }
+  /* Petrol form */
+  #page-petrol .panel-bd > div:first-child {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
 
-  /* Category grid — bigger on mobile */
-  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 6px; }
+  /* CRITICAL: 16px minimum font on inputs prevents iOS auto-zoom */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Bigger touch targets */
+  input, select  { height: 48px; }
+  .btn-ghost     { height: 40px; }
+  .pill          { padding: 6px 12px; font-size: 11px; }
+
+  /* Category grid */
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(76px,1fr)); gap: 6px; }
   .cat-btn  { padding: 10px 4px; font-size: 10px; }
-  .cat-btn .ci { font-size: 22px; }
+  .cat-btn .ci { font-size: 20px; }
 
-  /* Transaction rows */
-  .tx-item { padding: 10px 0; }
-  .tx-icon { width: 38px; height: 38px; font-size: 18px; }
-  .tx-name { font-size: var(--f-md); }
-  .tx-actions { opacity: 1 !important; } /* always show on mobile */
-  .tx-action-btn { width: 36px; height: 36px; font-size: 16px; }
+  /* Transaction items */
+  .tx-item    { padding: 10px 0; }
+  .tx-icon    { width: 38px; height: 38px; font-size: 17px; }
+  .tx-actions { opacity: 1 !important; } /* always show on touch */
+  .tx-action-btn { width: 38px; height: 38px; font-size: 16px; }
 
-  /* Bank cards full width */
-  .bank-edit-form { grid-template-columns: 1fr 1fr !important; }
+  /* Bank card edit form */
+  .bank-edit-form { grid-template-columns: 1fr 1fr !important; gap: 8px; }
 
-  /* Modals full screen on mobile */
+  /* Modals: slide up from bottom */
   .overlay { padding: 0; align-items: flex-end; }
-  .modal   { max-width: 100%; border-radius: var(--radius) var(--radius) 0 0; max-height: 92vh; }
-  .cat-modal { max-height: 92vh; }
+  .modal, .cat-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+  }
 
-  /* Petrol form stacks */
-  #page-petrol .panel-bd > div:first-of-type {
+  /* Budget form */
+  #page-expenses .panel-bd > div:last-child {
     grid-template-columns: 1fr 1fr !important;
   }
 
-  /* Trend chart scrollable */
-  .trend-months { min-width: 360px; }
+  /* Bar chart labels truncate nicely */
+  .bar-label { width: 70px; }
+
+  /* Trend chart scrollable horizontally */
+  #trend-chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .trend-months { min-width: 340px; }
 }
 
-/* Tablet: two-column still works but sidebar narrower */
-@media (min-width: 641px) and (max-width: 900px) {
+/* ── Tiny phones (iPhone SE etc) ── */
+@media (max-width: 375px) {
+  .nav-item { min-width: 40px; font-size: 8px; }
+  .nav-item .icon { font-size: 17px; }
+  .stat-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(68px,1fr)); }
+}
+
+/* ── Tablet (641–900px): sidebar visible but narrower ── */
+@media (min-width: 681px) and (max-width: 900px) {
   :root { --sb-w: 180px; }
   .cols-2   { grid-template-columns: 1fr; }
   .net-grid { grid-template-columns: repeat(2,1fr); }
@@ -1351,7 +1403,7 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-6">
         <div class="panel-hd"><span class="panel-title">Add income</span></div>
         <div class="panel-bd">
-          <div class="add-row" style="grid-template-columns:1fr 150px 150px 150px auto">
+          <div class="add-row" id="inc-add-row">
             <div>
               <label class="lbl">Description</label>
               <input type="text" id="inc-name" placeholder="Income description" maxlength="80"/>
@@ -1902,7 +1954,7 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Log a fill-up</span></div>
         <div class="panel-bd">
-          <div style="display:grid;grid-template-columns:1fr 120px 120px 140px 120px auto;gap:12px;align-items:end">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;align-items:end">
             <div>
               <label class="lbl">Station / Note</label>
               <input type="text" id="pt-station" placeholder="e.g. Petronas Rawang" maxlength="60"/>

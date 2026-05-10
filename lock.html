@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Finance"/>
+<meta name="theme-color" content="#1a1a1a"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icons/icon128.png"/>
+<title>Finance Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .card {
+    background: #242424;
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 40px 32px 36px;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  }
+
+  .logo { font-size: 48px; margin-bottom: 12px; line-height: 1; }
+  .app-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .app-sub  { font-size: 13px; color: #666; margin-bottom: 36px; }
+
+  .pin-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+
+  /* Dot indicators */
+  .dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; }
+  .dot  {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #444; background: transparent;
+    transition: background .15s, border-color .15s;
+  }
+  .dot.filled { background: #fff; border-color: #fff; }
+  .dot.error  { background: #e24b4a; border-color: #e24b4a; }
+
+  /* Number pad */
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .pad-btn {
+    background: #2e2e2e;
+    border: 1px solid #3a3a3a;
+    border-radius: 14px;
+    padding: 18px 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .1s, transform .08s;
+    user-select: none;
+  }
+  .pad-btn:active { background: #3a3a3a; transform: scale(.94); }
+  .pad-btn.del    { font-size: 18px; color: #888; }
+  .pad-btn.empty  { background: transparent; border-color: transparent; pointer-events: none; }
+
+  /* Text input fallback (desktop) */
+  .fallback { margin-top: 12px; }
+  .fallback input {
+    width: 100%;
+    height: 48px;
+    background: #2e2e2e;
+    border: 1px solid #3a3a3a;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 22px;
+    text-align: center;
+    letter-spacing: 8px;
+    outline: none;
+    padding: 0 12px;
+  }
+  .fallback input:focus { border-color: #555; }
+
+  .err-msg {
+    height: 18px;
+    font-size: 12px;
+    color: #e24b4a;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* Hide number pad on desktop, show text input */
+  @media (hover: hover) and (pointer: fine) {
+    .pad     { display: none; }
+    .dots    { display: none; }
+    .fallback{ display: block; }
+  }
+  /* Hide text input on touch devices, show number pad */
+  @media (hover: none), (pointer: coarse) {
+    .fallback { display: none; }
+    .pad      { display: grid; }
+    .dots     { display: flex; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">💰</div>
+  <div class="app-name">Finance Tracker</div>
+  <div class="app-sub">Personal money manager</div>
+
+  <div class="pin-label">Enter password</div>
+
+  <!-- Mobile: dot indicators -->
+  <div class="dots" id="dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+    <div class="dot" id="d4"></div>
+    <div class="dot" id="d5"></div>
+  </div>
+
+  <!-- Mobile: number pad -->
+  <div class="pad" id="numpad">
+    <button class="pad-btn" data-n="1">1</button>
+    <button class="pad-btn" data-n="2">2</button>
+    <button class="pad-btn" data-n="3">3</button>
+    <button class="pad-btn" data-n="4">4</button>
+    <button class="pad-btn" data-n="5">5</button>
+    <button class="pad-btn" data-n="6">6</button>
+    <button class="pad-btn" data-n="7">7</button>
+    <button class="pad-btn" data-n="8">8</button>
+    <button class="pad-btn" data-n="9">9</button>
+    <button class="pad-btn empty"></button>
+    <button class="pad-btn" data-n="0">0</button>
+    <button class="pad-btn del" id="del-btn">⌫</button>
+  </div>
+
+  <!-- Desktop: text input -->
+  <div class="fallback">
+    <input type="password" id="pw-input" placeholder="••••••" maxlength="20"
+           autocomplete="current-password" autofocus/>
+  </div>
+
+  <div class="err-msg" id="err"></div>
+</div>
+
+<script>
+// Password stored as SHA-256 hash — "145765"
+// Hash computed at build time so the raw password is never in source
+var HASH = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
+
+var entered = '';
+var MAX     = 6;
+var checking = false;
+
+// ── Hash function ──────────────────────────────────────────
+async function sha256(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+// ── Check session: already unlocked this session? ──────────
+(function() {
+  try {
+    if (sessionStorage.getItem('ft-unlocked') === '1') {
+      window.location.replace('./index.html');
+    }
+  } catch(e) {}
+})();
+
+// ── Update dot UI ──────────────────────────────────────────
+function updateDots(error) {
+  for (var i = 0; i < MAX; i++) {
+    var d = document.getElementById('d' + i);
+    if (!d) continue;
+    d.classList.remove('filled', 'error');
+    if (error) d.classList.add('error');
+    else if (i < entered.length) d.classList.add('filled');
+  }
+}
+
+// ── Submit ─────────────────────────────────────────────────
+async function submit(val) {
+  if (checking) return;
+  checking = true;
+  var h = await sha256(val);
+  if (h === HASH) {
+    try { sessionStorage.setItem('ft-unlocked', '1'); } catch(e) {}
+    window.location.replace('./index.html');
+  } else {
+    updateDots(true);
+    document.getElementById('err').textContent = 'Incorrect password';
+    setTimeout(function() {
+      entered = '';
+      updateDots(false);
+      document.getElementById('err').textContent = '';
+      var inp = document.getElementById('pw-input');
+      if (inp) inp.value = '';
+      checking = false;
+    }, 900);
+  }
+}
+
+// ── Number pad ─────────────────────────────────────────────
+document.querySelectorAll('.pad-btn[data-n]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    if (entered.length >= MAX || checking) return;
+    entered += btn.dataset.n;
+    updateDots(false);
+    if (entered.length === MAX) submit(entered);
+  });
+});
+
+document.getElementById('del-btn').addEventListener('click', function() {
+  if (checking) return;
+  entered = entered.slice(0, -1);
+  updateDots(false);
+});
+
+// ── Desktop text input ─────────────────────────────────────
+var inp = document.getElementById('pw-input');
+if (inp) {
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && inp.value) submit(inp.value);
+  });
+  inp.addEventListener('input', function() {
+    if (inp.value.length >= 4) {
+      // allow submit on Enter
+    }
+  });
+  // Also submit on Enter from text input
+  inp.addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') submit(inp.value);
+  });
+}
+</script>
+</body>
+</html>

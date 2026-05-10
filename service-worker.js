@@ -1,6 +1,7 @@
 const CACHE = 'ft-v1';
 const SHELL = [
   './',
+  './lock.html',
   './index.html',
   './app.js',
   './features.js',
