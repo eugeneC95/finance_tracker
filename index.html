@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Finance"/>
+<meta name="theme-color" content="#1a1a1a"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icons/icon128.png"/>
+<title>Finance Tracker</title>
+<style>
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* Colours – light */
+  --page-bg  : #F2F2F0;
+  --card-bg  : #FFFFFF;
+  --card-bg2 : #F8F8F6;
+  --line     : #E6E6E2;
+  --line2    : #CBCBC6;
+  --ink      : #1A1A1A;
+  --ink2     : #5A5A54;
+  --ink3     : #9A9A94;
+  --brand    : #1A1A1A;
+  --green    : #1A9E6E;
+  --red      : #E24B4A;
+  --blue     : #2563EB;
+
+  /* Sidebar */
+  --sb-bg    : #1A1A1A;
+  --sb-w     : 224px;
+
+  /* Space scale */
+  --s1  : 4px;
+  --s2  : 8px;
+  --s3  : 12px;
+  --s4  : 16px;
+  --s5  : 20px;
+  --s6  : 24px;
+  --s8  : 32px;
+  --s10 : 40px;
+
+  /* Type scale */
+  --f-xs : 11px;
+  --f-sm : 13px;
+  --f-md : 14px;
+  --f-lg : 16px;
+  --f-xl : 22px;
+  --f-2xl: 28px;
+
+  /* Misc */
+  --radius  : 10px;
+  --radius-sm: 7px;
+  --shadow  : 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+}
+
+/* ── Dark theme ── */
+body.dark {
+  --page-bg  : #111113;
+  --card-bg  : #1C1C1F;
+  --card-bg2 : #252528;
+  --line     : #2E2E32;
+  --line2    : #48484E;
+  --ink      : #F0F0F5;
+  --ink2     : #AEAEB8;
+  --ink3     : #56565E;
+  --brand    : #F0F0F5;
+  --sb-bg    : #000000;
+}
+
+/* ── Font size modes ── */
+body.fs-sm { --f-xs:10px; --f-sm:12px; --f-md:13px; --f-lg:15px; --f-xl:19px; --f-2xl:24px; }
+body.fs-md { --f-xs:11px; --f-sm:13px; --f-md:14px; --f-lg:16px; --f-xl:22px; --f-2xl:28px; }
+body.fs-lg { --f-xs:12px; --f-sm:14px; --f-md:15px; --f-lg:18px; --f-xl:25px; --f-2xl:32px; }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+html, body { height: 100%; }
+body {
+  display: flex;
+  background: var(--page-bg);
+  color: var(--ink);
+  font-size: var(--f-md);
+  line-height: 1.5;
+  transition: background .2s, color .2s;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sb {
+  width: var(--sb-w);
+  flex-shrink: 0;
+  background: var(--sb-bg);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sb-brand {
+  padding: var(--s6) var(--s5) var(--s5);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sb-brand .logo { font-size: 26px; line-height: 1; margin-bottom: var(--s2); }
+.sb-brand .name { font-size: var(--f-lg); font-weight: 700; color: #fff; letter-spacing: -.3px; }
+.sb-brand .tagline { font-size: var(--f-xs); color: rgba(255,255,255,.4); margin-top: 2px; }
+
+.sb-nav {
+  flex: 1;
+  padding: var(--s3) var(--s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 10px var(--s3);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: rgba(255,255,255,.5);
+  font-size: var(--f-sm);
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  transition: background .12s, color .12s;
+}
+.nav-item .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+.nav-item:hover  { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
+.nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
+.nav-spacer { flex: 1; }
+
+.sb-month {
+  padding: var(--s4) var(--s3) var(--s6);
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.sb-month .month-lbl {
+  font-size: var(--f-xs);
+  color: rgba(255,255,255,.35);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: var(--s2);
+}
+.month-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.month-arrow {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.month-arrow:hover { background: rgba(255,255,255,.2); }
+.month-name {
+  flex: 1;
+  text-align: center;
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ============================================================
+   MAIN AREA
+   ============================================================ */
+.main {
+  flex: 1;
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pages */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Page header */
+.page-header {
+  padding: var(--s8) var(--s8) 0;
+  margin-bottom: var(--s6);
+}
+.page-header h2 {
+  font-size: var(--f-2xl);
+  font-weight: 700;
+  letter-spacing: -.5px;
+  color: var(--ink);
+}
+.page-header .sub {
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  margin-top: var(--s1);
+}
+
+/* Page body */
+.page-body {
+  padding: 0 var(--s8) var(--s10);
+  flex: 1;
+}
+
+/* ============================================================
+   CARDS & PANELS
+   ============================================================ */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Panel = card with header */
+.panel { }
+.panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.panel-title {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--ink3);
+}
+.panel-bd { padding: var(--s5); }
+
+/* Stat cards row */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s4);
+  margin-bottom: var(--s6);
+}
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s5) var(--s5);
+  box-shadow: var(--shadow);
+}
+.stat-card .s-label {
+  font-size: var(--f-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--ink3);
+  margin-bottom: var(--s2);
+}
+.stat-card .s-value {
+  font-size: var(--f-xl);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.stat-card .s-value.green { color: var(--green); }
+.stat-card .s-value.red   { color: var(--red); }
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+.lbl {
+  display: block;
+  font-size: var(--f-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--ink3);
+  margin-bottom: var(--s2);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  height: 42px;
+  padding: 0 var(--s4);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: var(--f-md);
+  outline: none;
+  transition: border-color .15s, background .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input::placeholder { color: var(--ink3); }
+input:focus, select:focus { border-color: var(--line2); background: var(--card-bg); }
+
+textarea {
+  height: auto;
+  padding: var(--s3) var(--s4);
+  resize: vertical;
+  font-size: var(--f-sm);
+  font-family: monospace;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: 42px;
+  padding: 0 var(--s5);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--f-md);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity .15s, transform .1s;
+}
+.btn:hover  { opacity: .84; }
+.btn:active { transform: scale(.97); }
+
+.btn-primary { background: var(--brand); color: var(--card-bg); }
+body.dark .btn-primary { color: #000; }
+.btn-green   { background: var(--green); color: #fff; }
+.btn-ghost   {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink2);
+  font-size: var(--f-sm);
+  height: 36px;
+}
+.btn-ghost:hover { border-color: var(--line2); background: var(--card-bg2); opacity: 1; }
+.btn-ghost.green { border-color: var(--green); color: var(--green); }
+.btn-ghost.green:hover { background: rgba(26,158,110,.08); }
+
+/* ============================================================
+   CATEGORY BUTTON GRID
+   ============================================================ */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--s2);
+  margin-bottom: var(--s5);
+}
+.cat-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s3) var(--s2);
+  background: var(--card-bg2);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--f-xs);
+  font-weight: 600;
+  color: var(--ink2);
+  transition: border-color .12s, background .12s, color .12s;
+}
+.cat-btn .ci { font-size: 20px; line-height: 1; }
+.cat-btn:hover  { border-color: var(--line2); background: var(--card-bg); color: var(--ink); }
+.cat-btn.active { border-color: var(--brand); background: var(--brand); color: #fff; }
+body.dark .cat-btn.active { color: #000; }
+
+/* Add-expense input row */
+.add-row {
+  display: grid;
+  grid-template-columns: 1fr 150px 150px auto;
+  gap: var(--s3);
+  align-items: end;
+}
+
+/* ============================================================
+   TWO COLUMN LAYOUT
+   ============================================================ */
+.cols-2 {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--s5);
+  align-items: start;
+}
+
+/* ============================================================
+   TRANSACTION LIST
+   ============================================================ */
+.tx-list { display: flex; flex-direction: column; }
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--line);
+  user-select: none;
+  transition: background .1s;
+}
+.tx-item:last-child { border-bottom: none; }
+.tx-item.dragging  { opacity: .4; }
+.tx-item.drag-over { background: var(--card-bg2); border-radius: var(--radius-sm); padding-left: var(--s3); padding-right: var(--s3); margin: 0 calc(-1 * var(--s3)); }
+
+.drag-handle { color: var(--ink3); font-size: 13px; cursor: grab; flex-shrink: 0; line-height: 1; }
+
+.tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tx-info { flex: 1; min-width: 0; }
+.tx-name { font-size: var(--f-md); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-meta { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
+
+.tx-amount { font-size: var(--f-md); font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+.tx-amount.green { color: var(--green); }
+.tx-amount.red   { color: var(--red); }
+
+.tx-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity .15s;
+  flex-shrink: 0;
+}
+.tx-item:hover .tx-actions { opacity: 1; }
+.tx-action-btn {
+  width: 30px; height: 30px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink2);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.tx-action-btn:hover        { border-color: var(--line2); background: var(--card-bg2); }
+.tx-action-btn.del:hover    { border-color: #fca5a5; background: #fef2f2; color: var(--red); }
+.tx-action-btn.edit:hover   { border-color: #93c5fd; background: #eff6ff; color: var(--blue); }
+body.dark .tx-action-btn.del:hover  { background: #2d1a1a; border-color: #7f1d1d; }
+body.dark .tx-action-btn.edit:hover { background: #1a2d3d; border-color: #1e3a5f; }
+
+/* Filter pills */
+.pill-row { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.pill {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: var(--f-xs);
+  color: var(--ink2);
+  transition: all .12s;
+}
+.pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+body.dark .pill.active { color: #000; }
+.pill:hover:not(.active) { border-color: var(--line2); color: var(--ink); }
+
+/* Empty state */
+.empty {
+  text-align: center;
+  padding: var(--s10) 0;
+  color: var(--ink3);
+  font-size: var(--f-sm);
+}
+.empty .empty-icon { font-size: 32px; margin-bottom: var(--s3); }
+
+/* ============================================================
+   BAR CHART
+   ============================================================ */
+.bar-chart { display: flex; flex-direction: column; gap: var(--s3); }
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .1s;
+}
+.bar-row:hover { background: var(--card-bg2); }
+.bar-label { font-size: var(--f-xs); color: var(--ink2); width: 90px; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1; height: 8px; background: var(--card-bg2); border-radius: 999px; overflow: hidden; }
+body.dark .bar-track { background: var(--card-bg2); }
+.bar-fill  { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.bar-pct   { font-size: var(--f-xs); color: var(--ink3); width: 32px; text-align: right; flex-shrink: 0; }
+.bar-value { font-size: var(--f-xs); font-weight: 700; color: var(--ink2); width: 80px; text-align: right; flex-shrink: 0; }
+
+/* ============================================================
+   BANK ACCOUNTS
+   ============================================================ */
+.bank-grid { display: flex; flex-direction: column; gap: var(--s3); margin-bottom: var(--s5); }
+
+.bank-card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.bank-main {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+}
+.bank-ico {
+  width: 42px; height: 42px;
+  border-radius: var(--radius-sm);
+  background: rgba(26,158,110,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.bank-info { flex: 1; min-width: 0; }
+.bank-name { font-size: var(--f-md); font-weight: 700; }
+.bank-type { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
+.bank-bal  { font-size: var(--f-lg); font-weight: 700; color: var(--green); flex-shrink: 0; }
+.bank-card-btn {
+  width: 32px; height: 32px;
+  border: none; background: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px; color: var(--ink3);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.bank-card-btn:hover { background: var(--card-bg2); color: var(--ink); }
+.bank-card-btn.del:hover { color: var(--red); }
+
+.bank-edit-form {
+  border-top: 1px solid var(--line);
+  padding: var(--s4) var(--s5);
+  display: none;
+  grid-template-columns: 1fr 1fr 140px;
+  gap: var(--s3);
+  align-items: end;
+  background: var(--card-bg2);
+}
+.bank-edit-form.open { display: grid; }
+.bank-edit-form input { height: 38px; }
+.bank-edit-btns { display: flex; gap: var(--s2); }
+.bank-edit-btns .btn { height: 38px; font-size: var(--f-sm); }
+
+/* Net summary grid */
+.net-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s4);
+  margin-bottom: var(--s6);
+}
+.net-card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s5);
+  box-shadow: var(--shadow);
+}
+.net-card.highlight { border-color: var(--line2); border-width: 2px; }
+.net-card .n-lbl { font-size: var(--f-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--ink3); margin-bottom: var(--s2); }
+.net-card .n-val { font-size: var(--f-xl); font-weight: 700; }
+.net-card .n-val.green { color: var(--green); }
+.net-card .n-val.red   { color: var(--red); }
+
+/* ============================================================
+   IMPORT WIZARD
+   ============================================================ */
+.src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); max-width: 500px; margin-bottom: var(--s6); }
+.src-card {
+  background: var(--card-bg);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s6) var(--s5);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s;
+  box-shadow: var(--shadow);
+}
+.src-card:hover  { border-color: var(--line2); }
+.src-card.active { border-color: var(--brand); }
+.src-icon { font-size: 38px; margin-bottom: var(--s3); }
+.src-name { font-size: var(--f-lg); font-weight: 700; margin-bottom: var(--s1); }
+.src-desc { font-size: var(--f-xs); color: var(--ink3); }
+
+.info-box {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius);
+  padding: var(--s4) var(--s5);
+  margin-bottom: var(--s4);
+}
+body.dark .info-box { background: #1E2A3A; border-color: #2D4A6A; }
+.info-box .ib-title { font-size: var(--f-sm); font-weight: 700; color: #1D4ED8; margin-bottom: var(--s3); }
+body.dark .info-box .ib-title { color: #93C5FD; }
+.info-box ol { padding-left: var(--s5); }
+.info-box li { font-size: var(--f-sm); color: #1E3A8A; line-height: 1.9; }
+body.dark .info-box li { color: #BFDBFE; }
+.info-box code { background: #DBEAFE; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+body.dark .info-box code { background: #1E3A5A; color: #93C5FD; }
+
+.file-drop {
+  border: 2px dashed var(--line2);
+  border-radius: var(--radius);
+  padding: var(--s10) var(--s6);
+  text-align: center;
+  cursor: pointer;
+  background: var(--card-bg2);
+  transition: border-color .15s, background .15s;
+}
+.file-drop:hover, .file-drop.over { border-color: var(--brand); background: var(--card-bg); }
+.fd-icon  { font-size: 28px; margin-bottom: var(--s3); }
+.fd-name  { font-size: var(--f-md); font-weight: 600; margin-bottom: var(--s1); }
+.fd-hint  { font-size: var(--f-xs); color: var(--ink3); }
+
+.iw-summary { display: flex; gap: var(--s3); margin-bottom: var(--s4); }
+.iw-sc { background: var(--card-bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--s4); flex: 1; }
+.iw-sc .il { font-size: var(--f-xs); color: var(--ink3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: var(--s1); }
+.iw-sc .iv { font-size: var(--f-lg); font-weight: 700; }
+.iw-sc .iv.green { color: var(--green); }
+.iw-sc .iv.red   { color: var(--red); }
+
+.iw-table-wrap { max-height: 420px; overflow-y: auto; border-radius: var(--radius); border: 1px solid var(--line); margin-bottom: var(--s4); }
+table { width: 100%; border-collapse: collapse; font-size: var(--f-sm); }
+thead th {
+  background: var(--card-bg2);
+  padding: 10px var(--s4);
+  text-align: left;
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--ink3);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0;
+  white-space: nowrap;
+}
+tbody td { padding: 9px var(--s4); border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr.skipped td { opacity: .35; }
+td select { height: 28px; font-size: var(--f-xs); width: 130px; }
+
+.type-group { display: flex; gap: var(--s1); }
+.type-btn {
+  height: 26px; padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: var(--f-xs);
+  background: var(--card-bg2);
+  color: var(--ink2);
+  transition: all .1s;
+}
+.type-btn.exp.on { background: #FEE2E2; border-color: #FCA5A5; color: var(--red); }
+.type-btn.inc.on { background: #DCFCE7; border-color: #86EFAC; color: var(--green); }
+.type-btn.skip.on{ background: var(--card-bg2); border-color: var(--line2); color: var(--ink3); }
+
+.err { color: var(--red); font-size: var(--f-sm); margin-top: var(--s2); }
+.btn-row { display: flex; gap: var(--s3); flex-wrap: wrap; margin-top: var(--s2); }
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--line);
+}
+.setting-row:last-child { border-bottom: none; }
+.s-lbl { font-size: var(--f-md); font-weight: 500; }
+.s-sub { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
+
+/* Toggle switch */
+.toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--card-bg2);
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--brand); border-color: var(--brand); }
+.toggle-knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  pointer-events: none;
+  transition: transform .2s;
+}
+.toggle input:checked ~ .toggle-knob { transform: translateX(20px); }
+
+/* Font size selector */
+.fs-btns { display: flex; gap: var(--s2); }
+.fs-btn {
+  height: 32px; padding: 0 var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg2);
+  font-size: var(--f-sm);
+  color: var(--ink2);
+  transition: all .12s;
+}
+.fs-btn.active { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+body.dark .fs-btn.active { color: #000; }
+
+.cur-input {
+  width: 80px !important;
+  height: 34px !important;
+  text-align: center;
+  padding: 0 var(--s3) !important;
+}
+
+.about-card {
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s5);
+  font-size: var(--f-sm);
+  color: var(--ink2);
+  line-height: 1.7;
+}
+.about-card strong { color: var(--ink); }
+
+/* ============================================================
+   MODALS (edit + category drill-down)
+   ============================================================ */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s5);
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0,0,0,.2);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s5) var(--s6);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.modal-title { font-size: var(--f-lg); font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px;
+  border: none; background: none;
+  border-radius: var(--radius-sm);
+  font-size: 18px; color: var(--ink3);
+}
+.modal-close:hover { background: var(--card-bg2); color: var(--ink); }
+.modal-bd {
+  padding: var(--s6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-ft {
+  padding: var(--s4) var(--s6);
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: var(--s3);
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+.modal-row { display: grid; gap: var(--s3); }
+.modal-row.two { grid-template-columns: 1fr 1fr; }
+
+/* Category drill-down modal */
+.cat-modal { max-width: 560px; }
+.cat-stats {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.cat-stat {
+  flex: 1;
+  padding: var(--s4) var(--s5);
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+.cat-stat:last-child { border-right: none; }
+.cat-stat .cs-lbl { font-size: var(--f-xs); color: var(--ink3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: var(--s1); }
+.cat-stat .cs-val { font-size: var(--f-xl); font-weight: 700; }
+
+.cat-list { overflow-y: auto; flex: 1; }
+.cat-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s5);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background .1s;
+}
+.cat-entry:last-child { border-bottom: none; }
+.cat-entry:hover { background: var(--card-bg2); }
+.cat-entry .ce-ico { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.cat-entry .ce-info { flex: 1; min-width: 0; }
+.cat-entry .ce-name { font-size: var(--f-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-entry .ce-date { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
+.cat-entry .ce-amt  { font-size: var(--f-sm); font-weight: 700; flex-shrink: 0; }
+.cat-entry .ce-amt.red   { color: var(--red); }
+.cat-entry .ce-amt.green { color: var(--green); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: var(--s6);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--card-bg);
+  font-size: var(--f-sm);
+  font-weight: 600;
+  padding: 9px var(--s5);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity .2s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; }
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+.mb-4 { margin-bottom: var(--s4); }
+.mb-5 { margin-bottom: var(--s5); }
+.mb-6 { margin-bottom: var(--s6); }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-5px); }
+  75%      { transform: translateX(5px); }
+}
+.shake { animation: shake .25s ease; border-color: var(--red) !important; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+
+/* ── Recurring list ── */
+.rec-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.rec-item:last-child { border-bottom: none; }
+.rec-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.rec-info { flex: 1; min-width: 0; }
+.rec-name { font-size: var(--f-md); font-weight: 600; }
+.rec-meta { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
+.rec-amount { font-size: var(--f-md); font-weight: 700; flex-shrink: 0; }
+.rec-amount.green { color: var(--green); }
+.rec-amount.red   { color: var(--red); }
+.rec-pause { display: inline-flex; align-items: center; gap: 4px; font-size: var(--f-xs); }
+.rec-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--f-xs);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.rec-badge.active { background: rgba(26,158,110,.12); color: var(--green); }
+.rec-badge.paused { background: var(--card-bg2); color: var(--ink3); border: 1px solid var(--line); }
+.rec-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* ── Trend chart ── */
+.trend-months {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-end;
+  min-width: 500px;
+  padding-bottom: var(--s3);
+}
+.trend-month-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+}
+.trend-month-col:hover .trend-bars { opacity: .8; }
+.trend-bars {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 160px;
+  transition: opacity .15s;
+}
+.trend-bar {
+  width: 20px;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height .4s ease;
+}
+.trend-month-lbl {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.trend-month-col.current .trend-month-lbl { color: var(--ink); font-weight: 700; }
+.trend-legend {
+  display: flex;
+  gap: var(--s5);
+  margin-bottom: var(--s4);
+}
+.trend-legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--f-sm);
+  color: var(--ink2);
+}
+.trend-legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Net worth line chart ── */
+.nw-chart-wrap { position: relative; height: 160px; }
+.nw-svg { width: 100%; height: 100%; overflow: visible; }
+.nw-axis-lbl { font-size: 10px; fill: var(--ink3); }
+.nw-point { cursor: pointer; }
+.nw-empty { text-align: center; padding: var(--s8) 0; color: var(--ink3); font-size: var(--f-sm); }
+
+
+/* ── Petrol log table ── */
+.pt-table { width:100%; border-collapse:collapse; font-size:var(--f-sm); }
+.pt-table th { background:var(--card-bg2); padding:10px 16px; text-align:left; font-size:var(--f-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--ink3); border-bottom:1px solid var(--line); }
+.pt-table td { padding:10px 16px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.pt-table tr:last-child td { border-bottom:none; }
+.pt-table .del-btn { background:none; border:none; cursor:pointer; color:var(--ink3); font-size:16px; }
+.pt-table .del-btn:hover { color:var(--red); }
+
+/* ── Report ── */
+@media print {
+  .sb, .page-header .sub, #print-report-btn, .page-header + div { display:none !important; }
+  .main { width:100% !important; }
+  #page-report { display:block !important; }
+  .page:not(#page-report) { display:none !important; }
+  body { background:#fff !important; }
+}
+.report-section { margin-bottom:24px; }
+.report-section h3 { font-size:var(--f-lg); font-weight:700; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--line); }
+.report-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:var(--f-sm); }
+.report-row:last-child { border-bottom:none; }
+.report-row .rr-label { color:var(--ink2); }
+.report-row .rr-val   { font-weight:600; }
+.report-row .rr-val.red   { color:var(--red); }
+.report-row .rr-val.green { color:var(--green); }
+.report-total { display:flex; justify-content:space-between; padding:12px 0 0; margin-top:8px; border-top:2px solid var(--line); font-weight:700; font-size:var(--f-lg); }
+
+
+/* ── PWA / Mobile overrides ────────────────────────────── */
+
+/* Safe area for iPhone notch / home bar */
+.sb    { padding-bottom: env(safe-area-inset-bottom); }
+.main  { padding-bottom: env(safe-area-inset-bottom); }
+
+/* On narrow screens: collapse sidebar into bottom nav */
+@media (max-width: 640px) {
+  body { flex-direction: column-reverse; }
+
+  .sb {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    flex-direction: row;
+    padding: 0 0 env(safe-area-inset-bottom);
+  }
+
+  .sb-brand  { display: none; }
+  .sb-month  { display: none; }
+  .nav-spacer{ display: none; }
+
+  .sb-nav {
+    flex-direction: row;
+    padding: 4px 0 0;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sb-nav::-webkit-scrollbar { display: none; }
+
+  .nav-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 4px 8px;
+    border-radius: 0;
+    font-size: 9px;
+    min-width: 52px;
+    flex-shrink: 0;
+    color: rgba(255,255,255,.5);
+  }
+  .nav-item .icon { font-size: 20px; width: auto; }
+  .nav-item.active { background: rgba(255,255,255,.12); color: #fff; border-radius: 10px; }
+
+  .main {
+    padding-bottom: 72px; /* space for bottom nav */
+  }
+
+  /* Month nav — show as floating pill at top */
+  .month-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px 0;
+    margin-bottom: -8px;
+  }
+
+  /* Wider cards on mobile */
+  .stat-row { grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .cols-2   { grid-template-columns: 1fr; }
+  .net-grid { grid-template-columns: repeat(2,1fr); }
+  .settings-grid { grid-template-columns: 1fr; }
+
+  .page-header { padding: 12px 16px 0; }
+  .page-header h2 { font-size: var(--f-xl); }
+  .page-body  { padding: 12px 16px 20px; }
+
+  /* Add form stacks on mobile */
+  .add-row { grid-template-columns: 1fr 1fr !important; }
+  .add-row > div:last-child { grid-column: 1 / -1; }
+  .add-row .btn { width: 100%; height: 48px; font-size: var(--f-lg); }
+
+  /* Larger touch targets */
+  input, select { height: 46px; font-size: 16px !important; } /* 16px prevents iOS zoom */
+  .btn  { height: 46px; }
+  .pill { padding: 5px 14px; font-size: var(--f-xs); }
+
+  /* Category grid — bigger on mobile */
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 6px; }
+  .cat-btn  { padding: 10px 4px; font-size: 10px; }
+  .cat-btn .ci { font-size: 22px; }
+
+  /* Transaction rows */
+  .tx-item { padding: 10px 0; }
+  .tx-icon { width: 38px; height: 38px; font-size: 18px; }
+  .tx-name { font-size: var(--f-md); }
+  .tx-actions { opacity: 1 !important; } /* always show on mobile */
+  .tx-action-btn { width: 36px; height: 36px; font-size: 16px; }
+
+  /* Bank cards full width */
+  .bank-edit-form { grid-template-columns: 1fr 1fr !important; }
+
+  /* Modals full screen on mobile */
+  .overlay { padding: 0; align-items: flex-end; }
+  .modal   { max-width: 100%; border-radius: var(--radius) var(--radius) 0 0; max-height: 92vh; }
+  .cat-modal { max-height: 92vh; }
+
+  /* Petrol form stacks */
+  #page-petrol .panel-bd > div:first-of-type {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Trend chart scrollable */
+  .trend-months { min-width: 360px; }
+}
+
+/* Tablet: two-column still works but sidebar narrower */
+@media (min-width: 641px) and (max-width: 900px) {
+  :root { --sb-w: 180px; }
+  .cols-2   { grid-template-columns: 1fr; }
+  .net-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+</style>
+</head>
+<body class="fs-md">
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+<aside class="sb">
+  <div class="sb-brand">
+    <div class="logo">💰</div>
+    <div class="name">Finance Tracker</div>
+    <div class="tagline">Personal money manager</div>
+  </div>
+
+  <nav class="sb-nav">
+    <button class="nav-item active" data-tab="expenses">
+      <span class="icon">💸</span> Expenses
+    </button>
+    <button class="nav-item" data-tab="income">
+      <span class="icon">💵</span> Income
+    </button>
+    <button class="nav-item" data-tab="assets">
+      <span class="icon">🏦</span> Assets
+    </button>
+    <button class="nav-item" data-tab="search">
+      <span class="icon">🔍</span> Search
+    </button>
+    <button class="nav-item" data-tab="recurring">
+      <span class="icon">🔁</span> Recurring
+    </button>
+    <button class="nav-item" data-tab="trends">
+      <span class="icon">📈</span> Trends
+    </button>
+    <button class="nav-item" data-tab="import">
+      <span class="icon">📥</span> Import
+    </button>
+    <button class="nav-item" data-tab="petrol">
+      <span class="icon">⛽</span> Petrol Log
+    </button>
+    <button class="nav-item" data-tab="report">
+      <span class="icon">📄</span> Report
+    </button>
+    <div class="nav-spacer"></div>
+    <button class="nav-item" data-tab="pin-settings">
+      <span class="icon">🔒</span> PIN Lock
+    </button>
+    <button class="nav-item" data-tab="settings">
+      <span class="icon">⚙️</span> Settings
+    </button>
+  </nav>
+
+  <div class="sb-month">
+    <div class="month-lbl">Viewing period</div>
+    <div class="month-row">
+      <button class="month-arrow" id="prev-month">‹</button>
+      <span class="month-name" id="month-label">—</span>
+      <button class="month-arrow" id="next-month">›</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════ -->
+<main class="main">
+  <!-- Mobile month nav (hidden on desktop via CSS, shown on mobile) -->
+  <div class="month-controls" id="mobile-month-nav" style="display:none">
+    <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
+    <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center">—</span>
+    <button class="month-arrow" id="next-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">›</button>
+  </div>
+
+  <!-- ── EXPENSES ── -->
+  <div class="page active" id="page-expenses">
+    <div class="page-header">
+      <h2>Expenses</h2>
+      <div class="sub">Track where your money goes</div>
+    </div>
+    <div class="page-body">
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="s-label">Spent this month</div>
+          <div class="s-value red" id="c-total">RM 0.00</div>
+          <div id="mom-exp" style="font-size:var(--f-xs);margin-top:4px;font-weight:600"></div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Spent today</div>
+          <div class="s-value" id="c-today">RM 0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Transactions</div>
+          <div class="s-value" id="c-count">0</div>
+        </div>
+      </div>
+
+      <!-- Budget overview -->
+      <div class="card mb-5">
+        <div class="panel-hd">
+          <span class="panel-title">Budget targets</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Set monthly limits per category</span>
+        </div>
+        <div class="panel-bd">
+          <div id="budget-panel"></div>
+          <div style="display:grid;grid-template-columns:1fr 160px auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+            <div>
+              <label class="lbl">Category</label>
+              <select id="bud-cat">
+                <option value="Food">🍜 Food &amp; drink</option>
+                <option value="Shopping">🛍 Shopping</option>
+                <option value="Health">💊 Health</option>
+                <option value="Bills">🧾 Bills</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+                <option value="Petrol">⛽ Petrol</option>
+                <option value="Car Service">🔧 Car service</option>
+                <option value="Toll">🛣 Toll &amp; parking</option>
+                <option value="Car Expenses">🚗 Car expenses</option>
+                <option value="Transport">🚌 Transport</option>
+                <option value="Other">📦 Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Monthly limit (RM)</label>
+              <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01"/>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" id="add-bud-btn">Set</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add expense card -->
+      <div class="card mb-6">
+        <div class="panel-hd">
+          <span class="panel-title">Add expense</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Pick a category, fill in details, press Add</span>
+        </div>
+        <div class="panel-bd">
+          <div class="cat-grid" id="cat-btns"></div>
+          <div class="add-row">
+            <div>
+              <label class="lbl">Description</label>
+              <input type="text" id="exp-name" placeholder="What did you spend on?" maxlength="80"/>
+            </div>
+            <div>
+              <label class="lbl">Amount (RM)</label>
+              <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div>
+              <label class="lbl">Date</label>
+              <input type="date" id="exp-date"/>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" id="add-exp-btn" style="width:100%">Add</button>
+            </div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
+          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+          <span>Also save as a recurring entry (auto-adds every month)</span>
+        </label>
+      </div>
+
+      <div class="cols-2">
+        <!-- Left: transaction list -->
+        <div>
+          <div class="card mb-5">
+            <div class="panel-hd">
+              <span class="panel-title">Transactions</span>
+              <div class="pill-row" id="filter-bar"></div>
+            </div>
+            <div class="panel-bd">
+              <div class="tx-list" id="expense-list"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: chart -->
+        <div>
+          <div class="card">
+            <div class="panel-hd">
+              <span class="panel-title">By category</span>
+              <span style="font-size:var(--f-xs);color:var(--ink3)">Click to drill down</span>
+            </div>
+            <div class="panel-bd">
+              <div class="bar-chart" id="bar-chart"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── INCOME ── -->
+  <div class="page" id="page-income">
+    <div class="page-header">
+      <h2>Income</h2>
+      <div class="sub">Track what you earn each month</div>
+    </div>
+    <div class="page-body">
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="s-label">Total income</div>
+          <div class="s-value green" id="ic-total">RM 0.00</div>
+          <div id="mom-inc" style="font-size:var(--f-xs);margin-top:4px;font-weight:600"></div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Total expenses</div>
+          <div class="s-value red" id="ic-exp">RM 0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Net this month</div>
+          <div class="s-value" id="ic-net">RM 0.00</div>
+        </div>
+      </div>
+
+      <div class="card mb-6">
+        <div class="panel-hd"><span class="panel-title">Add income</span></div>
+        <div class="panel-bd">
+          <div class="add-row" style="grid-template-columns:1fr 150px 150px 150px auto">
+            <div>
+              <label class="lbl">Description</label>
+              <input type="text" id="inc-name" placeholder="Income description" maxlength="80"/>
+            </div>
+            <div>
+              <label class="lbl">Amount (RM)</label>
+              <input type="number" id="inc-amount" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div>
+              <label class="lbl">Category</label>
+              <select id="inc-cat">
+                <option value="Salary">💼 Salary</option>
+                <option value="Freelance">💻 Freelance</option>
+                <option value="Business">🏪 Business</option>
+                <option value="Investment">📈 Investment</option>
+                <option value="Rental">🏠 Rental</option>
+                <option value="Gift">🎁 Gift</option>
+                <option value="Other">📦 Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Date</label>
+              <input type="date" id="inc-date"/>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-green" id="add-inc-btn">Add</button>
+            </div>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
+          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+          <span>Also save as a recurring entry (auto-adds every month)</span>
+        </label>
+      </div>
+
+      <div class="cols-2">
+        <div>
+          <div class="card">
+            <div class="panel-hd"><span class="panel-title">Income entries</span></div>
+            <div class="panel-bd">
+              <div class="tx-list" id="income-list"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="panel-hd">
+              <span class="panel-title">By source</span>
+              <span style="font-size:var(--f-xs);color:var(--ink3)">Click to drill down</span>
+            </div>
+            <div class="panel-bd">
+              <div class="bar-chart" id="inc-chart"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── ASSETS ── -->
+  <div class="page" id="page-assets">
+    <div class="page-header">
+      <h2>Assets</h2>
+      <div class="sub">Bank accounts &amp; net worth overview</div>
+    </div>
+    <div class="page-body">
+
+      <div class="net-grid">
+        <div class="net-card">
+          <div class="n-lbl">Bank balance</div>
+          <div class="n-val green" id="ns-banks">RM 0</div>
+        </div>
+        <div class="net-card">
+          <div class="n-lbl">This month income</div>
+          <div class="n-val green" id="ns-income">RM 0</div>
+        </div>
+        <div class="net-card">
+          <div class="n-lbl">This month expenses</div>
+          <div class="n-val red" id="ns-exp">RM 0</div>
+        </div>
+        <div class="net-card highlight">
+          <div class="n-lbl">Net assets</div>
+          <div class="n-val" id="ns-net">RM 0</div>
+        </div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Bank accounts</span></div>
+        <div class="panel-bd">
+          <div class="bank-grid" id="bank-list"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 160px auto;gap:var(--s3);align-items:end">
+            <div>
+              <label class="lbl">Bank name</label>
+              <input type="text" id="bk-name" placeholder="e.g. UOB" maxlength="24"/>
+            </div>
+            <div>
+              <label class="lbl">Account type</label>
+              <input type="text" id="bk-acct" placeholder="e.g. ONE Account" maxlength="24"/>
+            </div>
+            <div>
+              <label class="lbl">Balance (RM)</label>
+              <input type="number" id="bk-balance" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" id="add-bank-btn" style="white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
+        <div class="panel-bd">
+          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:var(--s4);line-height:1.6">
+            Export all your data as a JSON file. Store it safely — import it back anytime to restore.
+          </p>
+          <div style="display:flex;gap:var(--s3)">
+            <button class="btn-ghost" id="export-btn">⬇ Export backup</button>
+            <button class="btn-ghost green" id="import-btn">⬆ Import backup</button>
+            <input type="file" id="import-file" accept=".json" style="display:none"/>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SEARCH ── -->
+  <div class="page" id="page-search">
+    <div class="page-header">
+      <h2>Search</h2>
+      <div class="sub">Find any transaction across all months</div>
+    </div>
+    <div class="page-body">
+      <div class="card mb-5">
+        <div class="panel-bd">
+          <input type="text" id="search-input" placeholder="Search by name or category… (Ctrl+F)" style="font-size:var(--f-lg);height:48px"/>
+        </div>
+      </div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- ── RECURRING ── -->
+  <div class="page" id="page-recurring">
+    <div class="page-header">
+      <h2>Recurring</h2>
+      <div class="sub">Auto-entries that apply on a specific day each month</div>
+    </div>
+    <div class="page-body">
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Add recurring entry</span></div>
+        <div class="panel-bd">
+          <div style="display:grid;grid-template-columns:1fr 120px 100px 120px 90px auto;gap:12px;align-items:end">
+            <div>
+              <label class="lbl">Description</label>
+              <input type="text" id="rec-name" placeholder="e.g. Unifi Bill" maxlength="80"/>
+            </div>
+            <div>
+              <label class="lbl">Amount (RM)</label>
+              <input type="number" id="rec-amount" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div>
+              <label class="lbl">Day of month</label>
+              <select id="rec-day">
+                <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="5">5th</option><option value="6">6th</option><option value="7">7th</option><option value="8">8th</option><option value="9">9th</option><option value="10">10th</option><option value="11">11th</option><option value="12">12th</option><option value="13">13th</option><option value="14">14th</option><option value="15">15th</option><option value="16">16th</option><option value="17">17th</option><option value="18">18th</option><option value="19">19th</option><option value="20">20th</option><option value="21">21th</option><option value="22">22th</option><option value="23">23th</option><option value="24">24th</option><option value="25">25th</option><option value="26">26th</option><option value="27">27th</option><option value="28">28th</option>
+                <option value="last">Last day</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Type</label>
+              <select id="rec-type">
+                <option value="exp">💸 Expense</option>
+                <option value="inc">💵 Income</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Category</label>
+              <select id="rec-cat">
+                <optgroup label="Expense">
+                  <option value="Food">🍜 Food</option>
+                  <option value="Shopping">🛍 Shopping</option>
+                  <option value="Health">💊 Health</option>
+                  <option value="Bills">🧾 Bills</option>
+                  <option value="Entertainment">🎬 Entertainment</option>
+                  <option value="Petrol">⛽ Petrol</option>
+                  <option value="Car Service">🔧 Car service</option>
+                  <option value="Toll">🛣 Toll</option>
+                  <option value="Car Expenses">🚗 Car expenses</option>
+                  <option value="Transport">🚌 Transport</option>
+                  <option value="Other">📦 Other</option>
+                </optgroup>
+                <optgroup label="Income">
+                  <option value="Salary">💼 Salary</option>
+                  <option value="Freelance">💻 Freelance</option>
+                  <option value="Business">🏪 Business</option>
+                  <option value="Investment">📈 Investment</option>
+                  <option value="Rental">🏠 Rental</option>
+                  <option value="Gift">🎁 Gift</option>
+                </optgroup>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" id="add-rec-btn">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-hd">
+          <span class="panel-title">Active recurring entries</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Applied automatically on the date you set each month</span>
+        </div>
+        <div class="panel-bd">
+          <div id="rec-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TRENDS ── -->
+  <div class="page" id="page-trends">
+    <div class="page-header">
+      <h2>Trends</h2>
+      <div class="sub">Spending &amp; income over the last 6 months</div>
+    </div>
+    <div class="page-body">
+      <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="s-label">Avg monthly spend</div><div class="s-value red" id="tr-avg-exp">RM 0</div></div>
+        <div class="stat-card"><div class="s-label">Avg monthly income</div><div class="s-value green" id="tr-avg-inc">RM 0</div></div>
+        <div class="stat-card"><div class="s-label">Best savings month</div><div class="s-value" id="tr-best">—</div></div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Monthly overview — last 6 months</span></div>
+        <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
+          <div id="trend-chart"></div>
+        </div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd">
+          <span class="panel-title">Spending by day of week</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Average spend per day · last 3 months</span>
+        </div>
+        <div class="panel-bd">
+          <div class="bar-chart" id="day-breakdown"></div>
+        </div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd">
+          <span class="panel-title">Net worth history</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Snapshot taken each time you update a bank balance</span>
+        </div>
+        <div class="panel-bd">
+          <div id="networth-chart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── IMPORT ── -->
+  <div class="page" id="page-import">
+    <div class="page-header">
+      <h2>Import</h2>
+      <div class="sub">Bring in transactions from TNG eWallet or UOB Bank</div>
+    </div>
+    <div class="page-body">
+
+      <!-- Step 1 -->
+      <div id="iw1">
+        <div class="src-grid">
+          <div class="src-card" id="iw-tng-card">
+            <div class="src-icon">💳</div>
+            <div class="src-name">TNG eWallet</div>
+            <div class="src-desc">Paste statement text from PDF email</div>
+          </div>
+          <div class="src-card" id="iw-uob-card">
+            <div class="src-icon">🏦</div>
+            <div class="src-name">UOB Bank</div>
+            <div class="src-desc">Upload XLS or CSV from internet banking</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="iw2" style="display:none;max-width:680px">
+        <div id="iw-tng-input" style="display:none">
+          <div class="info-box mb-4">
+            <div class="ib-title">📖 How to get your TNG statement</div>
+            <ol>
+              <li>Open TNG app → <strong>Profile</strong> → <strong>Transaction History</strong></li>
+              <li>Tap the ✉️ email icon — TNG will email you a PDF statement</li>
+              <li>Open the PDF, select all text, copy and paste below</li>
+            </ol>
+          </div>
+          <div class="card mb-4">
+            <div class="panel-hd"><span class="panel-title">Paste TNG statement text</span></div>
+            <div class="panel-bd">
+              <textarea id="iw-tng-text" rows="10" placeholder="Paste your TNG PDF text here...&#10;&#10;Example:&#10;01 Jan 2025  Successful  DuitNow Payment  MAMAK CORNER  -12.50  234.10&#10;02 Jan 2025  Successful  Payment  SHELL PETROL  -80.00  154.10"></textarea>
+              <div class="err" id="iw-tng-err"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="iw-uob-input" style="display:none">
+          <div class="info-box mb-4">
+            <div class="ib-title">📖 How to export from UOB</div>
+            <ol>
+              <li>Log in at <code>pib.uob.com.my</code></li>
+              <li>Go to <strong>Account</strong> → <strong>Account Activities</strong></li>
+              <li>Select account &amp; date range → <strong>Download</strong> → choose <strong>CSV</strong> or <strong>Excel</strong></li>
+              <li>Upload that file below</li>
+            </ol>
+          </div>
+          <div class="card mb-4">
+            <div class="panel-hd"><span class="panel-title">Upload UOB statement</span></div>
+            <div class="panel-bd">
+              <div class="file-drop" id="iw-drop">
+                <input type="file" id="iw-file" accept=".xls,.xlsx,.csv" style="display:none"/>
+                <div class="fd-icon">📂</div>
+                <div class="fd-name" id="iw-drop-lbl">Click or drag &amp; drop your file here</div>
+                <div class="fd-hint">XLS · XLSX · CSV from UOB internet banking</div>
+              </div>
+              <div class="err" id="iw-uob-err"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-ghost" id="iw-back2">← Back</button>
+          <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="iw3" style="display:none">
+        <div class="iw-summary" id="iw-summary"></div>
+        <div class="iw-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th style="text-align:right">Amount</th>
+                <th>Type</th>
+                <th>Category</th>
+              </tr>
+            </thead>
+            <tbody id="iw-tbody"></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn-ghost" id="iw-back3">← Start over</button>
+          <button class="btn btn-green" id="iw-import">✓ Import selected</button>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div id="iw4" style="display:none;text-align:center;padding:var(--s10) 0">
+        <div style="font-size:52px;margin-bottom:var(--s4)">🎉</div>
+        <div style="font-size:var(--f-2xl);font-weight:700;margin-bottom:var(--s3)" id="iw-done-h">Import complete!</div>
+        <div style="font-size:var(--f-md);color:var(--ink2);margin-bottom:var(--s8)" id="iw-done-sub"></div>
+        <button class="btn btn-primary" id="iw-again">Import more</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <h2>Settings</h2>
+      <div class="sub">Customise your experience</div>
+    </div>
+    <div class="page-body">
+      <div class="settings-grid">
+
+        <div class="card">
+          <div class="panel-hd"><span class="panel-title">Appearance</span></div>
+          <div class="panel-bd">
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Dark mode</div>
+                <div class="s-sub">Switch to dark theme</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="set-dark"/>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Font size</div>
+                <div class="s-sub">Adjust text size throughout</div>
+              </div>
+              <div class="fs-btns">
+                <button class="fs-btn" data-fs="fs-sm">S</button>
+                <button class="fs-btn active" data-fs="fs-md">M</button>
+                <button class="fs-btn" data-fs="fs-lg">L</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="panel-hd"><span class="panel-title">Preferences</span></div>
+          <div class="panel-bd">
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Currency symbol</div>
+                <div class="s-sub">Shown before amounts</div>
+              </div>
+              <input type="text" id="set-currency" class="cur-input" maxlength="6" placeholder="RM"/>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Drag handles</div>
+                <div class="s-sub">Reorder transactions by dragging</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="set-drag" checked/>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Compact view</div>
+                <div class="s-sub">Smaller row spacing in lists</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="set-compact"/>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="panel-hd"><span class="panel-title">Auto backup</span></div>
+            <div class="panel-bd">
+              <div class="setting-row">
+                <div>
+                  <div class="s-lbl">Auto-backup on open</div>
+                  <div class="s-sub">Saves a JSON backup once per day when you open the app</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="ab-toggle"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <div class="s-lbl">Sub-folder name</div>
+                  <div class="s-sub">Optional folder inside Downloads, e.g. <strong>Finance</strong></div>
+                </div>
+                <input type="text" id="ab-folder" placeholder="Finance" maxlength="60"
+                  style="width:140px;height:34px;font-size:var(--f-sm);padding:0 10px"/>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button class="btn btn-primary" id="ab-now-btn" style="height:36px;font-size:var(--f-sm)">⬇ Backup now</button>
+                <span id="ab-status" style="font-size:var(--f-xs);color:var(--ink3)">Auto-backup is disabled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-5">
+            <div class="panel-hd">
+              <span class="panel-title">Google Sheets sync</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs)">
+                <span id="sync-dot" style="font-size:16px;font-weight:700">○</span>
+                <span id="sync-msg" style="color:var(--ink3)">Not configured</span>
+              </span>
+            </div>
+            <div class="panel-bd">
+              <div style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.7">
+                Syncs all your data to a private Google Sheet in your own Google account.
+                Auto-saves 3 seconds after every change. Data never leaves your Google account.
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label class="lbl">Apps Script URL</label>
+                <input type="text" id="sync-url-input" placeholder="https://script.google.com/macros/s/…/exec"
+                  style="font-size:var(--f-sm);font-family:monospace"/>
+              </div>
+
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                <button class="btn-ghost" id="sync-ping-btn">🔌 Test connection</button>
+                <button class="btn btn-primary" id="sync-save-btn" style="height:36px;font-size:var(--f-sm)">⬆ Save to Sheet now</button>
+                <button class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
+              </div>
+
+              <div class="about-card" style="font-size:var(--f-xs);line-height:1.9">
+                <strong>Setup (one time, ~5 minutes):</strong><br/>
+                1. Go to <strong>script.google.com</strong> → New project<br/>
+                2. Delete all existing code, paste everything from <strong>google-apps-script.js</strong> (in the zip)<br/>
+                3. Click Save → <strong>Deploy → New deployment</strong><br/>
+                4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
+                5. Click Deploy → Google will ask you to authorise → click Allow<br/>
+                6. Copy the <strong>/exec</strong> URL → paste above → click Test connection<br/><br/>
+                <strong>⚠️ If "Failed to fetch" appears:</strong><br/>
+                • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
+                • Re-deploy: Deploy → Manage deployments → Edit → New version → Deploy<br/>
+                • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="about-card">
+            <strong>Finance Tracker v4.0</strong><br/>
+            Your data is stored 100% locally in Chrome — nothing is sent to any server.<br/><br/>
+            Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. No internet needed.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── PETROL LOG ── -->
+  <div class="page" id="page-petrol">
+    <div class="page-header">
+      <h2>Petrol Log</h2>
+      <div class="sub">Track fuel fills, litres, cost per km and efficiency</div>
+    </div>
+    <div class="page-body">
+      <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><div class="s-label">Total spent</div><div class="s-value red" id="pt-total">RM 0</div></div>
+        <div class="stat-card"><div class="s-label">Total litres</div><div class="s-value" id="pt-litres">0 L</div></div>
+        <div class="stat-card"><div class="s-label">Avg price/litre</div><div class="s-value" id="pt-ppl">RM 0</div></div>
+        <div class="stat-card"><div class="s-label">Cost per km</div><div class="s-value" id="pt-cpk">RM 0</div></div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Log a fill-up</span></div>
+        <div class="panel-bd">
+          <div style="display:grid;grid-template-columns:1fr 120px 120px 140px 120px auto;gap:12px;align-items:end">
+            <div>
+              <label class="lbl">Station / Note</label>
+              <input type="text" id="pt-station" placeholder="e.g. Petronas Rawang" maxlength="60"/>
+            </div>
+            <div>
+              <label class="lbl">Litres</label>
+              <input type="number" id="pt-litres-in" placeholder="0.00" min="0" step="0.01"/>
+            </div>
+            <div>
+              <label class="lbl">Price/litre (RM)</label>
+              <input type="number" id="pt-ppl-in" placeholder="2.05" min="0" step="0.01"/>
+            </div>
+            <div>
+              <label class="lbl">Odometer (km)</label>
+              <input type="number" id="pt-odo" placeholder="e.g. 54320" min="0" step="1"/>
+            </div>
+            <div>
+              <label class="lbl">Date</label>
+              <input type="date" id="pt-date"/>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" id="add-pt-btn">Log</button>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:var(--f-sm);color:var(--ink3)" id="pt-calc-hint"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-hd"><span class="panel-title">Fill-up history</span></div>
+        <div class="panel-bd" style="padding:0">
+          <div id="pt-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REPORT ── -->
+  <div class="page" id="page-report">
+    <div class="page-header">
+      <h2>Monthly Report</h2>
+      <div class="sub">Summary of your finances for the selected month</div>
+    </div>
+    <div class="page-body">
+      <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" id="print-report-btn">🖨 Print / Save PDF</button>
+        <span style="font-size:var(--f-sm);color:var(--ink3)">Use your browser's print dialog — choose "Save as PDF"</span>
+      </div>
+      <div id="report-content"></div>
+    </div>
+  </div>
+
+  <!-- ── PIN SETTINGS ── -->
+  <div class="page" id="page-pin-settings">
+    <div class="page-header">
+      <h2>PIN Lock</h2>
+      <div class="sub">Protect your finance data with a 4-digit PIN</div>
+    </div>
+    <div class="page-body" style="max-width:440px">
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Set PIN</span></div>
+        <div class="panel-bd">
+          <div id="pin-status" style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:16px;padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line)">
+            PIN lock is currently <strong id="pin-status-txt">disabled</strong>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label class="lbl">New PIN (4 digits)</label>
+              <input type="password" id="pin-new" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
+            </div>
+            <div>
+              <label class="lbl">Confirm PIN</label>
+              <input type="password" id="pin-confirm" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-primary" id="set-pin-btn">Set PIN</button>
+              <button class="btn-ghost" id="clear-pin-btn">Remove PIN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="about-card" style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
+        <strong>How PIN lock works:</strong><br/>
+        When enabled, you'll be asked for your PIN each time you open the dashboard. The PIN is stored locally in Chrome — it's not sent anywhere. If you forget your PIN, you can reset it by removing the extension and reinstalling.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════════════════
+     EDIT MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="edit-overlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="edit-title">Edit entry</div>
+      <button class="modal-close" id="edit-close">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div>
+        <label class="lbl">Description</label>
+        <input type="text" id="edit-name" maxlength="80"/>
+      </div>
+      <div class="modal-row two">
+        <div>
+          <label class="lbl">Amount</label>
+          <input type="number" id="edit-amount" min="0" step="0.01"/>
+        </div>
+        <div>
+          <label class="lbl">Date</label>
+          <input type="date" id="edit-date"/>
+        </div>
+      </div>
+      <div>
+        <label class="lbl">Category</label>
+        <select id="edit-cat"></select>
+      </div>
+      <div>
+        <label class="lbl">Note <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
+        <input type="text" id="edit-note" placeholder="e.g. Receipt #123, Petronas Rawang" maxlength="120"/>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" id="edit-cancel">Cancel</button>
+      <button class="btn btn-primary" id="edit-save">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CATEGORY DRILL-DOWN MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="cat-detail-overlay">
+  <div class="modal cat-modal" style="max-width:560px">
+    <div class="modal-hd">
+      <div>
+        <div class="modal-title" id="cd-title">Category</div>
+        <div style="font-size:var(--f-sm);color:var(--ink3);margin-top:2px" id="cd-sub"></div>
+      </div>
+      <button class="modal-close" id="cd-close">✕</button>
+    </div>
+    <div class="cat-stats">
+      <div class="cat-stat">
+        <div class="cs-lbl">Total</div>
+        <div class="cs-val" id="cd-total">—</div>
+      </div>
+      <div class="cat-stat">
+        <div class="cs-lbl">Entries</div>
+        <div class="cs-val" id="cd-count">—</div>
+      </div>
+      <div class="cat-stat">
+        <div class="cs-lbl">Average</div>
+        <div class="cs-val" id="cd-avg">—</div>
+      </div>
+    </div>
+    <div class="cat-list" id="cd-list"></div>
+  </div>
+</div>
+
+
+<!-- ── PIN LOCK SCREEN ── -->
+<div id="pin-overlay" style="display:none;position:fixed;inset:0;background:var(--page-bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+  <div style="font-size:40px">🔒</div>
+  <div style="font-size:var(--f-xl);font-weight:700;color:var(--ink)">Finance Tracker</div>
+  <div style="font-size:var(--f-sm);color:var(--ink3)">Enter your PIN to continue</div>
+  <div style="display:flex;gap:12px">
+    <input type="password" id="pin-entry" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*"
+      style="width:140px;height:56px;text-align:center;font-size:28px;letter-spacing:10px;border:2px solid var(--line);border-radius:var(--radius);background:var(--card-bg);color:var(--ink);outline:none"/>
+  </div>
+  <button class="btn btn-primary" id="pin-submit-btn" style="min-width:140px;height:48px;font-size:var(--f-lg)">Unlock</button>
+  <div id="pin-error" style="color:var(--red);font-size:var(--f-sm);height:20px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script src="features.js"></script>
+<script src="extras.js"></script>
+<script src="import-inline.js"></script>
+<script>
+// ── Service worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./service-worker.js');
+  });
+}
+
+// ── Mobile month nav sync ──
+function syncMobileMonthNav() {
+  var lbl = document.getElementById('month-label');
+  var lblM = document.getElementById('month-label-m');
+  if (lblM && lbl) lblM.textContent = lbl.textContent;
+}
+var origRender = render;
+render = function() {
+  origRender();
+  syncMobileMonthNav();
+};
+window.addEventListener('resize', function() {
+  var nav = document.getElementById('mobile-month-nav');
+  if (nav) nav.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
+});
+window.dispatchEvent(new Event('resize'));
+
+var pMM = document.getElementById('prev-month-m');
+var nMM = document.getElementById('next-month-m');
+if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
+if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
+</script>
+</body>
+</html>
