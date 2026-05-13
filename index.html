@@ -1114,25 +1114,38 @@ body.dark .fs-btn.active { color: #000; }
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 680px) {
 
-  /* Body stays as flex-row but sidebar is narrow/hidden visually */
-  html, body { height: 100%; overflow: hidden; }
-
-  body {
-    flex-direction: row;
-    position: fixed;
-    inset: 0;
+  /* v12: drop the position:fixed body trick. iOS Safari mis-resolves the
+     containing block for nested fixed children (so .sb stops pinning to
+     bottom) and locks page scrolling. Use plain document flow + a single
+     fixed bottom nav. */
+  html, body {
+    height: auto;
+    overflow: visible;
   }
 
-  /* Sidebar: thin strip, fixed at bottom */
+  body {
+    display: block;
+    position: static;
+    inset: auto;
+    min-height: 100vh;
+    /* Reserve space at the bottom for the fixed nav strip + iOS home bar. */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Sidebar: thin strip, truly fixed at the bottom of the viewport. */
   .sb {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     width: 100%;
-    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    background: var(--sb-bg);
     flex-direction: row;
     flex-shrink: 0;
     z-index: 100;
-    overflow: hidden;
+    box-shadow: 0 -1px 0 rgba(255,255,255,.06);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Cancel the desktop sticky/height rules. */
+    top: auto;
   }
 
   .sb-brand  { display: none; }
@@ -1147,35 +1160,34 @@ body.dark .fs-btn.active { color: #000; }
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     width: 100%;
-    align-items: flex-start;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    align-items: stretch;
   }
   .sb-nav::-webkit-scrollbar { display: none; }
 
   .nav-item {
     flex-direction: column;
     gap: 2px;
-    padding: 5px 2px 6px;
+    padding: 6px 4px 8px;
     border-radius: 8px;
-    font-size: 9px;
-    flex: 1;
-    min-width: 44px;
-    color: rgba(255,255,255,.5);
+    font-size: 10px;
+    flex: 1 0 auto;
+    min-width: 56px;
+    color: rgba(255,255,255,.55);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
   }
-  .nav-item .icon { font-size: 18px; width: auto; }
+  .nav-item .icon { font-size: 19px; width: auto; }
   .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
 
-  /* Main: fill all width, scroll vertically, bottom padding for nav bar */
+  /* Main: a normal block in document flow. Page scrolls the window
+     naturally, which is the only thing iOS Safari handles reliably. */
   .main {
-    flex: 1;
+    flex: 0 1 auto;
     width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    overflow: visible;
+    padding-bottom: 0; /* body already reserves bottom space */
   }
 
   /* Pages must be block and visible when active */
@@ -1258,8 +1270,15 @@ body.dark .fs-btn.active { color: #000; }
 
 /* Tiny phones (SE, 320px) */
 @media (max-width: 374px) {
-  .nav-item { min-width: 38px; font-size: 8px; }
-  .nav-item .icon { font-size: 16px; }
+  .nav-item { min-width: 48px; font-size: 9px; }
+  .nav-item .icon { font-size: 17px; }
+}
+
+/* On mobile lift the version stamp above the fixed bottom nav. */
+@media (max-width: 680px) {
+  #ft-build {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 4px) !important;
+  }
 }
 
 /* Tablet */
@@ -1429,7 +1448,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v12 · 2026-05-14';
+  var BUILD_VERSION    = 'v13 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2305,7 +2324,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v12 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v13 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2517,12 +2536,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v12 · 2026-05-14</div>
-<script src="app.js?v=12"></script>
-<script src="sync.js?v=12"></script>
-<script src="features.js?v=12"></script>
-<script src="extras.js?v=12"></script>
-<script src="import-inline.js?v=12"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v13 · 2026-05-14</div>
+<script src="app.js?v=13"></script>
+<script src="sync.js?v=13"></script>
+<script src="features.js?v=13"></script>
+<script src="extras.js?v=13"></script>
+<script src="import-inline.js?v=13"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
