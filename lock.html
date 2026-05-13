@@ -2,6 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script>
+// On-screen JS error reporter (iOS has no console). Remove later.
+(function(){
+  function panel(){
+    var d = document.getElementById('ft-jserr');
+    if (d) return d;
+    d = document.createElement('div');
+    d.id = 'ft-jserr';
+    d.style.cssText = 'position:fixed;top:0;left:0;right:0;max-height:55vh;overflow:auto;background:#fee;color:#900;padding:8px 10px;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;z-index:99999;white-space:pre-wrap;border-bottom:2px solid #f99;-webkit-user-select:text;user-select:text';
+    (document.body || document.documentElement).appendChild(d);
+    return d;
+  }
+  window.addEventListener('error', function(e){
+    try {
+      var p = panel();
+      var src = e && e.filename ? String(e.filename).split('/').pop() : '?';
+      p.textContent += 'ERR ' + src + ':' + (e && e.lineno || '?') + ' ' + (e && e.message || '') + '\n';
+    } catch (err) {}
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    try {
+      var p = panel();
+      var msg = e && e.reason && e.reason.message ? e.reason.message : String(e && e.reason);
+      p.textContent += 'PROMISE ' + msg + '\n';
+    } catch (err) {}
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
@@ -164,7 +192,7 @@
 var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
 var BRIDGE_KEY       = 'ft_unlock_bridge';
 var MAX = 6;
-var BUILD_VERSION = 'v7 · 2026-05-13';
+var BUILD_VERSION = 'v8 · 2026-05-13';
 
 var entered = '';
 var pendingPin = '';
@@ -174,7 +202,18 @@ var checking = false;
 (function showVersion() {
   try {
     var v = document.getElementById('ver');
-    if (v) v.textContent = BUILD_VERSION;
+    if (!v) return;
+    v.textContent = BUILD_VERSION + ' · tap 3× for debug';
+    v.style.cursor = 'pointer';
+    // Triple-tap the version stamp to skip lock and force a dashboard render
+    // via index.html?debug=1 — useful when the dashboard fails on iPhone.
+    var taps = 0, timer = null;
+    v.addEventListener('click', function() {
+      taps++;
+      clearTimeout(timer);
+      timer = setTimeout(function() { taps = 0; }, 800);
+      if (taps >= 3) { taps = 0; window.location.replace('./index.html?debug=1'); }
+    });
   } catch (e) {}
 })();
 

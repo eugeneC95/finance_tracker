@@ -3,8 +3,39 @@
 <head>
 <meta charset="UTF-8"/>
 <script>
-// Auth gate. Three independent unlock paths so this works even when iOS
+// On-screen JS error reporter — iOS Safari has no console, so any failure
+// has to be made visible inside the page itself. Mounts as soon as <body>
+// exists. Toggle off later by removing this <script>.
+(function(){
+  function panel(){
+    var d = document.getElementById('ft-jserr');
+    if (d) return d;
+    d = document.createElement('div');
+    d.id = 'ft-jserr';
+    d.style.cssText = 'position:fixed;top:0;left:0;right:0;max-height:55vh;overflow:auto;background:#fee;color:#900;padding:8px 10px;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;z-index:99999;white-space:pre-wrap;border-bottom:2px solid #f99;-webkit-user-select:text;user-select:text';
+    (document.body || document.documentElement).appendChild(d);
+    return d;
+  }
+  window.addEventListener('error', function(e){
+    try {
+      var p = panel();
+      var src = e && e.filename ? String(e.filename).split('/').pop() : '?';
+      p.textContent += 'ERR ' + src + ':' + (e && e.lineno || '?') + ' ' + (e && e.message || '') + '\n';
+    } catch (err) {}
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    try {
+      var p = panel();
+      var msg = e && e.reason && e.reason.message ? e.reason.message : String(e && e.reason);
+      p.textContent += 'PROMISE ' + msg + '\n';
+    } catch (err) {}
+  });
+})();
+</script>
+<script>
+// Auth gate. Four independent unlock paths so this works even when iOS
 // standalone PWAs drop one of the storage APIs across location.replace:
+//   0) ?debug=1 in URL                    — emergency bypass (no auth)
 //   1) URL hash token  (#u=<timestamp>)   — never relies on storage
 //   2) sessionStorage  ('ft-unlocked')    — standard same-session token
 //   3) localStorage    ('ft_unlock_bridge') — short-lived fallback (~45 s)
@@ -20,6 +51,12 @@
       try { sessionStorage.removeItem('ft-unlocked'); } catch (e0) {}
       try { localStorage.removeItem(BRIDGE_KEY); } catch (e0b) {}
       window.location.replace('./lock.html?reset=1');
+      return;
+    }
+    // Bypass for diagnostics: opening ?debug=1 skips the lock entirely so we
+    // can confirm the dashboard renders at all without the auth flow.
+    if (/[?&]debug=1\b/.test(window.location.search)) {
+      try { sessionStorage.setItem('ft-unlocked', '1'); } catch (eD) {}
       return;
     }
     var h = window.location.hash || '';
@@ -2175,12 +2212,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v7 · 2026-05-13</div>
-<script src="app.js?v=7"></script>
-<script src="sync.js?v=7"></script>
-<script src="features.js?v=7"></script>
-<script src="extras.js?v=7"></script>
-<script src="import-inline.js?v=7"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v8 · 2026-05-13</div>
+<script src="app.js?v=8"></script>
+<script src="sync.js?v=8"></script>
+<script src="features.js?v=8"></script>
+<script src="extras.js?v=8"></script>
+<script src="import-inline.js?v=8"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
