@@ -2,7 +2,7 @@
   "name": "Finance Tracker",
   "short_name": "Finance",
   "description": "Personal finance tracker \u2014 expenses, income, budgets, sync to Google Sheets",
-  "start_url": "./lock.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#1a1a1a",

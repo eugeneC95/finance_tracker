@@ -33,53 +33,60 @@
 })();
 </script>
 <script>
-// Auth gate. Four independent unlock paths so this works even when iOS
-// standalone PWAs drop one of the storage APIs across location.replace:
-//   0) ?debug=1 in URL                    — emergency bypass (no auth)
-//   1) URL hash token  (#u=<timestamp>)   — never relies on storage
-//   2) sessionStorage  ('ft-unlocked')    — standard same-session token
-//   3) localStorage    ('ft_unlock_bridge') — short-lived fallback (~45 s)
-// Also: `?reset=1` clears unlock state and returns to lock.html.
+// v9: The lock screen is now an in-page overlay inside this file. We no
+// longer navigate to a separate lock.html (which broke on iOS standalone
+// PWAs — cross-file location.replace inside the PWA shell silently
+// fails). Instead we set window.__ftUnlocked here, and the overlay at
+// the top of <body> shows/hides itself accordingly.
+//
+// Unlock sources (any one is sufficient):
+//   ?debug=1                            — diagnostics bypass (no auth)
+//   #u=<timestamp> in URL              — hash-token fallback (legacy)
+//   sessionStorage  ('ft-unlocked')    — same-session token
+//   localStorage    ('ft_unlock_bridge') — short-lived bridge (~45 s)
+//
+// ?reset=1 clears every lock-related key in storage so the user can
+// reset a forgotten PIN, then re-renders the overlay in "create" mode.
 (function(){
   var BRIDGE_KEY = 'ft_unlock_bridge';
   var BRIDGE_MS  = 45000;
-  function stripHash() {
-    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
-  }
+  window.__ftUnlocked    = false;
+  window.__ftForceCreate = false;
   try {
     if (/[?&]reset=1\b/.test(window.location.search)) {
-      try { sessionStorage.removeItem('ft-unlocked'); } catch (e0) {}
-      try { localStorage.removeItem(BRIDGE_KEY); } catch (e0b) {}
-      window.location.replace('./lock.html?reset=1');
-      return;
+      try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e0) {}
+      try { sessionStorage.removeItem('ft-unlocked'); } catch (e0b) {}
+      try { localStorage.removeItem(BRIDGE_KEY); } catch (e0c) {}
+      window.__ftForceCreate = true;
+      try { history.replaceState(null, '', window.location.pathname); } catch (e0d) {}
     }
-    // Bypass for diagnostics: opening ?debug=1 skips the lock entirely so we
-    // can confirm the dashboard renders at all without the auth flow.
     if (/[?&]debug=1\b/.test(window.location.search)) {
       try { sessionStorage.setItem('ft-unlocked', '1'); } catch (eD) {}
+      window.__ftUnlocked = true;
       return;
     }
     var h = window.location.hash || '';
     var m = h.match(/^#u=(\d+)/);
     if (m) {
+      try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (eS) {}
       var ts = parseInt(m[1], 10);
-      stripHash();
       if (!isNaN(ts) && (Date.now() - ts) < BRIDGE_MS) {
         try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e1) {}
+        window.__ftUnlocked = true;
         return;
       }
     }
-    if (sessionStorage.getItem('ft-unlocked') === '1') return;
+    if (sessionStorage.getItem('ft-unlocked') === '1') { window.__ftUnlocked = true; return; }
     var raw = localStorage.getItem(BRIDGE_KEY);
     if (raw) {
-      var ts2 = parseInt(raw, 10);
       try { localStorage.removeItem(BRIDGE_KEY); } catch (e2) {}
+      var ts2 = parseInt(raw, 10);
       if (!isNaN(ts2) && (Date.now() - ts2) < BRIDGE_MS) {
         try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e3) {}
+        window.__ftUnlocked = true;
         return;
       }
     }
-    window.location.replace('./lock.html');
   } catch (e) {}
 })();
 </script>
@@ -1262,8 +1269,258 @@ body.dark .fs-btn.active { color: #000; }
   .net-grid { grid-template-columns: repeat(2,1fr); }
 }
 
+/* ════════════════════════════════════════════════════════════
+   LOCK OVERLAY  (v9 — replaces the standalone lock.html screen)
+   Sits on top of the dashboard until the user enters their PIN.
+   No cross-file navigation; PIN match just hides this overlay.
+   ════════════════════════════════════════════════════════════ */
+#lock-overlay {
+  position: fixed; inset: 0;
+  min-height: 100vh; min-height: 100dvh;
+  background: #1a1a1a;
+  display: flex; align-items: center; justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 99998;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#lock-overlay .lk-card {
+  background: #242424; border: 1px solid #333; border-radius: 20px;
+  padding: 40px 32px 36px; width: 100%; max-width: 340px;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+#lock-overlay .lk-logo    { font-size: 48px; margin-bottom: 12px; line-height: 1; }
+#lock-overlay .lk-name    { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+#lock-overlay .lk-sub     { font-size: 13px; color: #666; margin-bottom: 36px; }
+#lock-overlay .lk-label   { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+#lock-overlay .lk-dots    { display: flex; justify-content: center; gap: 14px; margin-bottom: 28px; }
+#lock-overlay .lk-dot     {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #444; background: transparent;
+  transition: background .15s, border-color .15s;
+}
+#lock-overlay .lk-dot.filled { background: #fff; border-color: #fff; }
+#lock-overlay .lk-dot.error  { background: #e24b4a; border-color: #e24b4a; }
+#lock-overlay .lk-pad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+#lock-overlay .lk-btn {
+  background: #2e2e2e; border: 1px solid #3a3a3a; border-radius: 14px;
+  padding: 18px 0; font-size: 22px; font-weight: 500; color: #fff;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .1s, transform .08s; user-select: none;
+  font-family: inherit;
+}
+#lock-overlay .lk-btn:active { background: #3a3a3a; transform: scale(.94); }
+#lock-overlay .lk-btn.del    { font-size: 18px; color: #888; }
+#lock-overlay .lk-btn.empty  { background: transparent; border-color: transparent; pointer-events: none; }
+#lock-overlay .lk-fallback   { margin-top: 12px; }
+#lock-overlay .lk-fallback input {
+  width: 100%; height: 48px; background: #2e2e2e; border: 1px solid #3a3a3a;
+  border-radius: 12px; color: #fff; font-size: 22px; text-align: center;
+  letter-spacing: 8px; outline: none; padding: 0 12px;
+}
+#lock-overlay .lk-fallback input:focus { border-color: #555; }
+#lock-overlay .lk-err {
+  height: 18px; font-size: 12px; color: #e24b4a;
+  text-align: center; margin-top: 4px;
+}
+#lock-overlay .lk-ver { margin-top: 18px; font-size: 10px; color: #555; letter-spacing: .5px; }
+@media (hover: hover) and (pointer: fine) {
+  #lock-overlay .lk-pad      { display: none; }
+  #lock-overlay .lk-dots     { display: none; }
+  #lock-overlay .lk-fallback { display: block; }
+}
+@media (hover: none), (pointer: coarse) {
+  #lock-overlay .lk-fallback { display: none; }
+  #lock-overlay .lk-pad      { display: grid; }
+  #lock-overlay .lk-dots     { display: flex; }
+}
+
 </head>
 <body class="fs-md">
+
+<!-- ══════════════════════════════════════════
+     LOCK OVERLAY (v9)
+══════════════════════════════════════════ -->
+<div id="lock-overlay" aria-hidden="false">
+  <div class="lk-card">
+    <div class="lk-logo">💰</div>
+    <div class="lk-name">Finance Tracker</div>
+    <div class="lk-sub">Personal money manager</div>
+    <div class="lk-label" id="lk-label">Create your PIN</div>
+    <div class="lk-dots">
+      <div class="lk-dot" id="lk-d0"></div>
+      <div class="lk-dot" id="lk-d1"></div>
+      <div class="lk-dot" id="lk-d2"></div>
+      <div class="lk-dot" id="lk-d3"></div>
+      <div class="lk-dot" id="lk-d4"></div>
+      <div class="lk-dot" id="lk-d5"></div>
+    </div>
+    <div class="lk-pad">
+      <button class="lk-btn" data-n="1">1</button>
+      <button class="lk-btn" data-n="2">2</button>
+      <button class="lk-btn" data-n="3">3</button>
+      <button class="lk-btn" data-n="4">4</button>
+      <button class="lk-btn" data-n="5">5</button>
+      <button class="lk-btn" data-n="6">6</button>
+      <button class="lk-btn" data-n="7">7</button>
+      <button class="lk-btn" data-n="8">8</button>
+      <button class="lk-btn" data-n="9">9</button>
+      <button class="lk-btn empty"></button>
+      <button class="lk-btn" data-n="0">0</button>
+      <button class="lk-btn del" id="lk-del">⌫</button>
+    </div>
+    <div class="lk-fallback">
+      <input type="password" id="lk-input" placeholder="6 digits" maxlength="6"
+             inputmode="numeric" pattern="[0-9]*" autocomplete="off"/>
+    </div>
+    <div class="lk-err" id="lk-err"></div>
+    <div class="lk-ver" id="lk-ver"></div>
+  </div>
+</div>
+
+<script>
+// Lock-overlay controller. Runs synchronously here so the overlay is hidden
+// before painting if the user is already unlocked (set by the auth gate in
+// <head> via window.__ftUnlocked). No location.replace — when the PIN is
+// correct we just remove the overlay and let the dashboard render in place.
+(function lockController(){
+  var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
+  var BRIDGE_KEY       = 'ft_unlock_bridge';
+  var MAX              = 6;
+  var BUILD_VERSION    = 'v9 · 2026-05-13';
+
+  var ov = document.getElementById('lock-overlay');
+  if (!ov) return;
+
+  function hide() {
+    ov.style.display = 'none';
+    ov.setAttribute('aria-hidden', 'true');
+  }
+  function show() {
+    ov.style.display = 'flex';
+    ov.setAttribute('aria-hidden', 'false');
+  }
+
+  if (window.__ftUnlocked) { hide(); return; }
+
+  function getStored() { try { return localStorage.getItem(STORAGE_HASH_KEY); } catch (e) { return null; } }
+  function setStored(h) { try { localStorage.setItem(STORAGE_HASH_KEY, h); } catch (e) {} }
+
+  async function sha256(s) {
+    if (!window.crypto || !window.crypto.subtle) throw new Error('crypto.subtle unavailable (needs HTTPS)');
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  }
+
+  var entered = '', pendingPin = '', checking = false;
+  var stored = window.__ftForceCreate ? null : getStored();
+  var mode = stored ? 'login' : 'setup1';
+
+  function $(id){ return document.getElementById(id); }
+  function setLabel(t){ var e = $('lk-label'); if (e) e.textContent = t; }
+  function setError(t){ var e = $('lk-err');   if (e) e.textContent = t || ''; }
+  function setPlaceholder(){
+    var i = $('lk-input'); if (!i) return;
+    i.placeholder = (mode === 'setup1') ? 'New PIN (6 digits)'
+                  : (mode === 'setup2') ? 'Confirm PIN'
+                  : '6 digits';
+  }
+  function updateDots(err){
+    for (var i = 0; i < MAX; i++) {
+      var d = $('lk-d' + i); if (!d) continue;
+      d.classList.remove('filled','error');
+      if (err) d.classList.add('error');
+      else if (i < entered.length) d.classList.add('filled');
+    }
+  }
+  function reset(msg){
+    updateDots(true); setError(msg || 'Try again');
+    setTimeout(function(){
+      entered = ''; updateDots(false); setError('');
+      var i = $('lk-input'); if (i) i.value = '';
+      checking = false;
+    }, 900);
+  }
+  function unlock(){
+    try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
+    try { localStorage.setItem(BRIDGE_KEY, String(Date.now())); } catch (e2) {}
+    window.__ftUnlocked = true;
+    hide();
+    // Kick the dashboard so any "show after unlock" hooks fire. The page is
+    // already loaded and rendered behind the overlay, this is just for
+    // listeners that want to know we're now authenticated.
+    try { window.dispatchEvent(new Event('ft-unlocked')); } catch (e3) {}
+  }
+  async function complete(val){
+    val = String(val || '').trim();
+    if (val.length !== MAX) return;
+    if (checking) return;
+    checking = true;
+    try {
+      if (mode === 'login') {
+        var s = getStored();
+        if (!s) { checking = false; return; }
+        var h = await sha256(val);
+        if (h === s) { unlock(); return; }
+        reset('Incorrect PIN'); return;
+      }
+      if (mode === 'setup1') {
+        pendingPin = val; entered = ''; mode = 'setup2';
+        setLabel('Confirm your PIN'); setPlaceholder(); updateDots(false);
+        var i = $('lk-input'); if (i) i.value = '';
+        checking = false; return;
+      }
+      if (mode === 'setup2') {
+        if (val !== pendingPin) {
+          mode = 'setup1'; pendingPin = '';
+          setLabel('Create your PIN'); setPlaceholder();
+          reset('PINs did not match — start over'); return;
+        }
+        var h2 = await sha256(pendingPin);
+        setStored(h2); unlock(); return;
+      }
+    } catch (e) {
+      reset('Error: ' + (e && e.message || e));
+    }
+  }
+
+  // Wire up
+  setLabel(mode === 'login' ? 'Enter PIN' : 'Create your PIN');
+  setPlaceholder();
+  var ver = $('lk-ver'); if (ver) ver.textContent = BUILD_VERSION;
+  show();
+
+  document.querySelectorAll('#lock-overlay .lk-btn[data-n]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (entered.length >= MAX || checking) return;
+      entered += btn.dataset.n;
+      updateDots(false);
+      if (entered.length === MAX) complete(entered);
+    });
+  });
+  var delBtn = $('lk-del');
+  if (delBtn) delBtn.addEventListener('click', function(){
+    if (checking) return;
+    entered = entered.slice(0, -1);
+    updateDots(false);
+  });
+  var inp = $('lk-input');
+  if (inp) {
+    inp.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter' || e.repeat) return;
+      var v = (inp.value || '').trim();
+      if (v.length !== MAX) return;
+      e.preventDefault();
+      complete(v);
+    });
+  }
+})();
+</script>
 
 <!-- ══════════════════════════════════════════
      SIDEBAR
@@ -2212,12 +2469,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v8 · 2026-05-13</div>
-<script src="app.js?v=8"></script>
-<script src="sync.js?v=8"></script>
-<script src="features.js?v=8"></script>
-<script src="extras.js?v=8"></script>
-<script src="import-inline.js?v=8"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v9 · 2026-05-13</div>
+<script src="app.js?v=9"></script>
+<script src="sync.js?v=9"></script>
+<script src="features.js?v=9"></script>
+<script src="extras.js?v=9"></script>
+<script src="import-inline.js?v=9"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
