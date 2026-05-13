@@ -52,19 +52,26 @@ function buildPayload() {
   };
 }
 
-// ── Core fetch — GET with ?action=…&data=… ─────────────────
-// Apps Script GET never triggers CORS preflight.
-// We follow redirects manually by using fetch with redirect:'follow'.
-function scriptFetch(url, params) {
+// ── Core fetch ─────────────────────────────────────────────
+// GET for tiny calls (ping / load). For "save" we POST the JSON in
+// the body — URL-encoded payloads quickly outgrow the ~8 KB limit
+// Apps Script (and Safari) enforce on the request line.
+// Content-Type "text/plain" keeps the request a CORS "simple"
+// request, so no OPTIONS preflight (Apps Script does not honor it).
+function scriptFetch(url, params, body) {
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
     .join('&');
   var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + qs;
+  var hasBody = typeof body === 'string' && body.length > 0;
 
-  return fetch(fullUrl, {
-    method:   'GET',
-    redirect: 'follow',
-  }).then(function(r) {
+  var opts = { method: hasBody ? 'POST' : 'GET', redirect: 'follow' };
+  if (hasBody) {
+    opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    opts.body = body;
+  }
+
+  return fetch(fullUrl, opts).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
   });
@@ -105,28 +112,26 @@ function syncSave(silent) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var json    = JSON.stringify(buildPayload());
-  var encoded = encodeURIComponent(json);
+  var json = JSON.stringify(buildPayload());
 
-  // Google Apps Script has a URL length limit (~8000 chars after encoding).
-  // If payload is larger, we split into a metadata-only save + a warning.
-  // For most users months of data fits fine. If not, we show a clear error.
-  if (encoded.length > 7500) {
-    // Try anyway — Apps Script can handle longer via POST body passed as param
-    // If it fails we'll surface it
-    console.warn('Large payload:', encoded.length, 'chars');
-  }
-
-  scriptFetch(syncUrl, { action: 'save', data: json })
+  // POST the payload in the body; action stays in the URL query string.
+  scriptFetch(syncUrl, { action: 'save' }, json)
     .then(function(data) {
-      if (data.ok) {
+      if (data && data.ok) {
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
         persistSyncState();
         if (!silent) showToast('Saved to Google Sheets');
       } else {
-        setSyncStatus('error', 'Save failed: ' + (data.error || 'unknown'));
-        if (!silent) showToast('Save failed — check console for details');
+        var msg = (data && data.error) || 'unknown';
+        // Old Apps Script deployments only read e.parameter.data and will
+        // respond with "No data received" when given a POST body. Tell the
+        // user clearly what to do.
+        if (/no data received/i.test(msg)) {
+          msg = 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
+        }
+        setSyncStatus('error', 'Save failed: ' + msg);
+        if (!silent) showToast('Save failed — ' + msg);
       }
     })
     .catch(function(err) {

@@ -34,10 +34,11 @@ function getOrCreateSheet(tabName) {
   return sheet;
 }
 
-// ── All requests come in as GET ────────────────────────────
-// action=ping                          → test connection
-// action=save&data=<url-encoded-json>  → save all data
-// action=load                          → return all data
+// ── Request entry points ───────────────────────────────────
+// GET  ?action=ping                          → test connection
+// GET  ?action=load                          → return all data
+// GET  ?action=save&data=<url-encoded-json>  → save (small payloads, legacy)
+// POST ?action=save  body: <raw JSON>        → save (preferred — no URL-length cap)
 function doGet(e) {
   var action = (e.parameter && e.parameter.action) ? e.parameter.action : 'ping';
   var result;
@@ -47,7 +48,7 @@ function doGet(e) {
       result = { ok: true, message: 'Finance Tracker connected successfully' };
 
     } else if (action === 'save') {
-      var raw = e.parameter.data || '';
+      var raw = (e.parameter && e.parameter.data) ? e.parameter.data : '';
       if (!raw) {
         result = { ok: false, error: 'No data received' };
       } else {
@@ -71,8 +72,24 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ── doPost kept for compatibility ──────────────────────────
+// POST is used for "save" so the JSON payload travels in the request body
+// instead of the URL — works for arbitrarily large datasets and is the only
+// reliable path once you have many transactions.
 function doPost(e) {
+  try {
+    var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
+    if (action === 'save' && e.postData && e.postData.contents) {
+      var payload = JSON.parse(e.postData.contents);
+      saveAllData(payload);
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   return doGet(e);
 }
 

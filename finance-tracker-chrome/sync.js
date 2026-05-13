@@ -52,20 +52,27 @@ function buildPayload() {
   };
 }
 
-// ── Core fetch — GET with ?action=…&data=… ─────────────────
-// In the extension, page-origin fetch() often breaks on Apps Script redirects/CORS.
-// The service worker proxies via SYNC_FETCH (see background.js).
-function scriptFetch(url, params) {
+// ── Core fetch ─────────────────────────────────────────────
+// GET for tiny calls (ping / load). For "save" we POST the JSON in
+// the body — URL-encoded payloads quickly outgrow the ~8 KB limit
+// Apps Script enforces on the request line. Extension fetches still
+// go through the service worker (background.js) to dodge the
+// Apps-Script redirect / CORS issue, which already supports POST.
+function scriptFetch(url, params, body) {
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
     .join('&');
   var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + qs;
+  var hasBody = typeof body === 'string' && body.length > 0;
+  var method  = hasBody ? 'POST' : 'GET';
 
   function directFetch() {
-    return fetch(fullUrl, {
-      method:   'GET',
-      redirect: 'follow',
-    }).then(function(r) {
+    var opts = { method: method, redirect: 'follow' };
+    if (hasBody) {
+      opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+      opts.body    = body;
+    }
+    return fetch(fullUrl, opts).then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });
@@ -74,7 +81,7 @@ function scriptFetch(url, params) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
     return new Promise(function(resolve, reject) {
       chrome.runtime.sendMessage(
-        { type: 'SYNC_FETCH', url: fullUrl, method: 'GET' },
+        { type: 'SYNC_FETCH', url: fullUrl, method: method, body: hasBody ? body : undefined },
         function(response) {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
@@ -128,28 +135,22 @@ function syncSave(silent) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var json    = JSON.stringify(buildPayload());
-  var encoded = encodeURIComponent(json);
+  var json = JSON.stringify(buildPayload());
 
-  // Google Apps Script has a URL length limit (~8000 chars after encoding).
-  // If payload is larger, we split into a metadata-only save + a warning.
-  // For most users months of data fits fine. If not, we show a clear error.
-  if (encoded.length > 7500) {
-    // Try anyway — Apps Script can handle longer via POST body passed as param
-    // If it fails we'll surface it
-    console.warn('Large payload:', encoded.length, 'chars');
-  }
-
-  scriptFetch(syncUrl, { action: 'save', data: json })
+  scriptFetch(syncUrl, { action: 'save' }, json)
     .then(function(data) {
-      if (data.ok) {
+      if (data && data.ok) {
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
         persistSyncState();
         if (!silent) showToast('Saved to Google Sheets');
       } else {
-        setSyncStatus('error', 'Save failed: ' + (data.error || 'unknown'));
-        if (!silent) showToast('Save failed — check console for details');
+        var msg = (data && data.error) || 'unknown';
+        if (/no data received/i.test(msg)) {
+          msg = 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
+        }
+        setSyncStatus('error', 'Save failed: ' + msg);
+        if (!silent) showToast('Save failed — ' + msg);
       }
     })
     .catch(function(err) {
