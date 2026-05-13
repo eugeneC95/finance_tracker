@@ -14,8 +14,9 @@
 //  7. In the extension: Settings → Google Sheets Sync → paste URL → Test connection
 //
 //  NOTE: Every time you change this script, you must
-//  Deploy → New deployment (not Manage deployments) to get a new URL.
-//  Or use "Manage deployments → Edit" to update the existing one.
+//  Deploy → Manage deployments → Edit → select the active deployment →
+//  Version: "New version" → Deploy. (Or create a brand-new deployment.)
+//  Without a new version, Google keeps running the old code.
 // ============================================================
 
 var SHEET_NAME = 'Finance Tracker';
@@ -37,8 +38,67 @@ function getOrCreateSheet(tabName) {
 // ── Request entry points ───────────────────────────────────
 // GET  ?action=ping                          → test connection
 // GET  ?action=load                          → return all data
-// GET  ?action=save&data=<url-encoded-json>  → save (small payloads, legacy)
-// POST ?action=save  body: <raw JSON>        → save (preferred — no URL-length cap)
+// GET  ?action=save&data=<json>              → save (small payloads; data is already URL-decoded by Apps Script)
+// GET  ?action=save_chunk&id=&seq=&total=&data= → save (large payloads; see handleSaveChunk_)
+// POST ?action=save  body: <raw JSON>        → save (Chrome extension / no redirect issues)
+function handleSaveChunk_(e) {
+  var chunkId = (e.parameter && e.parameter.id) ? String(e.parameter.id) : '';
+  var seqStr = (e.parameter && e.parameter.seq !== undefined && e.parameter.seq !== null) ? String(e.parameter.seq) : '';
+  var totStr = (e.parameter && e.parameter.total) ? String(e.parameter.total) : '';
+  var part = (e.parameter && e.parameter.data !== undefined && e.parameter.data !== null) ? String(e.parameter.data) : '';
+
+  if (!chunkId || seqStr === '' || totStr === '') {
+    return { ok: false, error: 'save_chunk: missing id, seq, or total' };
+  }
+
+  var seq = parseInt(seqStr, 10);
+  var total = parseInt(totStr, 10);
+  if (isNaN(seq) || isNaN(total) || total < 1 || seq < 0 || seq >= total) {
+    return { ok: false, error: 'save_chunk: invalid seq or total' };
+  }
+
+  var cache = CacheService.getScriptCache();
+  var keyPrefix = 'ftc_' + chunkId + '_';
+  cache.put(keyPrefix + seqStr, part, 600);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var parts = [];
+    var i;
+    for (i = 0; i < total; i++) {
+      var piece = cache.get(keyPrefix + i);
+      if (piece === null) {
+        var allGone = true;
+        var g;
+        for (g = 0; g < total; g++) {
+          if (cache.get(keyPrefix + g) !== null) {
+            allGone = false;
+            break;
+          }
+        }
+        if (allGone) {
+          return { ok: true, saved: new Date().toISOString(), duplicate: true };
+        }
+        return { ok: true, partial: true, need: i };
+      }
+      parts.push(piece);
+    }
+
+    var fullJson = parts.join('');
+    var payload = JSON.parse(fullJson);
+    for (i = 0; i < total; i++) {
+      cache.remove(keyPrefix + i);
+    }
+    saveAllData(payload);
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total };
+  } catch (err) {
+    return { ok: false, error: err.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function doGet(e) {
   var action = (e.parameter && e.parameter.action) ? e.parameter.action : 'ping';
   var result;
@@ -52,10 +112,15 @@ function doGet(e) {
       if (!raw) {
         result = { ok: false, error: 'No data received' };
       } else {
-        var payload = JSON.parse(decodeURIComponent(raw));
+        // Apps Script already URL-decodes e.parameter.* — do NOT decodeURIComponent again
+        // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
+        var payload = JSON.parse(raw);
         saveAllData(payload);
         result = { ok: true, saved: new Date().toISOString() };
       }
+
+    } else if (action === 'save_chunk') {
+      result = handleSaveChunk_(e);
 
     } else if (action === 'load') {
       result = { ok: true, payload: loadAllData() };
@@ -72,9 +137,9 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// POST is used for "save" so the JSON payload travels in the request body
-// instead of the URL — works for arbitrarily large datasets and is the only
-// reliable path once you have many transactions.
+// POST body save works for the Chrome extension (background fetch keeps the body
+// across redirects). The PWA uses GET save / save_chunk instead because fetch()
+// drops POST bodies when following Apps Script's 302.
 function doPost(e) {
   try {
     var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';

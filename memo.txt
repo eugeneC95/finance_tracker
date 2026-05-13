@@ -20,7 +20,8 @@ Major fixes shipped (timeline)
 3) Google Sheets save on PWA vs extension
    Extension works because manifest host_permissions lets background fetch follow Apps Script redirects with POST body intact.
    PWA: POST to script.google.com → 302 → fetch may drop body on follow → "No data received" / misleading redeploy message.
-   Mitigation (v14): for smaller payloads, send save as GET ?action=save&data=<json> so data survives redirect. Threshold ~6500 chars URL-encoded; larger payloads still use POST (may fail on PWA until further fix e.g. chunking).
+   Mitigation (v14): small saves as GET ?action=save&data=<json> (threshold ~6500 URL-encoded chars).
+   Fix (v17): realistic datasets (~37+ expense rows) exceed that threshold and still POST-failed; PWA now sends sequential GET ?action=save_chunk&id=&seq=&total=&data=... (Apps Script reassembles via CacheService). Backend also uses JSON.parse(raw) only on doGet save — decodeURIComponent was unsafe for notes containing "%".
 
 4) Auto-load from Sheet on app open
    After local load/render, ft-app-ready fires; sync.js pulls cloud once per session (skip confirm), toast with row count.
@@ -39,6 +40,6 @@ Operational notes
 
 Open / verify
 -------------
-- PWA save if payload exceeds GET threshold — may need chunked save or backend change.
-- Confirm GitHub Pages shows latest build stamp (v15+ after merges).
+- After pulling v17, redeploy google-apps-script.js (chunked save + parse fix) or cloud save will fail with unknown action / old behavior.
+- Confirm GitHub Pages shows latest build stamp (v17+ after merges).
 - iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.

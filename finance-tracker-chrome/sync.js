@@ -53,11 +53,9 @@ function buildPayload() {
 }
 
 // ── Core fetch ─────────────────────────────────────────────
-// GET for tiny calls (ping / load). For "save" we POST the JSON in
-// the body — URL-encoded payloads quickly outgrow the ~8 KB limit
-// Apps Script enforces on the request line. Extension fetches still
-// go through the service worker (background.js) to dodge the
-// Apps-Script redirect / CORS issue, which already supports POST.
+// GET for ping / load / save (query) / save_chunk. Extension fetches go
+// through background.js (SYNC_FETCH) to dodge Apps Script CORS; POST is still
+// supported there for other callers, but syncSave uses GET + chunking like the PWA.
 function scriptFetch(url, params, body) {
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
@@ -127,11 +125,38 @@ function syncPing() {
 }
 
 // ── Save ───────────────────────────────────────────────────
-// The extension's background.js proxy can POST a body successfully (thanks to
-// host_permissions covering both google domains), but we use the same
-// URL-first strategy as the PWA for parity: smaller payloads ride in the
-// query string and survive any redirect; large payloads fall back to POST.
+// Same contract as ../sync.js: GET ?action=save for small payloads; chunked
+// GET save_chunk when URL-encoded JSON exceeds SAVE_URL_LIMIT. The extension
+// could POST large bodies via background.js, but chunking keeps one code path
+// and matches the deployed Apps Script (save_chunk).
 var SAVE_URL_LIMIT = 6500;
+var CHUNK_PAYLOAD_CHARS = 3000;
+
+function syncSaveChunked(fullJson) {
+  var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
+  var chunks = [];
+  var i;
+  for (i = 0; i < fullJson.length; i += CHUNK_PAYLOAD_CHARS) {
+    chunks.push(fullJson.slice(i, i + CHUNK_PAYLOAD_CHARS));
+  }
+  var total = chunks.length;
+  var chain = Promise.resolve();
+  chunks.forEach(function(chunk, idx) {
+    chain = chain.then(function() {
+      return scriptFetch(syncUrl, {
+        action: 'save_chunk',
+        id: sessionId,
+        seq: String(idx),
+        total: String(total),
+        data: chunk
+      });
+    }).then(function(data) {
+      if (!data || !data.ok) throw new Error((data && data.error) || 'Chunk save failed');
+      return data;
+    });
+  });
+  return chain;
+}
 
 function syncSave(silent) {
   if (!syncUrl) {
@@ -148,7 +173,7 @@ function syncSave(silent) {
   if (encoded.length < SAVE_URL_LIMIT) {
     promise = scriptFetch(syncUrl, { action: 'save', data: json });
   } else {
-    promise = scriptFetch(syncUrl, { action: 'save' }, json);
+    promise = syncSaveChunked(json);
   }
 
   promise

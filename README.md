@@ -53,6 +53,8 @@ Follow the same steps as the Chrome extension:
 
 Your data syncs automatically every time you add or edit anything.
 
+**PWA note (GitHub Pages):** The web app saves to Sheets using GET requests (small payloads) or chunked GET requests (large datasets) so data survives Google’s redirect. If you use a **custom** Apps Script backend, paste in the latest `google-apps-script.js` from this repo and **re-deploy** the web app (Manage deployments → Edit → New version) whenever that file changes — otherwise chunked saves will not work.
+
 ---
 
 ## Password

@@ -53,11 +53,9 @@ function buildPayload() {
 }
 
 // ── Core fetch ─────────────────────────────────────────────
-// GET for tiny calls (ping / load). For "save" we POST the JSON in
-// the body — URL-encoded payloads quickly outgrow the ~8 KB limit
-// Apps Script (and Safari) enforce on the request line.
-// Content-Type "text/plain" keeps the request a CORS "simple"
-// request, so no OPTIONS preflight (Apps Script does not honor it).
+// GET for ping / load / save (query) / save_chunk. For "save" with a POST body
+// we only use that path when explicitly needed — the PWA avoids POST here
+// because Apps Script returns a 302 and fetch drops the body on redirect.
 function scriptFetch(url, params, body) {
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
@@ -108,16 +106,44 @@ function syncPing() {
 // a 302 to script.googleusercontent.com. Per HTTP/1.1, fetch converts POST
 // to GET on the follow and DROPS THE BODY, so doPost runs without
 // e.postData.contents, falls through to doGet, which responds
-// {ok:false, error:"No data received"}. That is the error users saw.
-// The Chrome extension dodges this with host_permissions on both google
-// domains, which is unavailable to a page-context fetch.
+// {ok:false, error:"No data received"}.
 //
-// Workaround: ship the payload in the query string as ?action=save&data=...
-// whenever it fits (Apps Script and most CDNs cap URLs around 8 KB). The
-// existing doGet handler already reads e.parameter.data, decodes, and saves.
-// Only fall back to POST body when the payload is too large to fit; the
-// body-loss bug is a smaller risk than truncating data.
+// v14 sent small saves as GET ?action=save&data=... (survives redirect).
+// Realistic datasets (~37 expense rows + other tabs) still URL-encode to
+// >6500 chars, so the code fell back to POST and hit the same bug.
+//
+// v17: if encodeURIComponent(json) >= SAVE_URL_LIMIT, send a sequential chain
+// of GET ?action=save_chunk&id=&seq=&total=&data=... (see google-apps-script.js).
+// Each chunk stays under URL limits; no POST body is used on the PWA path.
 var SAVE_URL_LIMIT = 6500;
+// Raw JSON substring length per chunk (encodeURIComponent expands non-ASCII).
+var CHUNK_PAYLOAD_CHARS = 3000;
+
+function syncSaveChunked(fullJson) {
+  var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
+  var chunks = [];
+  var i;
+  for (i = 0; i < fullJson.length; i += CHUNK_PAYLOAD_CHARS) {
+    chunks.push(fullJson.slice(i, i + CHUNK_PAYLOAD_CHARS));
+  }
+  var total = chunks.length;
+  var chain = Promise.resolve();
+  chunks.forEach(function(chunk, idx) {
+    chain = chain.then(function() {
+      return scriptFetch(syncUrl, {
+        action: 'save_chunk',
+        id: sessionId,
+        seq: String(idx),
+        total: String(total),
+        data: chunk
+      });
+    }).then(function(data) {
+      if (!data || !data.ok) throw new Error((data && data.error) || 'Chunk save failed');
+      return data;
+    });
+  });
+  return chain;
+}
 
 function syncSave(silent) {
   if (!syncUrl) {
@@ -134,7 +160,7 @@ function syncSave(silent) {
   if (encoded.length < SAVE_URL_LIMIT) {
     promise = scriptFetch(syncUrl, { action: 'save', data: json });
   } else {
-    promise = scriptFetch(syncUrl, { action: 'save' }, json);
+    promise = syncSaveChunked(json);
   }
 
   promise
