@@ -1,0 +1,25 @@
+# Normalize text files to LF in the repository.
+# Working tree on Windows can still use CRLF (Git autoconverts on checkout
+# when core.autocrlf=true), but committed blobs stay LF for clean diffs
+# and predictable GitHub Pages output.
+* text=auto eol=lf
+
+# Explicit text types
+*.js       text eol=lf
+*.html     text eol=lf
+*.css      text eol=lf
+*.json     text eol=lf
+*.webmanifest text eol=lf
+*.md       text eol=lf
+*.txt      text eol=lf
+
+# Binaries — never normalize
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.crx  binary
+*.zip  binary
+*.pem  binary

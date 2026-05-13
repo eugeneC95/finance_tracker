@@ -1,0 +1,38 @@
+# ── OS / editor noise ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+*.swp
+*.swo
+*~
+
+# ── Editors / IDEs ─────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# ── Logs / runtime ─────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Local backups / experiments ────────────────────────────
+*.bak
+*.orig
+*.local
+*.local.*
+
+# ── Local secrets (Apps Script URL, PIN drafts, etc.) ──────
+# Never commit private deployment URLs or credentials.
+secrets.txt
+.env
+.env.*
+
+# ── Chrome extension packaging artifacts ──────────────────
+finance-tracker-chrome/*.zip
+finance-tracker-chrome/*.crx
+finance-tracker-chrome/*.pem

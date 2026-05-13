@@ -16,8 +16,11 @@ Go to [github.com](https://github.com) and sign up if you don't have one.
 
 ### 3. Upload the files
 - On the repository page, click **uploading an existing file**
-- Drag and drop the PWA files from this folder into the browser (everything needed for `index.html`, `lock.html`, CSS/JS, and the service worker). The `finance-tracker-chrome` subfolder is only for the Chrome extension — you may omit it from the GitHub Pages site if you want a smaller upload.
+- Drag and drop the PWA files from this folder into the browser (everything needed for `index.html`, `lock.html`, CSS/JS, the service worker, and the empty `.nojekyll` file).
+- The `finance-tracker-chrome/` subfolder is only for the Chrome extension. It is safe to publish (the extension source is already public-style HTML/JS), but you may omit it for a smaller upload — the PWA does not import from it.
 - Click **Commit changes**
+
+> `.nojekyll` disables Jekyll processing on GitHub Pages so files are served verbatim. Keep it at the repo root.
 
 ### 4. Enable GitHub Pages
 - Go to **Settings** (tab at the top of your repo)
@@ -64,3 +67,14 @@ To change the password: compute the SHA-256 hash of your new password (use any o
 - **iOS storage**: Safari may clear PWA data if the phone is low on storage. Use Google Sheets sync to prevent data loss.
 - **Sharing data**: The Chrome extension and PWA share the same Google Sheet — they stay in sync automatically.
 - **Privacy**: Your financial data only goes to your own Google account. GitHub only hosts the app files, not your data.
+
+## Repo housekeeping
+
+- `.nojekyll` — disables Jekyll on GitHub Pages so the service worker, manifest, and any leading-underscore filenames are served as-is.
+- `.gitignore` — keeps OS files (`.DS_Store`, `Thumbs.db`), editor folders (`.vscode/`, `.idea/`), local backups, log files, secrets (`.env`, `secrets.txt`), and Chrome packaging artifacts (`*.crx`, `*.pem`, `*.zip` inside `finance-tracker-chrome/`) out of commits.
+- `.gitattributes` — normalizes text files to LF in the repository so Pages, the service worker, and Windows checkouts produce consistent diffs.
+- **Backend parity** — `google-apps-script.js` is kept identical between repo root (PWA) and `finance-tracker-chrome/` (Chrome extension). Only one copy is actually deployed as the Apps Script web app, but both should match so either folder can be the source of truth.
+- **Client parity** — `app.js`, `features.js`, `extras.js`, `sync.js`, and `import-inline.js` are mirrored in both folders. The only intentional differences are:
+  - PWA uses a `chromeStorage` adapter (top of `app.js`) that wraps `localStorage`; the extension uses real `chrome.storage`.
+  - PWA does direct `fetch()` to Apps Script; the extension routes through `chrome.runtime.sendMessage({ type:'SYNC_FETCH' })` to `background.js` to avoid extension-context CORS.
+  - PWA's auto-backup uses an `<a download>` link; the extension uses `chrome.downloads.download()`.
