@@ -217,6 +217,9 @@ function syncPlaceholder() {
 
 function unlockAndGo() {
   try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
+  // One-shot bridge: some mobile / in-app browsers drop sessionStorage across
+  // location.replace; index.html accepts this token for a few seconds only.
+  try { localStorage.setItem('ft_unlock_bridge', String(Date.now())); } catch (e2) {}
   window.location.replace('./index.html');
 }
 

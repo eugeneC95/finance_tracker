@@ -285,7 +285,9 @@ function openEditModal(type, id) {
   sel.innerHTML = '';
   Object.keys(catMap).forEach(c => {
     const opt = document.createElement('option');
-    opt.value = c; opt.textContent = c;
+    const info = catMap[c] || {};
+    opt.value = c;
+    opt.textContent = (info.icon ? info.icon + ' ' : '') + c;
     if (c === entry.cat) opt.selected = true;
     sel.appendChild(opt);
   });

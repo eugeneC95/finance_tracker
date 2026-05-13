@@ -350,11 +350,16 @@ var pinUnlocked = false;
 
 function initPinLock() {
   chromeStorage.local.get([KEY_PIN], function(r) {
-    pinState = r[KEY_PIN] || { hash: null, enabled: false };
-    updatePinStatusUI();
-    if (pinState.enabled && pinState.hash) {
-      showPinOverlay();
-    } else {
+    try {
+      pinState = r[KEY_PIN] || { hash: null, enabled: false };
+      updatePinStatusUI();
+      if (pinState.enabled && pinState.hash) {
+        showPinOverlay();
+      } else {
+        pinUnlocked = true;
+      }
+    } catch (e) {
+      console.warn('initPinLock', e);
       pinUnlocked = true;
     }
   });
@@ -362,9 +367,16 @@ function initPinLock() {
 
 function showPinOverlay() {
   var ov = document.getElementById('pin-overlay');
-  if (ov) { ov.style.display = 'flex'; }
+  if (ov) {
+    ov.style.display = 'flex';
+    ov.style.flexDirection = 'column';
+    ov.style.alignItems = 'center';
+    ov.style.justifyContent = 'center';
+  }
   var pe = document.getElementById('pin-entry');
-  if (pe) pe.focus();
+  if (pe) {
+    try { pe.focus(); } catch (e) {}
+  }
 }
 
 function hidePinOverlay() {
@@ -374,6 +386,9 @@ function hidePinOverlay() {
 }
 
 async function hashPin(pin) {
+  if (!window.crypto || !crypto.subtle) {
+    throw new Error('Secure crypto unavailable — open this site with HTTPS');
+  }
   var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'ft2024'));
   return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
 }
@@ -383,13 +398,18 @@ async function submitPin() {
   if (!val || val.length !== 4 || !/^\d{4}$/.test(val)) {
     showPinError('Enter a 4-digit PIN'); return;
   }
-  var h = await hashPin(val);
-  if (h === pinState.hash) {
-    hidePinOverlay();
-    if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
-  } else {
-    showPinError('Incorrect PIN');
-    if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
+  try {
+    var h = await hashPin(val);
+    if (h === pinState.hash) {
+      hidePinOverlay();
+      if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
+    } else {
+      showPinError('Incorrect PIN');
+      if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
+    }
+  } catch (e) {
+    showPinError('Could not verify PIN');
+    console.warn('submitPin', e);
   }
 }
 
@@ -403,9 +423,15 @@ async function setNewPin() {
   var cv = document.getElementById('pin-confirm') ? document.getElementById('pin-confirm').value  : '';
   if (!nv || nv.length !== 4 || !/^\d{4}$/.test(nv)) { showToast('PIN must be exactly 4 digits'); return; }
   if (nv !== cv) { showToast('PINs do not match'); return; }
-  pinState.hash    = await hashPin(nv);
-  pinState.enabled = true;
-  savePinSt();
+  try {
+    pinState.hash    = await hashPin(nv);
+    pinState.enabled = true;
+    savePinSt();
+  } catch (e) {
+    showToast('Could not set PIN — try another browser or check HTTPS');
+    console.warn('setNewPin', e);
+    return;
+  }
   if (document.getElementById('pin-new'))     document.getElementById('pin-new').value     = '';
   if (document.getElementById('pin-confirm')) document.getElementById('pin-confirm').value  = '';
   updatePinStatusUI();

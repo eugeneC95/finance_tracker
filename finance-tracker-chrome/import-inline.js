@@ -1,5 +1,12 @@
 'use strict';
 
+// PWA uses chromeStorage (localStorage) from app.js; Chrome extension uses chrome.storage.
+function importWalletStorage() {
+  if (typeof chromeStorage !== 'undefined' && chromeStorage && chromeStorage.local) return chromeStorage;
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) return chrome.storage;
+  return null;
+}
+
 // ── Category rules for auto-detection ─────────────────────
 const IW_CAT_RULES = [
   { cat:'Petrol',        keys:['shell','petron','petronas','caltex','bhp','petrol','fuel','diesel'] },
@@ -239,9 +246,11 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
 
 // ── Import button ──────────────────────────────────────────
 document.getElementById('iw-import').addEventListener('click',()=>{
+  var st = importWalletStorage();
+  if (!st) { showToast('Import unavailable — storage not ready'); return; }
   const toAdd=iwRows.filter(r=>!r.skip);
   if(!toAdd.length){ alert('Nothing to import — all rows are skipped.'); return; }
-  chrome.storage.local.get(['expenses_v2','incomes_v1'],result=>{
+  st.local.get(['expenses_v2','incomes_v1'],result=>{
     const exps=result['expenses_v2']||[], incs=result['incomes_v1']||[];
     let ae=0,ai=0;
     toAdd.forEach(r=>{
@@ -251,7 +260,7 @@ document.getElementById('iw-import').addEventListener('click',()=>{
       const entry={id:Date.now()+Math.random(),name:r.desc,amount:r.amount,cat:r.cat,date:r.date};
       if(r.type==='exp'){exps.push(entry);ae++;}else{incs.push(entry);ai++;}
     });
-    chrome.storage.local.set({'expenses_v2':exps,'incomes_v1':incs},()=>{
+    st.local.set({'expenses_v2':exps,'incomes_v1':incs},()=>{
       if(typeof load==='function') load();
       document.getElementById('iw-done-h').textContent='Import complete!';
       document.getElementById('iw-done-sub').textContent=`Added ${ae} expense${ae!==1?'s':''} and ${ai} income entr${ai!==1?'ies':'y'} to your tracker.`;
