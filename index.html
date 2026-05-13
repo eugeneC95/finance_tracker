@@ -1392,7 +1392,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v9 · 2026-05-13';
+  var BUILD_VERSION    = 'v10 · 2026-05-13';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2264,10 +2264,20 @@ body.dark .fs-btn.active { color: #000; }
         </div>
 
         <div>
-          <div class="about-card">
-            <strong>Finance Tracker v4.0</strong><br/>
-            Your data is stored 100% locally in Chrome — nothing is sent to any server.<br/><br/>
-            Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. No internet needed.
+          <div class="card">
+            <div class="panel-hd"><span class="panel-title">About</span></div>
+            <div class="panel-bd">
+              <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v10 · 2026-05-13</span><br/>
+                Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/>
+                Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+                <button class="btn-ghost" id="ft-force-refresh-btn" title="Unregister the service worker, clear the cache, and reload. Useful if the app looks stuck on an old build.">🔄 Force refresh app</button>
+                <button class="btn-ghost" id="ft-reset-pin-btn" title="Forget the saved PIN and start over.">🔑 Reset PIN</button>
+              </div>
+              <div id="ft-force-refresh-status" style="margin-top:8px;font-size:var(--f-xs);color:var(--ink3)"></div>
+            </div>
           </div>
         </div>
 
@@ -2469,12 +2479,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v9 · 2026-05-13</div>
-<script src="app.js?v=9"></script>
-<script src="sync.js?v=9"></script>
-<script src="features.js?v=9"></script>
-<script src="extras.js?v=9"></script>
-<script src="import-inline.js?v=9"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v10 · 2026-05-13</div>
+<script src="app.js?v=10"></script>
+<script src="sync.js?v=10"></script>
+<script src="features.js?v=10"></script>
+<script src="extras.js?v=10"></script>
+<script src="import-inline.js?v=10"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -2519,6 +2529,53 @@ var pMM = document.getElementById('prev-month-m');
 var nMM = document.getElementById('next-month-m');
 if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
 if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
+
+// ── Force refresh: unregister SW, drop caches, reload from network ──
+// Recovers from the "stuck on an old build" state that iOS PWAs occasionally
+// get into when the service worker pins old HTML/JS.
+(function wireForceRefresh(){
+  var btn    = document.getElementById('ft-force-refresh-btn');
+  var status = document.getElementById('ft-force-refresh-status');
+  if (!btn) return;
+  btn.addEventListener('click', async function() {
+    if (!confirm('Unregister the service worker, clear cached files, and reload?\n\nYour data is safe — only cached app files are cleared.')) return;
+    if (status) status.textContent = 'Clearing…';
+    try {
+      if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function(r){ return r.unregister(); }));
+      }
+      if (typeof caches !== 'undefined') {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function(k){ return caches.delete(k); }));
+      }
+      if (status) status.textContent = 'Done. Reloading…';
+    } catch (e) {
+      if (status) status.textContent = 'Error: ' + (e && e.message || e) + ' — reloading anyway';
+    }
+    setTimeout(function(){
+      // Cache-bust the URL so the reload bypasses any leftover HTTP cache.
+      var u = new URL(window.location.href);
+      u.searchParams.set('_', String(Date.now()));
+      window.location.replace(u.toString());
+    }, 400);
+  });
+})();
+
+// ── Reset PIN: forget saved hash, force "create PIN" overlay on next load ──
+(function wireResetPin(){
+  var btn = document.getElementById('ft-reset-pin-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    if (!confirm('Forget the saved PIN? You will be asked to create a new one next time you open the app.\n\nYour data stays intact.')) return;
+    try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e) {}
+    try { sessionStorage.removeItem('ft-unlocked'); } catch (e) {}
+    try { localStorage.removeItem('ft_unlock_bridge'); } catch (e) {}
+    var u = new URL(window.location.href);
+    u.searchParams.set('reset', '1');
+    window.location.replace(u.toString());
+  });
+})();
 </script>
 </body>
 </html>

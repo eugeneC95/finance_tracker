@@ -11,27 +11,64 @@
 <link rel="apple-touch-icon" href="icons/icon128.png"/>
 <title>Finance Tracker</title>
 <style>
-  html, body { margin: 0; padding: 0; background: #1a1a1a; color: #888; height: 100%; }
+  html, body { margin: 0; padding: 0; background: #1a1a1a; color: #ccc; height: 100%; }
   body {
     display: flex; align-items: center; justify-content: center;
-    font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    padding: 20px;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 24px;
   }
-  a { color: #4af; }
+  .wrap { max-width: 380px; text-align: center; }
+  .logo { font-size: 48px; margin-bottom: 12px; }
+  h1 { font-size: 20px; font-weight: 700; color: #fff; margin: 0 0 12px; }
+  p  { color: #999; margin: 0 0 16px; }
+  code { background: #2a2a2a; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 12px; color: #fff; }
+  .btn {
+    display: inline-block; background: #fff; color: #1a1a1a;
+    padding: 12px 20px; border-radius: 12px; border: 0;
+    font: inherit; font-weight: 600; cursor: pointer; margin: 6px;
+  }
+  .btn.ghost { background: transparent; color: #ccc; border: 1px solid #444; }
+  a { color: #4af; text-decoration: none; }
+  #recovery { display: none; }
+  .ver { margin-top: 24px; font-size: 11px; color: #555; letter-spacing: .5px; }
 </style>
 </head>
 <body>
 <!--
-  v9: lock.html is no longer a separate screen. The lock UI is now an
-  in-page overlay inside index.html, which avoids the iOS standalone-PWA
-  cross-file navigation bug. We keep this file only so that existing
-  Home Screen icons (whose start_url points at lock.html) still work — we
-  bounce them straight to index.html. ?reset=1 is forwarded so the user
-  can clear a forgotten PIN from this entry point too.
+  v10: lock.html is just a thin bouncer to index.html (the new in-page
+  lock-overlay lives there). We also detect cross-file redirect loops —
+  which happen when an iPhone PWA shell is still serving an OLD cached
+  index.html that redirects back here. If we see ourselves hit twice in
+  a few seconds, we show the recovery UI instead of bouncing again.
 -->
-<div>Loading Finance Tracker…</div>
+<div class="wrap" id="bouncer">
+  <div class="logo">💰</div>
+  <h1>Finance Tracker</h1>
+  <p>Loading…</p>
+  <div class="ver">v10 · 2026-05-13</div>
+</div>
+
+<div class="wrap" id="recovery">
+  <div class="logo">⚠️</div>
+  <h1>Stuck on an old version</h1>
+  <p>
+    Your device cached an older copy of the app and is bouncing back here.
+    Tap the button below to clear the cached files and reload — your data
+    stays intact (it's stored separately in browser storage and in your
+    Google Sheet).
+  </p>
+  <button class="btn" id="rec-fix">Clear cache &amp; reload</button>
+  <button class="btn ghost" id="rec-force">Force open dashboard</button>
+  <p style="margin-top:18px;font-size:12px">
+    If this doesn't help: long-press the Home Screen icon → <strong>Remove App</strong>,
+    then in Settings → Safari → Advanced → Website Data, delete the
+    <code>github.io</code> entry, then re-open the URL in Safari.
+  </p>
+  <div class="ver">v10 · 2026-05-13</div>
+</div>
+
 <script>
-(function(){
+(function errorReporter(){
   function panel(){
     var d = document.getElementById('ft-jserr');
     if (d) return d;
@@ -49,14 +86,98 @@
     } catch (err) {}
   });
 })();
-(function(){
+
+(function bounce(){
+  var COUNTER_KEY = 'ft-bounce-count';
+  var COUNTER_TS  = 'ft-bounce-ts';
+  var WINDOW_MS   = 8000;   // any 3 hits inside 8 s is a loop
+  var MAX_HITS    = 3;
+
+  function showRecovery() {
+    var b = document.getElementById('bouncer');
+    var r = document.getElementById('recovery');
+    if (b) b.style.display = 'none';
+    if (r) r.style.display = 'block';
+  }
+
+  async function clearEverything() {
+    try {
+      if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function(r){ return r.unregister(); }));
+      }
+    } catch (e) {}
+    try {
+      if (typeof caches !== 'undefined') {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function(k){ return caches.delete(k); }));
+      }
+    } catch (e) {}
+    try { sessionStorage.removeItem(COUNTER_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(COUNTER_TS); } catch (e) {}
+  }
+
+  document.getElementById('rec-fix').addEventListener('click', async function() {
+    this.textContent = 'Clearing…';
+    this.disabled = true;
+    await clearEverything();
+    var u = new URL('./index.html', window.location.href);
+    u.searchParams.set('_', String(Date.now()));
+    window.location.replace(u.toString());
+  });
+
+  document.getElementById('rec-force').addEventListener('click', function() {
+    try { sessionStorage.removeItem(COUNTER_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(COUNTER_TS); } catch (e) {}
+    var u = new URL('./index.html', window.location.href);
+    u.searchParams.set('_', String(Date.now()));
+    u.searchParams.set('debug', '1');
+    window.location.replace(u.toString());
+  });
+
+  // Count this visit. If too many hits in a short window, recovery UI.
+  try {
+    var now  = Date.now();
+    var prev = parseInt(sessionStorage.getItem(COUNTER_TS) || '0', 10);
+    var n    = parseInt(sessionStorage.getItem(COUNTER_KEY) || '0', 10);
+    if (!prev || (now - prev) > WINDOW_MS) {
+      n = 1;
+    } else {
+      n += 1;
+    }
+    sessionStorage.setItem(COUNTER_KEY, String(n));
+    sessionStorage.setItem(COUNTER_TS,  String(now));
+
+    if (n >= MAX_HITS) {
+      showRecovery();
+      return;
+    }
+  } catch (e) {}
+
+  // Try to prod any waiting service worker into activating immediately, so
+  // a stale cached index.html gets replaced before we land on it.
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(function(reg) {
+        try {
+          if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          if (reg) reg.update();
+        } catch (e) {}
+      });
+    }
+  } catch (e) {}
+
+  // Cache-bust the target URL so the SW / browser fetches the new
+  // index.html instead of returning the old one. Preserve any existing
+  // ?reset=1, #u=…, etc.
   try {
     var search = window.location.search || '';
     var hash   = window.location.hash   || '';
-    var target = './index.html' + search + hash;
+    var bust   = (search ? search + '&' : '?') + '_=' + Date.now();
+    var target = './index.html' + bust + hash;
     window.location.replace(target);
   } catch (e) {
-    document.body.innerHTML = '<div style="color:#fff;text-align:center">Could not redirect. Please open <a style="color:#4af" href="./index.html">index.html</a></div>';
+    document.body.innerHTML = '<div class="wrap"><h1>Could not redirect</h1><p>Open <a href="./index.html">index.html</a> directly.</p></div>';
   }
 })();
 </script>
