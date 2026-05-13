@@ -1,4 +1,4 @@
-const CACHE = 'ft-v3';
+const CACHE = 'ft-v4';
 const SHELL = [
   './lock.html',
   './index.html',
@@ -10,7 +10,6 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  // Cache files individually so one failure doesn't break everything
   e.waitUntil(
     caches.open(CACHE).then(cache =>
       Promise.allSettled(SHELL.map(url =>
@@ -28,24 +27,50 @@ self.addEventListener('activate', e => {
   );
 });
 
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-  // Pass through Google API calls
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = req.url;
+
   if (url.includes('script.google.com') || url.includes('googleapis.com')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('', {status: 503})));
+    e.respondWith(fetch(req).catch(() => new Response('', { status: 503 })));
     return;
   }
-  // Cache-first for everything else
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        if (resp.ok) {
+
+  const accept = req.headers.get('accept') || '';
+  const isHtml = req.mode === 'navigate' ||
+                 accept.includes('text/html') ||
+                 url.endsWith('.html');
+
+  if (isHtml) {
+    // Network-first: HTML updates are picked up the moment the device is online.
+    e.respondWith(
+      fetch(req).then(resp => {
+        if (resp && resp.ok) {
           const clone = resp.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE).then(c => c.put(req, clone));
         }
         return resp;
-      }).catch(() => caches.match('./index.html'));
+      }).catch(() => caches.match(req).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-first with background refresh for static assets (JS/CSS/icons).
+  e.respondWith(
+    caches.match(req).then(cached => {
+      const networkFetch = fetch(req).then(resp => {
+        if (resp && resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(req, clone));
+        }
+        return resp;
+      }).catch(() => null);
+      return cached || networkFetch.then(r => r || caches.match('./index.html'));
     })
   );
 });

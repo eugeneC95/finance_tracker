@@ -156,17 +156,39 @@
   </div>
 
   <div class="err-msg" id="err"></div>
+  <div id="ver" style="margin-top:18px;font-size:10px;color:#555;letter-spacing:.5px"></div>
 </div>
 
 <script>
 // PIN is stored only on this device (SHA-256). No default in source — first visit creates a PIN.
 var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
+var BRIDGE_KEY       = 'ft_unlock_bridge';
 var MAX = 6;
+var BUILD_VERSION = 'v4 · 2026-05-13';
 
 var entered = '';
 var pendingPin = '';
 var mode = 'login'; // 'login' | 'setup1' | 'setup2'
 var checking = false;
+
+(function showVersion() {
+  try {
+    var v = document.getElementById('ver');
+    if (v) v.textContent = BUILD_VERSION;
+  } catch (e) {}
+})();
+
+// Emergency reset: open the lock page with ?reset=1 to clear everything and start over.
+(function maybeReset() {
+  try {
+    if (/[?&]reset=1\b/.test(window.location.search)) {
+      try { localStorage.removeItem(STORAGE_HASH_KEY); } catch (e1) {}
+      try { localStorage.removeItem(BRIDGE_KEY); } catch (e2) {}
+      try { sessionStorage.removeItem('ft-unlocked'); } catch (e3) {}
+      window.location.replace('./lock.html');
+    }
+  } catch (e) {}
+})();
 
 function getStoredHash() {
   try { return localStorage.getItem(STORAGE_HASH_KEY); } catch (e) { return null; }
@@ -217,10 +239,14 @@ function syncPlaceholder() {
 
 function unlockAndGo() {
   try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
-  // One-shot bridge: some mobile / in-app browsers drop sessionStorage across
-  // location.replace; index.html accepts this token for a few seconds only.
-  try { localStorage.setItem('ft_unlock_bridge', String(Date.now())); } catch (e2) {}
-  window.location.replace('./index.html');
+  // Storage-backed fallback (lives ~45 s) for browsers that drop sessionStorage
+  // across location.replace.
+  try { localStorage.setItem(BRIDGE_KEY, String(Date.now())); } catch (e2) {}
+  // Hash-based fallback: works even when ALL storage APIs are unavailable
+  // (e.g. iOS standalone PWAs that occasionally reset storage on navigation).
+  // index.html consumes the token immediately and strips it from the URL.
+  var token = String(Date.now());
+  window.location.replace('./index.html#u=' + encodeURIComponent(token));
 }
 
 function updateDots(error) {
@@ -323,6 +349,29 @@ if (inp) {
     if (v.length !== MAX) return;
     e.preventDefault();
     onPinComplete(v);
+  });
+}
+
+// ── Service worker registration with auto-reload on update ─
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./service-worker.js').then(function(reg) {
+      try {
+        reg.addEventListener('updatefound', function() {
+          var newSW = reg.installing;
+          if (!newSW) return;
+          newSW.addEventListener('statechange', function() {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              // New code is ready — activate it now.
+              try { newSW.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {}
+            }
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          window.location.reload();
+        });
+      } catch (e) {}
+    }).catch(function() {});
   });
 }
 </script>

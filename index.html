@@ -3,23 +3,44 @@
 <head>
 <meta charset="UTF-8"/>
 <script>
-// Redirect to lock screen if not authenticated this session.
-// If sessionStorage is missing or cleared across location.replace (seen on some
-// mobile browsers), lock.html sets a short-lived ft_unlock_bridge in localStorage.
+// Auth gate. Three independent unlock paths so this works even when iOS
+// standalone PWAs drop one of the storage APIs across location.replace:
+//   1) URL hash token  (#u=<timestamp>)   — never relies on storage
+//   2) sessionStorage  ('ft-unlocked')    — standard same-session token
+//   3) localStorage    ('ft_unlock_bridge') — short-lived fallback (~45 s)
+// Also: `?reset=1` clears unlock state and returns to lock.html.
 (function(){
   var BRIDGE_KEY = 'ft_unlock_bridge';
-  var BRIDGE_MS = 45000;
+  var BRIDGE_MS  = 45000;
+  function stripHash() {
+    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+  }
   try {
+    if (/[?&]reset=1\b/.test(window.location.search)) {
+      try { sessionStorage.removeItem('ft-unlocked'); } catch (e0) {}
+      try { localStorage.removeItem(BRIDGE_KEY); } catch (e0b) {}
+      window.location.replace('./lock.html?reset=1');
+      return;
+    }
+    var h = window.location.hash || '';
+    var m = h.match(/^#u=(\d+)/);
+    if (m) {
+      var ts = parseInt(m[1], 10);
+      stripHash();
+      if (!isNaN(ts) && (Date.now() - ts) < BRIDGE_MS) {
+        try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e1) {}
+        return;
+      }
+    }
     if (sessionStorage.getItem('ft-unlocked') === '1') return;
     var raw = localStorage.getItem(BRIDGE_KEY);
     if (raw) {
-      var ts = parseInt(raw, 10);
-      if (!isNaN(ts) && (Date.now() - ts) < BRIDGE_MS) {
-        try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e2) {}
-        try { localStorage.removeItem(BRIDGE_KEY); } catch (e3) {}
+      var ts2 = parseInt(raw, 10);
+      try { localStorage.removeItem(BRIDGE_KEY); } catch (e2) {}
+      if (!isNaN(ts2) && (Date.now() - ts2) < BRIDGE_MS) {
+        try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e3) {}
         return;
       }
-      try { localStorage.removeItem(BRIDGE_KEY); } catch (e4) {}
     }
     window.location.replace('./lock.html');
   } catch (e) {}
@@ -2151,16 +2172,32 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js"></script>
-<script src="sync.js"></script>
-<script src="features.js"></script>
-<script src="extras.js"></script>
-<script src="import-inline.js"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v4 · 2026-05-13</div>
+<script src="app.js?v=4"></script>
+<script src="sync.js?v=4"></script>
+<script src="features.js?v=4"></script>
+<script src="extras.js?v=4"></script>
+<script src="import-inline.js?v=4"></script>
 <script>
-// ── Service worker registration ──
+// ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./service-worker.js');
+    navigator.serviceWorker.register('./service-worker.js').then(function(reg) {
+      try {
+        reg.addEventListener('updatefound', function() {
+          var newSW = reg.installing;
+          if (!newSW) return;
+          newSW.addEventListener('statechange', function() {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              try { newSW.postMessage({ type: 'SKIP_WAITING' }); } catch (e) {}
+            }
+          });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          window.location.reload();
+        });
+      } catch (e) {}
+    }).catch(function() {});
   });
 }
 
