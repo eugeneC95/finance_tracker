@@ -1,0 +1,44 @@
+Finance Tracker — project memo (summary)
+========================================
+Last updated: 2026-05-14
+
+What this repo is
+------------------
+- PWA: static site (index.html + JS/CSS), GitHub Pages at eugenec95.github.io/finance_tracker/
+- Chrome extension: finance-tracker-chrome/ — same logic, chrome.storage + background.js for Apps Script fetch
+
+Major fixes shipped (timeline)
+------------------------------
+1) White screen (Chrome + iPhone + Incognito)
+   Root cause: index.html had <style> opened but no </style> before </head>. The HTML parser treated the entire rest of the file (including <body> and all <script src>) as CSS text, so DOM was <body></body> and no JS ran.
+   Fix: added missing </style>; bumped cache/SW versions.
+
+2) iPhone layout broken (nav at top, no scroll, content missing)
+   Root cause: mobile CSS used body { position:fixed; overflow:hidden } + .main { overflow-y:auto }, which WebKit mishandles; nested fixed .sb did not pin to bottom.
+   Fix: normal document flow on mobile, body padding-bottom for bottom nav, .sb position fixed bottom.
+
+3) Google Sheets save on PWA vs extension
+   Extension works because manifest host_permissions lets background fetch follow Apps Script redirects with POST body intact.
+   PWA: POST to script.google.com → 302 → fetch may drop body on follow → "No data received" / misleading redeploy message.
+   Mitigation (v14): for smaller payloads, send save as GET ?action=save&data=<json> so data survives redirect. Threshold ~6500 chars URL-encoded; larger payloads still use POST (may fail on PWA until further fix e.g. chunking).
+
+4) Auto-load from Sheet on app open
+   After local load/render, ft-app-ready fires; sync.js pulls cloud once per session (skip confirm), toast with row count.
+
+5) Mobile panel headers looked cramped
+   v15: stack .panel-hd (title above subtitle) in @media (max-width:680px).
+
+6) User asked for broader mobile-first redesign
+   Delegated to background work (v16+); coordinate with any parallel sync/save fixes.
+
+Operational notes
+-----------------
+- Apps Script: repo file google-apps-script.js — user must Deploy → Manage deployments → Edit → New version after backend changes.
+- Cache issues: nosw.html clears SW + caches; Settings has force refresh; lock.html has recovery for redirect loops.
+- Parity: keep PWA sync.js and extension sync.js / google-apps-script.js aligned where intentional differences are documented in README.
+
+Open / verify
+-------------
+- PWA save if payload exceeds GET threshold — may need chunked save or backend change.
+- Confirm GitHub Pages shows latest build stamp (v15+ after merges).
+- iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.
