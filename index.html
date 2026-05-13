@@ -459,8 +459,6 @@ body.dark .btn-primary { color: #000; }
   gap: var(--s2);
   margin-bottom: var(--s5);
 }
-/* Wrapper pages: desktop uses display:contents so .cat-btn stay grid cells */
-.cat-page { display: contents; }
 .cat-btn {
   display: flex;
   flex-direction: column;
@@ -1165,7 +1163,10 @@ body.dark .fs-btn.active { color: #000; }
     padding: 4px 0 0;
     gap: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
     scrollbar-width: none;
     width: 100%;
     align-items: stretch;
@@ -1173,20 +1174,34 @@ body.dark .fs-btn.active { color: #000; }
   .sb-nav::-webkit-scrollbar { display: none; }
 
   .nav-item {
+    flex: 0 0 25%;            /* exactly 4 items visible per screen */
+    min-width: 0;
     flex-direction: column;
     gap: 2px;
-    padding: 6px 4px 8px;
+    padding: 8px 4px 10px;
     border-radius: 8px;
     font-size: 10px;
-    flex: 1 0 auto;
-    min-width: 56px;
     color: rgba(255,255,255,.55);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
-  .nav-item .icon { font-size: 19px; width: auto; }
+  .nav-item .icon { font-size: 20px; width: auto; }
   .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
+
+  /* Tiny right-edge fade so users see there's more to swipe to */
+  .sb::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    background: linear-gradient(to left, var(--sb-bg), transparent);
+    z-index: 2;
+  }
+  .sb { position: fixed; }  /* re-affirm so ::after positions correctly */
 
   /* Main: a normal block in document flow. Page scrolls the window
      naturally, which is the only thing iOS Safari handles reliably. */
@@ -1295,44 +1310,16 @@ body.dark .fs-btn.active { color: #000; }
   input  { height: 48px; }
   select { height: 48px; }
 
-  /* Expense categories: horizontal paged strip (4 per swipe) on phone */
-  #page-expenses #cat-btns.cat-grid {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 4px;
-    padding: 8px 0 14px;
-    margin-bottom: var(--s4);
-    scrollbar-width: none;
+  /* Category grid: 3 columns, taller tap targets */
+  .cat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
-  #page-expenses #cat-btns.cat-grid::-webkit-scrollbar { display: none; height: 0; }
-  #page-expenses #cat-btns .cat-page {
-    display: flex;
-    flex-direction: row;
-    flex: 0 0 100%;
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    gap: 10px;
-    padding: 0 2px;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    align-items: stretch;
-  }
-  #page-expenses #cat-btns .cat-page .cat-btn {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 76px;
-    padding: 10px 4px;
+  .cat-btn {
+    padding: 12px 6px;
     font-size: 11px;
     font-weight: 600;
+    min-height: 72px;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -1340,7 +1327,7 @@ body.dark .fs-btn.active { color: #000; }
     justify-content: center;
     gap: 4px;
   }
-  #page-expenses #cat-btns .cat-page .cat-btn .ci { font-size: 22px; line-height: 1; }
+  .cat-btn .ci { font-size: 22px; line-height: 1; }
 
   /* Transaction items: always show actions on touch */
   .tx-item    { padding: 10px 0; }
@@ -1377,10 +1364,9 @@ body.dark .fs-btn.active { color: #000; }
 
 /* Tiny phones (SE, 320px) */
 @media (max-width: 374px) {
-  .nav-item { min-width: 48px; font-size: 9px; }
-  .nav-item .icon { font-size: 17px; }
-  /* Slightly fewer categories visible per page on SE — still 4 slots, tighter gap */
-  #page-expenses #cat-btns .cat-page { gap: 6px; padding: 0 1px; }
+  .nav-item { font-size: 9px; padding: 6px 3px 8px; }
+  .nav-item .icon { font-size: 18px; }
+  .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Tablet */
@@ -1550,7 +1536,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v18 · 2026-05-14';
+  var BUILD_VERSION    = 'v19 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2426,7 +2412,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v18 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v19 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2638,12 +2624,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v18 · 2026-05-14</div>
-<script src="app.js?v=18"></script>
-<script src="sync.js?v=18"></script>
-<script src="features.js?v=18"></script>
-<script src="extras.js?v=18"></script>
-<script src="import-inline.js?v=18"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v19 · 2026-05-14</div>
+<script src="app.js?v=19"></script>
+<script src="sync.js?v=19"></script>
+<script src="features.js?v=19"></script>
+<script src="extras.js?v=19"></script>
+<script src="import-inline.js?v=19"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

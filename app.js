@@ -164,40 +164,26 @@ function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
 function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
 
 // ── Category buttons ───────────────────────────────────────
-// Desktop: .cat-page uses display:contents so buttons stay in the CSS grid.
-// Mobile (≤680px): .cat-page becomes a horizontal "page" of 4 categories;
-// user swipes sideways for the next page (scroll-snap in index.html).
-var CAT_PAGE_SIZE = 4;
-
 function buildCatButtons() {
   const wrap = document.getElementById('cat-btns');
   if (!wrap) return;
   wrap.innerHTML = '';
-  const entries = Object.entries(EXP_CATS);
-  for (let i = 0; i < entries.length; i += CAT_PAGE_SIZE) {
-    const page = document.createElement('div');
-    page.className = 'cat-page';
-    const slice = entries.slice(i, i + CAT_PAGE_SIZE);
-    slice.forEach(([name, {icon}]) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
-      btn.dataset.cat = name;
-      const iconEl = document.createElement('span');
-      iconEl.className = 'ci';
-      iconEl.textContent = icon;
-      btn.appendChild(iconEl);
-      btn.appendChild(document.createTextNode(name));
-      btn.addEventListener('click', function() {
-        selectedCat = name;
-        wrap.querySelectorAll('.cat-btn').forEach(function(b) {
-          b.classList.toggle('active', b.dataset.cat === name);
-        });
-      });
-      page.appendChild(btn);
+  Object.entries(EXP_CATS).forEach(([name, {icon}]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
+    btn.dataset.cat = name;
+    const iconEl = document.createElement('span');
+    iconEl.className = 'ci';
+    iconEl.textContent = icon;
+    btn.appendChild(iconEl);
+    btn.appendChild(document.createTextNode(name));
+    btn.addEventListener('click', () => {
+      selectedCat = name;
+      wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === name));
     });
-    wrap.appendChild(page);
-  }
+    wrap.appendChild(btn);
+  });
 }
 
 // ── Settings ───────────────────────────────────────────────
@@ -898,13 +884,38 @@ document.getElementById('cat-detail-overlay').addEventListener('click', e => {
 });
 
 // ── Nav ────────────────────────────────────────────────────
+// On mobile the nav is a horizontal swipe strip (4 items per screen).
+// Scroll the tapped item to the left edge so the user always sees their
+// current tab while the next pages remain swipe-discoverable.
+function scrollNavItemIntoView(btn) {
+  if (!btn) return;
+  var strip = btn.closest('.sb-nav');
+  if (!strip) return;
+  if (window.matchMedia && window.matchMedia('(max-width: 680px)').matches) {
+    try {
+      var stripWidth = strip.clientWidth;
+      var itemsPerPage = 4;
+      var index = Array.prototype.indexOf.call(strip.children, btn);
+      if (index < 0) return;
+      var pageIndex = Math.floor(index / itemsPerPage);
+      strip.scrollTo({ left: pageIndex * stripWidth, behavior: 'smooth' });
+    } catch (e) {}
+  }
+}
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('page-' + btn.dataset.tab).classList.add('active');
+    scrollNavItemIntoView(btn);
   });
+});
+
+// Ensure the initially-active tab is parked at the left edge on first paint.
+window.addEventListener('load', function() {
+  var active = document.querySelector('.nav-item.active');
+  if (active) scrollNavItemIntoView(active);
 });
 
 document.getElementById('prev-month').addEventListener('click', () => {

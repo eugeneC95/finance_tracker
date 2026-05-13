@@ -41,10 +41,14 @@ Operational notes
 v18 (2026-05-14)
 ---------------
 - iPhone/PWA: viewport `maximum-scale=1,user-scalable=no` + `touch-action:manipulation` to reduce double-tap zoom.
-- Expense categories on mobile: 4 per horizontal “page”, swipe (scroll-snap) for more; `.cat-page` wrappers from `buildCatButtons`.
+
+v19 (2026-05-14)
+---------------
+- Reverted the expense-category swipe pager (was misinterpreted user intent).
+- Bottom navigation on mobile now shows exactly 4 tabs at a time with `scroll-snap`; swipe horizontally to reveal the rest. Right-edge fade hints there is more. Active tab auto-scrolls into view on click.
 
 Open / verify
 -------------
 - After pulling v17, redeploy google-apps-script.js (chunked save + parse fix) or cloud save will fail with unknown action / old behavior.
-- Confirm GitHub Pages shows latest build stamp (v18+ after merges).
+- Confirm GitHub Pages shows latest build stamp (v19+ after merges).
 - iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.
