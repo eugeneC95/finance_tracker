@@ -758,8 +758,10 @@ document.addEventListener('keydown', function(e) {
     }
   }
   if (e.key === 'Escape') {
-    document.getElementById('edit-overlay')?.classList.remove('open');
-    document.getElementById('cat-detail-overlay')?.classList.remove('open');
+    var eo = document.getElementById('edit-overlay');
+    if (eo) eo.classList.remove('open');
+    var co = document.getElementById('cat-detail-overlay');
+    if (co) co.classList.remove('open');
   }
 });
 

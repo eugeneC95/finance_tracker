@@ -35,7 +35,7 @@
 </head>
 <body>
 <!--
-  v10: lock.html is just a thin bouncer to index.html (the new in-page
+  v11: lock.html is just a thin bouncer to index.html (the in-page
   lock-overlay lives there). We also detect cross-file redirect loops —
   which happen when an iPhone PWA shell is still serving an OLD cached
   index.html that redirects back here. If we see ourselves hit twice in
@@ -45,7 +45,7 @@
   <div class="logo">💰</div>
   <h1>Finance Tracker</h1>
   <p>Loading…</p>
-  <div class="ver">v10 · 2026-05-13</div>
+  <div class="ver">v11 · 2026-05-13</div>
 </div>
 
 <div class="wrap" id="recovery">
@@ -60,11 +60,12 @@
   <button class="btn" id="rec-fix">Clear cache &amp; reload</button>
   <button class="btn ghost" id="rec-force">Force open dashboard</button>
   <p style="margin-top:18px;font-size:12px">
+    Or open <a href="./nosw.html">nosw.html</a> in Safari (clears cache, then returns to the app).<br/><br/>
     If this doesn't help: long-press the Home Screen icon → <strong>Remove App</strong>,
     then in Settings → Safari → Advanced → Website Data, delete the
     <code>github.io</code> entry, then re-open the URL in Safari.
   </p>
-  <div class="ver">v10 · 2026-05-13</div>
+  <div class="ver">v11 · 2026-05-13</div>
 </div>
 
 <script>

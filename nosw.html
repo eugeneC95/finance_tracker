@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Clearing cache…</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1a1a1a; color: #ccc;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  a { color: #6af; }
+</style>
+</head>
+<body>
+<p id="msg">Clearing offline cache and service worker…</p>
+<script>
+(function(){
+  function go() {
+    var u = new URL('./index.html', window.location.href);
+    u.searchParams.set('_', String(Date.now()));
+    window.location.replace(u.toString());
+  }
+  function fail(e) {
+    var m = document.getElementById('msg');
+    if (m) m.innerHTML = 'Could not clear automatically. Try removing the app from your Home Screen, then delete Safari website data for this site.<br/><br/><a href="./index.html">Open app anyway</a>';
+  }
+  try {
+    var p = Promise.resolve();
+    if ('serviceWorker' in navigator) {
+      p = p.then(function() {
+        return navigator.serviceWorker.getRegistrations();
+      }).then(function(regs) {
+        return Promise.all(regs.map(function(r) { return r.unregister(); }));
+      });
+    }
+    p = p.then(function() {
+      if (typeof caches === 'undefined') return;
+      return caches.keys().then(function(keys) {
+        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+      });
+    });
+    p.then(go, fail);
+  } catch (e) { fail(e); }
+})();
+</script>
+</body>
+</html>

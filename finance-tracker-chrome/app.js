@@ -293,7 +293,8 @@ function saveEdit() {
 
   const date  = document.getElementById('edit-date').value || todayStr();
   const cat   = document.getElementById('edit-cat').value;
-  const note  = (document.getElementById('edit-note')?.value || '').trim();
+  const noteEl = document.getElementById('edit-note');
+  const note  = (noteEl && noteEl.value ? noteEl.value : '').trim();
   const arr   = editCtx.type === 'exp' ? expenses : incomes;
   const entry = arr.find(e => e.id === editCtx.id);
   if (!entry) return;

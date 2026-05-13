@@ -497,5 +497,9 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
 // ╔══════════════════════════════════════════════════════════╗
 //   INIT
 // ╚══════════════════════════════════════════════════════════╝
-initPinLock();
+if (document.readyState === 'complete') setTimeout(function() { initPinLock(); }, 0);
+else window.addEventListener('load', function ftPinInit() {
+  window.removeEventListener('load', ftPinInit);
+  initPinLock();
+});
 loadExtras();

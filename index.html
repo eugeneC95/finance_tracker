@@ -1282,7 +1282,7 @@ body.dark .fs-btn.active { color: #000; }
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   padding: 20px;
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  z-index: 99998;
+  z-index: 100002;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1343,6 +1343,42 @@ body.dark .fs-btn.active { color: #000; }
 </head>
 <body class="fs-md">
 
+<!-- Visible when the 6-digit lock is hidden but JS failed — iOS PWA can serve a broken cached bundle. -->
+<div id="ft-boot" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:99990;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(26,26,26,.94);color:#ddd;font-size:12px;line-height:1.45;text-align:center;border-top:1px solid #333">
+  <span id="ft-boot-msg">Loading Finance Tracker…</span>
+  <div id="ft-boot-actions" style="display:none;margin-top:8px">
+    <a id="ft-boot-nosw" href="./nosw.html" style="color:#8cf;font-weight:600">Clear offline cache</a>
+    · <a href="./index.html?debug=1&amp;_=1" style="color:#8cf">Open without lock</a>
+  </div>
+</div>
+<script>
+(function bootStrip(){
+  function showBar() {
+    var b = document.getElementById('ft-boot');
+    if (!b) return;
+    b.style.display = 'block';
+  }
+  function hideBar() {
+    var b = document.getElementById('ft-boot');
+    if (!b) return;
+    b.style.display = 'none';
+  }
+  window.addEventListener('ft-app-ready', hideBar);
+  window.addEventListener('ft-unlocked', function() {
+    if (window.__ftUnlocked) showBar();
+  });
+  if (window.__ftUnlocked) showBar();
+  setTimeout(function() {
+    var b = document.getElementById('ft-boot');
+    if (!b || b.style.display === 'none') return;
+    var m = document.getElementById('ft-boot-msg');
+    var a = document.getElementById('ft-boot-actions');
+    if (m) m.textContent = 'Still loading? Your device may be stuck on an old offline copy.';
+    if (a) a.style.display = 'block';
+  }, 7000);
+})();
+</script>
+
 <!-- ══════════════════════════════════════════
      LOCK OVERLAY (v9)
 ══════════════════════════════════════════ -->
@@ -1392,7 +1428,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v10 · 2026-05-13';
+  var BUILD_VERSION    = 'v11 · 2026-05-13';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2268,8 +2304,9 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v10 · 2026-05-13</span><br/>
-                Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v11 · 2026-05-13</span><br/>
+                Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
+                Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
@@ -2466,7 +2503,7 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <!-- ── PIN LOCK SCREEN ── -->
-<div id="pin-overlay" style="display:none;box-sizing:border-box;position:fixed;inset:0;width:100%;min-height:100%;min-height:-webkit-fill-available;background:var(--page-bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:24px;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))">
+<div id="pin-overlay" style="display:none;box-sizing:border-box;position:fixed;inset:0;width:100%;min-height:100%;min-height:-webkit-fill-available;background:#e8e8e4;z-index:100000;flex-direction:column;align-items:center;justify-content:center;gap:24px;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));box-shadow:inset 0 0 0 2px #333">
   <div style="font-size:40px">🔒</div>
   <div style="font-size:var(--f-xl);font-weight:700;color:var(--ink)">Finance Tracker</div>
   <div style="font-size:var(--f-sm);color:var(--ink3)">Enter your PIN to continue</div>
@@ -2479,12 +2516,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v10 · 2026-05-13</div>
-<script src="app.js?v=10"></script>
-<script src="sync.js?v=10"></script>
-<script src="features.js?v=10"></script>
-<script src="extras.js?v=10"></script>
-<script src="import-inline.js?v=10"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v11 · 2026-05-13</div>
+<script src="app.js?v=11"></script>
+<script src="sync.js?v=11"></script>
+<script src="features.js?v=11"></script>
+<script src="extras.js?v=11"></script>
+<script src="import-inline.js?v=11"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -2514,11 +2551,13 @@ function syncMobileMonthNav() {
   var lblM = document.getElementById('month-label-m');
   if (lblM && lbl) lblM.textContent = lbl.textContent;
 }
-var origRender = render;
-render = function() {
-  origRender();
-  syncMobileMonthNav();
-};
+if (typeof render === 'function') {
+  var origRender = render;
+  render = function() {
+    origRender();
+    syncMobileMonthNav();
+  };
+}
 window.addEventListener('resize', function() {
   var nav = document.getElementById('mobile-month-nav');
   if (nav) nav.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
