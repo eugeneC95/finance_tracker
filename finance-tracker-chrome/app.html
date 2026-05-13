@@ -2,6 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<script>
+// On-screen JS error reporter — mirrors index.html (PWA). DevTools is the
+// primary debug surface in the extension, but a visible banner is useful
+// when reproducing user-reported issues without opening the console.
+(function(){
+  function panel(){
+    var d = document.getElementById('ft-jserr');
+    if (d) return d;
+    d = document.createElement('div');
+    d.id = 'ft-jserr';
+    d.style.cssText = 'position:fixed;top:0;left:0;right:0;max-height:55vh;overflow:auto;background:#fee;color:#900;padding:8px 10px;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;z-index:99999;white-space:pre-wrap;border-bottom:2px solid #f99;-webkit-user-select:text;user-select:text';
+    (document.body || document.documentElement).appendChild(d);
+    return d;
+  }
+  window.addEventListener('error', function(e){
+    try {
+      var p = panel();
+      var src = e && e.filename ? String(e.filename).split('/').pop() : '?';
+      p.textContent += 'ERR ' + src + ':' + (e && e.lineno || '?') + ' ' + (e && e.message || '') + '\n';
+    } catch (err) {}
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    try {
+      var p = panel();
+      var msg = e && e.reason && e.reason.message ? e.reason.message : String(e && e.reason);
+      p.textContent += 'PROMISE ' + msg + '\n';
+    } catch (err) {}
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Finance Tracker</title>
 <style>
