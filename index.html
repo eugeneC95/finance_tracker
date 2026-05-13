@@ -1203,6 +1203,17 @@ body.dark .fs-btn.active { color: #000; }
   .page-header .sub   { font-size: var(--f-xs); margin-top: 2px; }
   .page-body          { padding: 12px 14px 24px; }
 
+  /* v14: stack panel header title + subtitle/pills on mobile so the right-
+     side text doesn't wrap into a cramped 3-word column. */
+  .panel-hd {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+  }
+  .panel-bd { padding: 14px; }
+  .panel-hd .pill-row { width: 100%; }
+
   /* Stat cards: 2 wide + 1 full */
   .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
   .stat-row .stat-card:nth-child(3) { grid-column: 1 / -1; }
@@ -1448,7 +1459,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v14 · 2026-05-14';
+  var BUILD_VERSION    = 'v15 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2324,7 +2335,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v14 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v15 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2536,12 +2547,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v14 · 2026-05-14</div>
-<script src="app.js?v=14"></script>
-<script src="sync.js?v=14"></script>
-<script src="features.js?v=14"></script>
-<script src="extras.js?v=14"></script>
-<script src="import-inline.js?v=14"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v15 · 2026-05-14</div>
+<script src="app.js?v=15"></script>
+<script src="sync.js?v=15"></script>
+<script src="features.js?v=15"></script>
+<script src="extras.js?v=15"></script>
+<script src="import-inline.js?v=15"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
