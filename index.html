@@ -1310,24 +1310,28 @@ body.dark .fs-btn.active { color: #000; }
   input  { height: 48px; }
   select { height: 48px; }
 
-  /* Category grid: 3 columns, taller tap targets */
+  /* Category grid: 4 columns, compact tap targets */
   .cat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
   }
   .cat-btn {
-    padding: 12px 6px;
-    font-size: 11px;
+    padding: 10px 4px;
+    font-size: 10px;
     font-weight: 600;
-    min-height: 72px;
-    border-radius: 12px;
+    min-height: 68px;
+    border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    line-height: 1.15;
+    text-align: center;
+    word-break: break-word;
+    hyphens: auto;
   }
-  .cat-btn .ci { font-size: 22px; line-height: 1; }
+  .cat-btn .ci { font-size: 20px; line-height: 1; }
 
   /* Transaction items: always show actions on touch */
   .tx-item    { padding: 10px 0; }
@@ -1366,7 +1370,9 @@ body.dark .fs-btn.active { color: #000; }
 @media (max-width: 374px) {
   .nav-item { font-size: 9px; padding: 6px 3px 8px; }
   .nav-item .icon { font-size: 18px; }
-  .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .cat-btn { padding: 8px 3px; font-size: 9px; min-height: 64px; }
+  .cat-btn .ci { font-size: 18px; }
 }
 
 /* Tablet */
@@ -1536,7 +1542,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v19 · 2026-05-14';
+  var BUILD_VERSION    = 'v20 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2412,7 +2418,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v19 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v20 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2624,12 +2630,12 @@ body.dark .fs-btn.active { color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v19 · 2026-05-14</div>
-<script src="app.js?v=19"></script>
-<script src="sync.js?v=19"></script>
-<script src="features.js?v=19"></script>
-<script src="extras.js?v=19"></script>
-<script src="import-inline.js?v=19"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v20 · 2026-05-14</div>
+<script src="app.js?v=20"></script>
+<script src="sync.js?v=20"></script>
+<script src="features.js?v=20"></script>
+<script src="extras.js?v=20"></script>
+<script src="import-inline.js?v=20"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
