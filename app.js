@@ -154,6 +154,7 @@ function load() {
     if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
     applySettings();
     render();
+    window.__ftAppReady = true;
     try { window.dispatchEvent(new Event('ft-app-ready')); } catch (e) {}
   });
 }

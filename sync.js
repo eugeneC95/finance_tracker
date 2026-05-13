@@ -104,6 +104,21 @@ function syncPing() {
 }
 
 // ── Save ───────────────────────────────────────────────────
+// On PWA (github.io origin) the Apps Script /macros/s/.../exec POST returns
+// a 302 to script.googleusercontent.com. Per HTTP/1.1, fetch converts POST
+// to GET on the follow and DROPS THE BODY, so doPost runs without
+// e.postData.contents, falls through to doGet, which responds
+// {ok:false, error:"No data received"}. That is the error users saw.
+// The Chrome extension dodges this with host_permissions on both google
+// domains, which is unavailable to a page-context fetch.
+//
+// Workaround: ship the payload in the query string as ?action=save&data=...
+// whenever it fits (Apps Script and most CDNs cap URLs around 8 KB). The
+// existing doGet handler already reads e.parameter.data, decodes, and saves.
+// Only fall back to POST body when the payload is too large to fit; the
+// body-loss bug is a smaller risk than truncating data.
+var SAVE_URL_LIMIT = 6500;
+
 function syncSave(silent) {
   if (!syncUrl) {
     if (!silent) showToast('No sync URL — add it in Settings');
@@ -112,10 +127,17 @@ function syncSave(silent) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var json = JSON.stringify(buildPayload());
+  var json    = JSON.stringify(buildPayload());
+  var encoded = encodeURIComponent(json);
+  var promise;
 
-  // POST the payload in the body; action stays in the URL query string.
-  scriptFetch(syncUrl, { action: 'save' }, json)
+  if (encoded.length < SAVE_URL_LIMIT) {
+    promise = scriptFetch(syncUrl, { action: 'save', data: json });
+  } else {
+    promise = scriptFetch(syncUrl, { action: 'save' }, json);
+  }
+
+  promise
     .then(function(data) {
       if (data && data.ok) {
         syncState.lastSaved = new Date().toISOString();
@@ -124,9 +146,6 @@ function syncSave(silent) {
         if (!silent) showToast('Saved to Google Sheets');
       } else {
         var msg = (data && data.error) || 'unknown';
-        // Old Apps Script deployments only read e.parameter.data and will
-        // respond with "No data received" when given a POST body. Tell the
-        // user clearly what to do.
         if (/no data received/i.test(msg)) {
           msg = 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
         }
@@ -142,18 +161,26 @@ function syncSave(silent) {
 }
 
 // ── Load ───────────────────────────────────────────────────
-function syncLoad() {
-  if (!syncUrl) { showToast('No sync URL — add it in Settings'); return; }
+// opts.skipConfirm — used by auto-load on startup (no "REPLACE all data?" prompt)
+// opts.silent       — suppress toasts for the success case
+function syncLoad(opts) {
+  opts = opts || {};
+  if (!syncUrl) {
+    if (!opts.silent) showToast('No sync URL — add it in Settings');
+    return;
+  }
 
-  if (!confirm(
-    'Load data from Google Sheets?\n\n' +
-    'This will REPLACE all data on this device with what is in your Sheet.\n' +
-    'Make sure your Sheet has the latest data before proceeding.'
-  )) return;
+  if (!opts.skipConfirm) {
+    if (!confirm(
+      'Load data from Google Sheets?\n\n' +
+      'This will REPLACE all data on this device with what is in your Sheet.\n' +
+      'Make sure your Sheet has the latest data before proceeding.'
+    )) return;
+  }
 
   if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
 
-  setSyncStatus('loading', 'Loading from Google Sheets…');
+  setSyncStatus('loading', opts.skipConfirm ? 'Syncing from cloud…' : 'Loading from Google Sheets…');
 
   scriptFetch(syncUrl, { action: 'load' })
     .then(function(data) {
@@ -254,18 +281,37 @@ function syncLoad() {
 
       var rowCount = expenses.length + incomes.length + banks.length;
       if (rowCount === 0) {
-        showToast('Loaded — no expense/income/bank rows in this backend (check Sheet name "Finance Tracker" and Expenses/Income/Banks tabs).');
-      } else {
-        showToast('Data loaded from Google Sheets');
+        if (!opts.silent) {
+          showToast('Loaded — no expense/income/bank rows in this backend (check Sheet name "Finance Tracker" and Expenses/Income/Banks tabs).');
+        }
+      } else if (!opts.silent) {
+        showToast(opts.skipConfirm ? 'Synced ' + rowCount + ' rows from cloud' : 'Data loaded from Google Sheets');
       }
     })
     .catch(function(err) {
       setSyncStatus('error', 'Network error loading data');
       var detail = (err && err.message) ? err.message : 'check connection';
-      showToast('Load failed: ' + detail);
+      if (!opts.silent) showToast('Load failed: ' + detail);
       console.error('Sync load error:', err);
     });
 }
+
+// ── Auto-load on app start ─────────────────────────────────
+// Fires once per page session after the local data is loaded and rendered.
+// Pulls the latest Google Sheets snapshot so the iPhone PWA (which is
+// killed/rehydrated aggressively by iOS) shows fresh data on every launch.
+var _autoLoadFired = false;
+function syncAutoLoad() {
+  if (_autoLoadFired) return;
+  _autoLoadFired = true;
+  if (!syncUrl) return;
+  // Tiny delay so the first paint isn't blocked by the network round-trip.
+  setTimeout(function() {
+    syncLoad({ skipConfirm: true, silent: false });
+  }, 400);
+}
+
+window.addEventListener('ft-app-ready', syncAutoLoad);
 
 // ── Auto-sync (debounced, triggered by save functions) ──────
 var syncTimer = null;
@@ -348,7 +394,7 @@ function wireSyncUI() {
 
   if (pingBtn) pingBtn.addEventListener('click', syncPing);
   if (saveBtn) saveBtn.addEventListener('click', function() { syncSave(false); });
-  if (loadBtn) loadBtn.addEventListener('click', syncLoad);
+  if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
   if (urlInp)  urlInp.addEventListener('change', function() {
     persistSyncUrl(urlInp.value.trim());
     updateSyncUI();
@@ -356,4 +402,9 @@ function wireSyncUI() {
 }
 
 // ── Init ───────────────────────────────────────────────────
-loadSyncSettings(wireSyncUI);
+loadSyncSettings(function() {
+  wireSyncUI();
+  // Cover the race where app.js dispatched ft-app-ready before sync.js
+  // attached its listener. syncAutoLoad guards itself against double-firing.
+  if (window.__ftAppReady) syncAutoLoad();
+});

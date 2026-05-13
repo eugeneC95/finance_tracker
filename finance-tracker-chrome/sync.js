@@ -127,6 +127,12 @@ function syncPing() {
 }
 
 // ── Save ───────────────────────────────────────────────────
+// The extension's background.js proxy can POST a body successfully (thanks to
+// host_permissions covering both google domains), but we use the same
+// URL-first strategy as the PWA for parity: smaller payloads ride in the
+// query string and survive any redirect; large payloads fall back to POST.
+var SAVE_URL_LIMIT = 6500;
+
 function syncSave(silent) {
   if (!syncUrl) {
     if (!silent) showToast('No sync URL — add it in Settings');
@@ -135,9 +141,17 @@ function syncSave(silent) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var json = JSON.stringify(buildPayload());
+  var json    = JSON.stringify(buildPayload());
+  var encoded = encodeURIComponent(json);
+  var promise;
 
-  scriptFetch(syncUrl, { action: 'save' }, json)
+  if (encoded.length < SAVE_URL_LIMIT) {
+    promise = scriptFetch(syncUrl, { action: 'save', data: json });
+  } else {
+    promise = scriptFetch(syncUrl, { action: 'save' }, json);
+  }
+
+  promise
     .then(function(data) {
       if (data && data.ok) {
         syncState.lastSaved = new Date().toISOString();
@@ -161,18 +175,26 @@ function syncSave(silent) {
 }
 
 // ── Load ───────────────────────────────────────────────────
-function syncLoad() {
-  if (!syncUrl) { showToast('No sync URL — add it in Settings'); return; }
+// opts.skipConfirm — used by auto-load on startup (no "REPLACE all data?" prompt)
+// opts.silent       — suppress toasts for the success case
+function syncLoad(opts) {
+  opts = opts || {};
+  if (!syncUrl) {
+    if (!opts.silent) showToast('No sync URL — add it in Settings');
+    return;
+  }
 
-  if (!confirm(
-    'Load data from Google Sheets?\n\n' +
-    'This will REPLACE all data on this device with what is in your Sheet.\n' +
-    'Make sure your Sheet has the latest data before proceeding.'
-  )) return;
+  if (!opts.skipConfirm) {
+    if (!confirm(
+      'Load data from Google Sheets?\n\n' +
+      'This will REPLACE all data on this device with what is in your Sheet.\n' +
+      'Make sure your Sheet has the latest data before proceeding.'
+    )) return;
+  }
 
   if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
 
-  setSyncStatus('loading', 'Loading from Google Sheets…');
+  setSyncStatus('loading', opts.skipConfirm ? 'Syncing from cloud…' : 'Loading from Google Sheets…');
 
   scriptFetch(syncUrl, { action: 'load' })
     .then(function(data) {
@@ -276,18 +298,34 @@ function syncLoad() {
 
       var rowCount = expenses.length + incomes.length + banks.length;
       if (rowCount === 0) {
-        showToast('Loaded — no expense/income/bank rows in this backend (check Sheet name "Finance Tracker" and Expenses/Income/Banks tabs).');
-      } else {
-        showToast('Data loaded from Google Sheets');
+        if (!opts.silent) {
+          showToast('Loaded — no expense/income/bank rows in this backend (check Sheet name "Finance Tracker" and Expenses/Income/Banks tabs).');
+        }
+      } else if (!opts.silent) {
+        showToast(opts.skipConfirm ? 'Synced ' + rowCount + ' rows from cloud' : 'Data loaded from Google Sheets');
       }
     })
     .catch(function(err) {
       setSyncStatus('error', 'Network error loading data');
       var detail = (err && err.message) ? err.message : 'check connection';
-      showToast('Load failed: ' + detail);
+      if (!opts.silent) showToast('Load failed: ' + detail);
       console.error('Sync load error:', err);
     });
 }
+
+// ── Auto-load on app start ─────────────────────────────────
+// Fires once per page session after the local data is loaded and rendered.
+var _autoLoadFired = false;
+function syncAutoLoad() {
+  if (_autoLoadFired) return;
+  _autoLoadFired = true;
+  if (!syncUrl) return;
+  setTimeout(function() {
+    syncLoad({ skipConfirm: true, silent: false });
+  }, 400);
+}
+
+window.addEventListener('ft-app-ready', syncAutoLoad);
 
 // ── Auto-sync (debounced, triggered by save functions) ──────
 var syncTimer = null;
@@ -370,7 +408,7 @@ function wireSyncUI() {
 
   if (pingBtn) pingBtn.addEventListener('click', syncPing);
   if (saveBtn) saveBtn.addEventListener('click', function() { syncSave(false); });
-  if (loadBtn) loadBtn.addEventListener('click', syncLoad);
+  if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
   if (urlInp)  urlInp.addEventListener('change', function() {
     persistSyncUrl(urlInp.value.trim());
     updateSyncUI();
@@ -378,4 +416,7 @@ function wireSyncUI() {
 }
 
 // ── Init ───────────────────────────────────────────────────
-loadSyncSettings(wireSyncUI);
+loadSyncSettings(function() {
+  wireSyncUI();
+  if (window.__ftAppReady) syncAutoLoad();
+});
