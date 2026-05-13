@@ -1264,26 +1264,89 @@ body.dark .fs-btn.active { color: #000; }
 
   .card { border-radius: 14px; }
 
-  /* Stat strip: one column = hero numbers, easier to scan */
+  /* v21 — UX focus: surface the Add Expense form, shrink everything else.
+     Reorder the Expenses page on phone so the most-common action (add) is at
+     the top, then a quick glance at spending, then recent activity. Budget
+     and the chart are pushed below the fold for users who scroll for context.
+
+     Order on mobile (Expenses page only):
+       1. Add expense card
+       2. Stat row (compact)
+       3. Transactions list
+       4. Budget targets
+       5. By-category chart                                                */
+  #page-expenses .page-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  #page-expenses .page-body > * { margin-bottom: 0 !important; }
+  /* Flatten the desktop .cols-2 wrapper so its two cards (transactions, chart)
+     become direct flex children we can independently order. */
+  #page-expenses .cols-2 { display: contents; }
+  #page-expenses .cols-2 > div { width: 100%; }
+
+  #page-expenses .page-body > .stat-row              { order: 2; }
+  /* Among the two top-level .card children of .page-body the 2nd is Budget
+     and the 3rd is Add Expense (a .stat-row precedes them). */
+  #page-expenses .page-body > .card:nth-of-type(2)   { order: 4; }
+  #page-expenses .page-body > .card:nth-of-type(3)   { order: 1; }
+  #page-expenses .cols-2 > div:first-child           { order: 3; }
+  #page-expenses .cols-2 > div:last-child            { order: 5; }
+
+  /* Stat strip on phone: two compact tiles up top, transaction count full-
+     width below. No more "hero" gradient — it stole attention from the form. */
   .stat-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 0;
   }
-  .stat-row .stat-card:nth-child(3) { grid-column: auto; }
+  .stat-row .stat-card:nth-child(3) { grid-column: 1 / -1; }
   .stat-card {
-    padding: 16px 18px;
-    border-radius: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
-  .stat-card .s-label { font-size: 11px; margin-bottom: 6px; }
+  .stat-card .s-label { font-size: 10px; margin-bottom: 4px; letter-spacing: .04em; }
   .stat-card .s-value {
-    font-size: clamp(1.35rem, 6vw, 1.85rem);
+    font-size: 18px;
     font-weight: 700;
+    line-height: 1.15;
   }
   .stat-row .stat-card:first-child {
-    background: linear-gradient(165deg, var(--card-bg2) 0%, var(--card-bg) 55%);
-    border-color: var(--line2);
+    background: var(--card-bg);
+    border-color: var(--line);
   }
+  #mom-exp { font-size: 10px !important; margin-top: 2px !important; }
+
+  /* Add Expense form: amount becomes the hero input (fewer taps to commit).
+     Keep description / date small. The category grid stays 4-col. */
+  #page-expenses #exp-amount {
+    height: 56px !important;
+    font-size: 24px !important;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+  #page-expenses .add-row { gap: 8px !important; }
+  #page-expenses .add-row .lbl {
+    font-size: 10px;
+    letter-spacing: .04em;
+    color: var(--ink3);
+    text-transform: uppercase;
+  }
+  #page-expenses .add-row .btn {
+    height: 54px;
+    font-size: 17px;
+    border-radius: 14px;
+  }
+
+  /* Budget targets: tighter rows and de-emphasized subtitle. */
+  #page-expenses .card .panel-hd + .panel-bd { padding-top: 10px; }
+  #budget-panel + div[style*="grid-template-columns"] { padding-top: 10px !important; }
+
+  /* Filter pills row inside transactions: keep it compact and wrap. */
+  #filter-bar { flex-wrap: wrap; gap: 6px; }
+  #filter-bar .pill { padding: 4px 10px; font-size: 11px; }
 
   /* Net summary grid: 2 cols */
   .net-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1373,6 +1436,39 @@ body.dark .fs-btn.active { color: #000; }
   .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   .cat-btn { padding: 8px 3px; font-size: 9px; min-height: 64px; }
   .cat-btn .ci { font-size: 18px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON (mobile only)
+   "+" jumps to the Add Expense form and focuses the amount.
+   Always visible above the bottom nav so adding is one tap away.
+   ════════════════════════════════════════════════════════════ */
+.ft-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.18);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+  padding-bottom: 3px;
+}
+body.dark .ft-fab { background: #fff; color: #000; }
+.ft-fab:active { transform: scale(.92); }
+@media (max-width: 680px) {
+  .ft-fab { display: flex; }
 }
 
 /* Tablet */
@@ -1542,7 +1638,7 @@ body.dark .fs-btn.active { color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v20 · 2026-05-14';
+  var BUILD_VERSION    = 'v21 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2418,7 +2514,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v20 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v21 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2629,13 +2725,37 @@ body.dark .fs-btn.active { color: #000; }
   <div id="pin-error" style="color:var(--red);font-size:var(--f-sm);height:20px"></div>
 </div>
 
+<!-- v21: Floating quick-add button (mobile only via CSS) -->
+<button id="ft-fab" class="ft-fab" type="button" aria-label="Quick add expense">+</button>
+<script>
+(function wireFab(){
+  var fab = document.getElementById('ft-fab');
+  if (!fab) return;
+  fab.addEventListener('click', function() {
+    var expTab = document.querySelector('.nav-item[data-tab="expenses"]');
+    if (expTab && !expTab.classList.contains('active')) expTab.click();
+    setTimeout(function() {
+      var amt = document.getElementById('exp-amount');
+      var card = amt ? amt.closest('.card') : null;
+      if (card) {
+        try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
+      }
+      if (amt) {
+        try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); }
+        try { amt.select(); } catch (e) {}
+      }
+    }, 60);
+  });
+})();
+</script>
+
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v20 · 2026-05-14</div>
-<script src="app.js?v=20"></script>
-<script src="sync.js?v=20"></script>
-<script src="features.js?v=20"></script>
-<script src="extras.js?v=20"></script>
-<script src="import-inline.js?v=20"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v21 · 2026-05-14</div>
+<script src="app.js?v=21"></script>
+<script src="sync.js?v=21"></script>
+<script src="features.js?v=21"></script>
+<script src="extras.js?v=21"></script>
+<script src="import-inline.js?v=21"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

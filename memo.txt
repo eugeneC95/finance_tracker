@@ -47,8 +47,21 @@ v19 (2026-05-14)
 - Reverted the expense-category swipe pager (was misinterpreted user intent).
 - Bottom navigation on mobile now shows exactly 4 tabs at a time with `scroll-snap`; swipe horizontally to reveal the rest. Right-edge fade hints there is more. Active tab auto-scrolls into view on click.
 
+v20 (2026-05-14)
+---------------
+- Mobile expense category grid: 4 columns (was 3, SE was 2).
+
+v21 (2026-05-14)
+---------------
+UX redesign of the Expenses page (mobile only):
+- Reorder via flex+order: Add Expense card now first, then compact stat strip, then transactions list, then budget panel, then by-category chart. `.cols-2 { display: contents }` flattens the desktop two-column wrapper so transactions and chart can be independently ordered.
+- Amount input is the hero: 56px tall, 24px bold, centered.
+- Stat cards shrunk to a 2-column compact row (count card spans full width below). No more hero gradient.
+- Floating "+" FAB above the bottom nav scrolls to and focuses the amount input. One tap to add from anywhere.
+- Filter pills wrap with smaller padding.
+
 Open / verify
 -------------
 - After pulling v17, redeploy google-apps-script.js (chunked save + parse fix) or cloud save will fail with unknown action / old behavior.
-- Confirm GitHub Pages shows latest build stamp (v19+ after merges).
+- Confirm GitHub Pages shows latest build stamp (v21+ after merges).
 - iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.
