@@ -51,6 +51,21 @@ v20 (2026-05-14)
 ---------------
 - Mobile expense category grid: 4 columns (was 3, SE was 2).
 
+v22 (2026-05-14)
+---------------
+Modern app-like visual style (mobile only, pure CSS overlay):
+- Cards: 20px radius, no border, soft elevation shadow.
+- "Spent this month" hero card painted dark with white type.
+- Buttons: pill (border-radius 999px), heavier weight.
+- Inputs: rounded, no harsh border, soft fill.
+- Filter pills: pill all the way.
+- Transactions: 40px circular tinted icons, 800-weight amounts.
+- Month controls: pill arrows.
+- Bottom nav: floating capsule (lifted 8px from screen edges, rounded 22px,
+  blurred translucent background). Body padding-bottom + FAB + version stamp
+  adjusted to clear the new lifted nav.
+- Page header: 800-weight, tight letter spacing.
+
 v21 (2026-05-14)
 ---------------
 UX redesign of the Expenses page (mobile only):
@@ -63,5 +78,5 @@ UX redesign of the Expenses page (mobile only):
 Open / verify
 -------------
 - After pulling v17, redeploy google-apps-script.js (chunked save + parse fix) or cloud save will fail with unknown action / old behavior.
-- Confirm GitHub Pages shows latest build stamp (v21+ after merges).
+- Confirm GitHub Pages shows latest build stamp (v22+ after merges).
 - iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.
