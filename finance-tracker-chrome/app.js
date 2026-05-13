@@ -140,26 +140,35 @@ function saveBanks() { chrome.storage.local.set({[KEY_BANKS]: banks}); }
 function saveSets()  { chrome.storage.local.set({[KEY_SETS]:  settings}); }
 
 // ── Category buttons ───────────────────────────────────────
+var CAT_PAGE_SIZE = 4;
+
 function buildCatButtons() {
   const wrap = document.getElementById('cat-btns');
   if (!wrap) return;
   wrap.innerHTML = '';
-  Object.entries(EXP_CATS).forEach(([name, {icon}]) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
-    btn.dataset.cat = name;
-    const iconEl = document.createElement('span');
-    iconEl.className = 'ci';
-    iconEl.textContent = icon;
-    btn.appendChild(iconEl);
-    btn.appendChild(document.createTextNode(name));
-    btn.addEventListener('click', () => {
-      selectedCat = name;
-      wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === name));
+  const entries = Object.entries(EXP_CATS);
+  for (let i = 0; i < entries.length; i += CAT_PAGE_SIZE) {
+    const page = document.createElement('div');
+    page.className = 'cat-page';
+    const slice = entries.slice(i, i + CAT_PAGE_SIZE);
+    slice.forEach(([name, {icon}]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
+      btn.dataset.cat = name;
+      const iconEl = document.createElement('span');
+      iconEl.className = 'ci';
+      iconEl.textContent = icon;
+      btn.appendChild(iconEl);
+      btn.appendChild(document.createTextNode(name));
+      btn.addEventListener('click', () => {
+        selectedCat = name;
+        wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === name));
+      });
+      page.appendChild(btn);
     });
-    wrap.appendChild(btn);
-  });
+    wrap.appendChild(page);
+  }
 }
 
 // ── Settings ───────────────────────────────────────────────
