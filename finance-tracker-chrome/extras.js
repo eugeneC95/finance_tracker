@@ -10,7 +10,7 @@ var petrolLog = [];
 var pinState  = { hash: null, enabled: false };
 
 function loadExtras() {
-  chromeStorage.local.get([KEY_PETROL, KEY_PIN], function(r) {
+  chrome.storage.local.get([KEY_PETROL, KEY_PIN], function(r) {
     petrolLog = r[KEY_PETROL] || [];
     pinState  = r[KEY_PIN]    || { hash: null, enabled: false };
     updatePinStatusUI();
@@ -19,8 +19,8 @@ function loadExtras() {
   });
 }
 
-function savePetrol() { chromeStorage.local.set({[KEY_PETROL]: petrolLog}); }
-function savePinSt()  { chromeStorage.local.set({[KEY_PIN]:    pinState}); }
+function savePetrol() { chrome.storage.local.set({[KEY_PETROL]: petrolLog}); }
+function savePinSt()  { chrome.storage.local.set({[KEY_PIN]:    pinState}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   CATEGORY SELECT REBUILD
@@ -349,7 +349,7 @@ function renderReport() {
 var pinUnlocked = false;
 
 function initPinLock() {
-  chromeStorage.local.get([KEY_PIN], function(r) {
+  chrome.storage.local.get([KEY_PIN], function(r) {
     pinState = r[KEY_PIN] || { hash: null, enabled: false };
     updatePinStatusUI();
     if (pinState.enabled && pinState.hash) {

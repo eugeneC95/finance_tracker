@@ -1,8 +1,8 @@
 'use strict';
 
 // ╔══════════════════════════════════════════════════════════╗
-//   GOOGLE SHEETS SYNC  — GET-only, no CORS preflight (PWA)
-//   Same Sheet contract as finance-tracker-chrome/sync.js
+//   GOOGLE SHEETS SYNC  — GET-only, no CORS preflight (Chrome)
+//   Same Sheet contract as ../sync.js (PWA); fetch via background SYNC_FETCH
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_URL   = 'sync_url_v1';
@@ -17,7 +17,7 @@ var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: ''
 
 // ── Load settings from chrome.storage ─────────────────────
 function loadSyncSettings(cb) {
-  chromeStorage.local.get([KEY_SYNC_URL, KEY_SYNC_STATE], function(r) {
+  chrome.storage.local.get([KEY_SYNC_URL, KEY_SYNC_STATE], function(r) {
     var stored = r[KEY_SYNC_URL];
     var hasStored = typeof stored === 'string' && stored.trim().length > 0;
     syncUrl = hasStored ? stored.trim() : DEFAULT_SYNC_URL;
@@ -32,11 +32,11 @@ function loadSyncSettings(cb) {
 
 function persistSyncUrl(url) {
   syncUrl = url;
-  chromeStorage.local.set({ [KEY_SYNC_URL]: url });
+  chrome.storage.local.set({ [KEY_SYNC_URL]: url });
 }
 
 function persistSyncState() {
-  chromeStorage.local.set({ [KEY_SYNC_STATE]: syncState });
+  chrome.storage.local.set({ [KEY_SYNC_STATE]: syncState });
 }
 
 // ── Build payload ──────────────────────────────────────────
@@ -53,21 +53,44 @@ function buildPayload() {
 }
 
 // ── Core fetch — GET with ?action=…&data=… ─────────────────
-// Apps Script GET never triggers CORS preflight.
-// We follow redirects manually by using fetch with redirect:'follow'.
+// In the extension, page-origin fetch() often breaks on Apps Script redirects/CORS.
+// The service worker proxies via SYNC_FETCH (see background.js).
 function scriptFetch(url, params) {
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
     .join('&');
   var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + qs;
 
-  return fetch(fullUrl, {
-    method:   'GET',
-    redirect: 'follow',
-  }).then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
-  });
+  function directFetch() {
+    return fetch(fullUrl, {
+      method:   'GET',
+      redirect: 'follow',
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+    return new Promise(function(resolve, reject) {
+      chrome.runtime.sendMessage(
+        { type: 'SYNC_FETCH', url: fullUrl, method: 'GET' },
+        function(response) {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (!response || !response.ok) {
+            reject(new Error((response && response.error) || 'Sync request failed'));
+            return;
+          }
+          resolve(response.data);
+        }
+      );
+    });
+  }
+
+  return directFetch();
 }
 
 // ── Ping ───────────────────────────────────────────────────
@@ -183,7 +206,8 @@ function syncLoad() {
         return todayStrLocal();
       }
 
-      // Same rules as finance-tracker-chrome/sync.js (Sheet headers may use id / ID / Id).
+      // Match PWA: coerce ids/amounts/dates from Sheet so rows are not dropped and filters work.
+      // Apps Script uses sheet header text as JSON keys — "ID" vs "id" matters; missing id gets synthetic.
       function sanitize(arr) {
         if (!Array.isArray(arr)) return [];
         return arr.filter(function(e) {
@@ -218,6 +242,7 @@ function syncLoad() {
         });
       }
 
+      // Move the visible month to the latest loaded transaction so lists are not empty by accident.
       try {
         if (typeof viewMonth !== 'undefined') {
           var best = null;
@@ -235,6 +260,7 @@ function syncLoad() {
         }
       } catch (e4) { console.warn('syncLoad viewMonth', e4); }
 
+      // Persist everything locally
       saveExp(); saveInc(); saveBanks();
       if (typeof saveRec === 'function') saveRec();
       if (typeof saveBud === 'function') saveBud();

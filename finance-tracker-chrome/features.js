@@ -21,7 +21,7 @@ var autoBackup   = { enabled: false, folder: '' };
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
-  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_AUTOBACK], function(r) {
+  chrome.storage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_AUTOBACK], function(r) {
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
@@ -43,10 +43,10 @@ function loadFeatures() {
   });
 }
 
-function saveRec()  { chromeStorage.local.set({[KEY_REC]:  recurring}); }
-function saveNWH()  { chromeStorage.local.set({[KEY_NWH]:  networthHist}); }
-function saveBud()  { chromeStorage.local.set({[KEY_BUD]:  budgets}); }
-function saveAB()   { chromeStorage.local.set({[KEY_AUTOBACK]: autoBackup}); }
+function saveRec()  { chrome.storage.local.set({[KEY_REC]:  recurring}); }
+function saveNWH()  { chrome.storage.local.set({[KEY_NWH]:  networthHist}); }
+function saveBud()  { chrome.storage.local.set({[KEY_BUD]:  budgets}); }
+function saveAB()   { chrome.storage.local.set({[KEY_AUTOBACK]: autoBackup}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   REMEMBER LAST CATEGORY
@@ -54,7 +54,7 @@ function saveAB()   { chromeStorage.local.set({[KEY_AUTOBACK]: autoBackup}); }
 document.getElementById('cat-btns').addEventListener('click', function(e) {
   var btn = e.target.closest('.cat-btn');
   if (btn && btn.dataset.cat) {
-    chromeStorage.local.set({[KEY_LAST_CAT]: btn.dataset.cat});
+    chrome.storage.local.set({[KEY_LAST_CAT]: btn.dataset.cat});
   }
 });
 
@@ -616,7 +616,11 @@ function performAutoBackup() {
     saveAs:   false,
     conflictAction: 'uniquify',
   };
-  var a2 = document.createElement('a'); a2.href = url; a2.download = opts.filename.split('/').pop(); a2.click(); URL.revokeObjectURL(url); showToast('Backup downloaded');
+  chrome.downloads.download(opts, function(id) {
+    URL.revokeObjectURL(url);
+    if (id) showToast('Auto-backup saved');
+    else    showToast('Auto-backup: check Downloads folder');
+  });
 }
 
 function updateAutoBackupUI() {
@@ -636,11 +640,11 @@ function updateAutoBackupUI() {
 // Auto-backup on open (once per day)
 (function checkAutoBackup() {
   var KEY = 'last_autobackup';
-  chromeStorage.local.get([KEY], function(r) {
+  chrome.storage.local.get([KEY], function(r) {
     var last  = r[KEY] || '';
     var today = new Date().toISOString().slice(0,10);
     if (autoBackup.enabled && last !== today) {
-      chromeStorage.local.set({[KEY]: today});
+      chrome.storage.local.set({[KEY]: today});
       setTimeout(performAutoBackup, 2000); // slight delay so data is loaded
     }
   });

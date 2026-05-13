@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Import Transactions</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f8f6; --bg2: #ffffff; --bg3: #f0f0ee;
+      --border: #e4e4e0; --border2: #c8c8c4;
+      --text: #1a1a1a; --text2: #555550; --text3: #9a9a94;
+      --green: #1A9E6E; --red: #e24b4a; --blue: #2563eb;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px; color: var(--text); background: var(--bg);
+      min-height: 100vh; padding: 0 0 40px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: #1a1a1a; color: #fff;
+      padding: 14px 24px; display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar h1 { font-size: 16px; font-weight: 600; flex: 1; }
+    .topbar .close-btn {
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 13px;
+    }
+    .topbar .close-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Steps ── */
+    .steps { display: flex; padding: 16px 24px 0; gap: 0; }
+    .step {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text3); flex: 1;
+    }
+    .step-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border2); background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text3);
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .step.active .step-dot { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+    .step.done .step-dot   { border-color: var(--green); background: var(--green); color: #fff; }
+    .step.active .step-lbl, .step.done .step-lbl { color: var(--text); font-weight: 500; }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 6px; }
+
+    /* ── Pages ── */
+    .page { display: none; padding: 20px 24px 0; }
+    .page.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px; margin-bottom: 14px;
+    }
+    .card-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .card-sub   { font-size: 12px; color: var(--text3); margin-bottom: 14px; line-height: 1.5; }
+
+    /* Source picker */
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .source-card {
+      background: var(--bg3); border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 16px 14px; cursor: pointer; text-align: center; transition: all 0.15s;
+    }
+    .source-card:hover { border-color: var(--border2); background: var(--bg2); }
+    .source-card.selected { border-color: #1a1a1a; background: var(--bg2); }
+    .source-icon { font-size: 28px; margin-bottom: 8px; }
+    .source-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .source-desc { font-size: 11px; color: var(--text3); }
+
+    /* How-to box */
+    .howto {
+      background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 14px;
+    }
+    .howto-title { font-size: 12px; font-weight: 700; color: #1e40af; margin-bottom: 8px; }
+    .howto ol { padding-left: 18px; }
+    .howto li { font-size: 12px; color: #1e3a8a; line-height: 1.8; }
+    .howto code {
+      background: #dbeafe; padding: 1px 5px; border-radius: 4px;
+      font-family: monospace; font-size: 11px;
+    }
+
+    /* Input areas */
+    textarea {
+      width: 100%; height: 160px; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 12px; font-family: monospace; color: var(--text);
+      background: var(--bg3); resize: vertical; outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: var(--border2); background: var(--bg2); }
+
+    .file-drop {
+      border: 2px dashed var(--border2); border-radius: var(--radius);
+      padding: 28px 20px; text-align: center; cursor: pointer;
+      transition: all 0.15s; background: var(--bg3);
+    }
+    .file-drop:hover, .file-drop.drag-over { border-color: #1a1a1a; background: var(--bg2); }
+    .file-drop .drop-icon  { font-size: 28px; margin-bottom: 8px; }
+    .file-drop .drop-label { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    .file-drop .drop-sub   { font-size: 11px; color: var(--text3); }
+    .file-drop input       { display: none; }
+
+    /* Preview table */
+    .preview-wrap { overflow-x: auto; max-height: 340px; overflow-y: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      background: var(--bg3); padding: 8px 10px; text-align: left;
+      font-weight: 600; font-size: 11px; position: sticky; top: 0;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.skip td { opacity: 0.35; text-decoration: line-through; }
+
+    /* Category select in table */
+    td select {
+      height: 26px; font-size: 11px; padding: 0 4px;
+      border: 1px solid var(--border); border-radius: 5px;
+      background: var(--bg2); color: var(--text); outline: none;
+    }
+    td .type-toggle {
+      display: flex; gap: 3px;
+    }
+    td .type-btn {
+      height: 22px; padding: 0 7px; border: 1px solid var(--border);
+      border-radius: 4px; font-size: 10px; cursor: pointer; background: var(--bg3);
+      color: var(--text2); transition: all 0.1s;
+    }
+    td .type-btn.exp.active { background: #fee2e2; border-color: #fca5a5; color: var(--red); }
+    td .type-btn.inc.active { background: #dcfce7; border-color: #86efac; color: var(--green); }
+    td .type-btn.skip-btn.active { background: var(--bg3); border-color: var(--border2); color: var(--text3); }
+
+    .amt-debit  { color: var(--red);   font-weight: 600; }
+    .amt-credit { color: var(--green); font-weight: 600; }
+
+    /* Summary bar */
+    .summary-bar {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px;
+      display: flex; gap: 20px; flex-wrap: wrap;
+    }
+    .sum-item .sum-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; }
+    .sum-item .sum-val   { font-size: 16px; font-weight: 700; }
+    .sum-item .sum-val.green { color: var(--green); }
+    .sum-item .sum-val.red   { color: var(--red); }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 8px; margin-top: 6px; }
+    .btn {
+      height: 38px; padding: 0 20px; border: none; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.82; }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary { background: #1a1a1a; color: #fff; }
+    .btn.secondary { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+    .btn.success { background: var(--green); color: #fff; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; color: #fff; font-size: 13px; font-weight: 500;
+      padding: 8px 20px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; z-index: 99;
+    }
+    .toast.show { opacity: 1; }
+
+    .done-screen { text-align: center; padding: 40px 20px; }
+    .done-icon   { font-size: 52px; margin-bottom: 14px; }
+    .done-title  { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .done-sub    { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 600;
+    }
+    .badge.exp  { background: #fee2e2; color: var(--red); }
+    .badge.inc  { background: #dcfce7; color: var(--green); }
+    .badge.skip { background: var(--bg3); color: var(--text3); }
+
+    .error-msg { color: var(--red); font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📥 Import transactions</h1>
+  <button class="close-btn" onclick="window.close()">✕ Close</button>
+</div>
+
+<div class="steps">
+  <div class="step active" id="step1">
+    <div class="step-dot">1</div>
+    <span class="step-lbl">Source</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step" id="step2">
+    <div class="step-dot">2</div>
+    <span class="step-lbl">Upload</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step" id="step3">
+    <div class="step-dot">3</div>
+    <span class="step-lbl">Review</span>
+  </div>
+  <div class="step-line"></div>
+  <div class="step" id="step4">
+    <div class="step-dot">4</div>
+    <span class="step-lbl">Done</span>
+  </div>
+</div>
+
+<!-- ── Step 1: Choose source ── -->
+<div class="page active" id="page1">
+  <div class="card">
+    <div class="card-title">Which account are you importing from?</div>
+    <div class="card-sub">Choose the source and we'll know how to parse the file.</div>
+    <div class="source-grid">
+      <div class="source-card" id="src-tng" onclick="selectSource('tng')">
+        <div class="source-icon">💳</div>
+        <div class="source-name">TNG eWallet</div>
+        <div class="source-desc">Paste statement text from PDF</div>
+      </div>
+      <div class="source-card" id="src-uob" onclick="selectSource('uob')">
+        <div class="source-icon">🏦</div>
+        <div class="source-name">UOB Bank</div>
+        <div class="source-desc">Upload XLS or CSV file</div>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn primary" id="btn-next1" disabled onclick="goStep(2)">Next →</button>
+  </div>
+</div>
+
+<!-- ── Step 2: Upload / Paste ── -->
+<div class="page" id="page2">
+  <!-- TNG paste -->
+  <div id="tng-input" style="display:none">
+    <div class="howto">
+      <div class="howto-title">📖 How to get your TNG statement text</div>
+      <ol>
+        <li>Open TNG eWallet app → tap <code>Profile</code> → <code>Transaction History</code></li>
+        <li>Tap the <code>email</code> icon — TNG will email you a PDF statement</li>
+        <li>Open the PDF, select all text (<code>Ctrl+A</code>), copy and paste below</li>
+        <li>Alternatively use the TNG ePortal at <code>ewallet.tngdigital.com.my</code></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title">Paste TNG statement text</div>
+      <div class="card-sub">Copy the full text from your TNG PDF and paste it here.</div>
+      <textarea id="tng-paste" placeholder="Paste your TNG statement text here...&#10;&#10;Example:&#10;01/01/2025  DuitNow Payment  MAMAK CORNER  -RM12.50  RM 234.10&#10;02/01/2025  Payment  SHELL PETROL  -RM80.00  RM 154.10"></textarea>
+      <div class="error-msg" id="tng-error"></div>
+    </div>
+  </div>
+
+  <!-- UOB file upload -->
+  <div id="uob-input" style="display:none">
+    <div class="howto">
+      <div class="howto-title">📖 How to export from UOB Personal Internet Banking</div>
+      <ol>
+        <li>Log in at <code>pib.uob.com.my</code></li>
+        <li>Go to <code>Account</code> → <code>Account Activities</code></li>
+        <li>Select your account and date range (up to 90 days)</li>
+        <li>Click <code>Download</code> → choose <code>Excel (XLS)</code> or <code>CSV</code></li>
+        <li>Upload the downloaded file below</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-title">Upload UOB statement file</div>
+      <div class="card-sub">Accepts .xls, .xlsx, or .csv from UOB Personal Internet Banking.</div>
+      <div class="file-drop" id="uob-drop" onclick="document.getElementById('uob-file').click()">
+        <input type="file" id="uob-file" accept=".xls,.xlsx,.csv"/>
+        <div class="drop-icon">📂</div>
+        <div class="drop-label" id="drop-label">Click to choose file</div>
+        <div class="drop-sub">or drag &amp; drop here · XLS / XLSX / CSV</div>
+      </div>
+      <div class="error-msg" id="uob-error"></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn secondary" onclick="goStep(1)">← Back</button>
+    <button class="btn primary" id="btn-next2" onclick="parseAndPreview()">Parse →</button>
+  </div>
+</div>
+
+<!-- ── Step 3: Review & edit ── -->
+<div class="page" id="page3">
+  <div class="summary-bar" id="summary-bar"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="preview-wrap">
+      <table id="preview-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount (RM)</th>
+            <th>Type</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
+    Toggle rows between <strong>Expense</strong>, <strong>Income</strong>, or <strong>Skip</strong>. Change categories as needed.
+  </div>
+  <div class="btn-row">
+    <button class="btn secondary" onclick="goStep(2)">← Back</button>
+    <button class="btn success" id="btn-import" onclick="doImport()">✓ Import selected</button>
+  </div>
+</div>
+
+<!-- ── Step 4: Done ── -->
+<div class="page" id="page4">
+  <div class="done-screen">
+    <div class="done-icon">🎉</div>
+    <div class="done-title" id="done-title">Import complete!</div>
+    <div class="done-sub" id="done-sub"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn primary" onclick="resetWizard()">Import more</button>
+      <button class="btn secondary" onclick="window.close()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="import.js"></script>
+</body>
+</html>

@@ -1,29 +1,5 @@
 'use strict';
 
-// ── localStorage adapter (replaces chrome.storage for PWA) ─
-var chromeStorage = {
-  local: {
-    get: function(keys, cb) {
-      var result = {};
-      (Array.isArray(keys) ? keys : [keys]).forEach(function(k) {
-        try { var v = localStorage.getItem(k); result[k] = v ? JSON.parse(v) : undefined; }
-        catch(e) { result[k] = undefined; }
-      });
-      cb(result);
-    },
-    set: function(obj, cb) {
-      Object.keys(obj).forEach(function(k) {
-        try { localStorage.setItem(k, JSON.stringify(obj[k])); } catch(e) {}
-      });
-      if (cb) cb();
-    },
-    remove: function(keys, cb) {
-      (Array.isArray(keys) ? keys : [keys]).forEach(function(k) { localStorage.removeItem(k); });
-      if (cb) cb();
-    }
-  }
-};
-
 // ── Category definitions ───────────────────────────────────
 const EXP_CATS = {
   // Food & drink
@@ -146,7 +122,7 @@ function viewYM() {
 // ── Storage ────────────────────────────────────────────────
 function load() {
   const gen = _storageReadGen;
-  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS], r => {
+  chrome.storage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS], r => {
     if (gen !== _storageReadGen) return;
     expenses = r[KEY_EXP]   || [];
     incomes  = r[KEY_INC]   || [];
@@ -156,10 +132,10 @@ function load() {
     render();
   });
 }
-function saveExp()   { chromeStorage.local.set({[KEY_EXP]:   expenses}); }
-function saveInc()   { chromeStorage.local.set({[KEY_INC]:   incomes}); }
-function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
-function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
+function saveExp()   { chrome.storage.local.set({[KEY_EXP]:   expenses}); }
+function saveInc()   { chrome.storage.local.set({[KEY_INC]:   incomes}); }
+function saveBanks() { chrome.storage.local.set({[KEY_BANKS]: banks}); }
+function saveSets()  { chrome.storage.local.set({[KEY_SETS]:  settings}); }
 
 // ── Category buttons ───────────────────────────────────────
 function buildCatButtons() {

@@ -16,7 +16,7 @@ Go to [github.com](https://github.com) and sign up if you don't have one.
 
 ### 3. Upload the files
 - On the repository page, click **uploading an existing file**
-- Drag and drop ALL files from this folder into the browser
+- Drag and drop the PWA files from this folder into the browser (everything needed for `index.html`, `lock.html`, CSS/JS, and the service worker). The `finance-tracker-chrome` subfolder is only for the Chrome extension — you may omit it from the GitHub Pages site if you want a smaller upload.
 - Click **Commit changes**
 
 ### 4. Enable GitHub Pages

@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Finance Tracker",
+  "version": "5.0",
+  "description": "Personal finance tracker \u2014 expenses, income, budgets, trends, recurring.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "downloads"
+  ],
+  "commands": {
+    "open-dashboard": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Open Finance Tracker dashboard"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "app.html",
+        "app.js",
+        "features.js",
+        "import-inline.js",
+        "import.html",
+        "import.js",
+        "extras.js",
+        "sync.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "host_permissions": [
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ]
+}

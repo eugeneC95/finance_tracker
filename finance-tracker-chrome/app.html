@@ -2,20 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<script>
-// Redirect to lock screen if not authenticated this session
-(function(){
-  try { if(sessionStorage.getItem('ft-unlocked')!=='1') window.location.replace('./lock.html'); }
-  catch(e){}
-})();
-</script>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Finance"/>
-<meta name="theme-color" content="#1a1a1a"/>
-<link rel="manifest" href="manifest.webmanifest"/>
-<link rel="apple-touch-icon" href="icons/icon128.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Finance Tracker</title>
 <style>
 /* ============================================================
@@ -1016,178 +1003,7 @@ body.dark .fs-btn.active { color: #000; }
 .report-row .rr-val.green { color:var(--green); }
 .report-total { display:flex; justify-content:space-between; padding:12px 0 0; margin-top:8px; border-top:2px solid var(--line); font-weight:700; font-size:var(--f-lg); }
 
-
-
-
-/* ══════════════════════════════════════════════════════════
-   PWA RESPONSIVE — MOBILE FIRST
-   ══════════════════════════════════════════════════════════ */
-
-/* ── Bottom nav bar (mobile) ── */
-
-/* ══════════════════════════════════════════════════════════
-   RESPONSIVE — MOBILE (iPhone / Android)
-   Key insight: sidebar stays in flow as flex column,
-   but on mobile we give it fixed height at bottom and
-   .main fills remaining space with overflow-y:auto.
-   ══════════════════════════════════════════════════════════ */
-@media (max-width: 680px) {
-
-  /* Body stays as flex-row but sidebar is narrow/hidden visually */
-  html, body { height: 100%; overflow: hidden; }
-
-  body {
-    flex-direction: row;
-    position: fixed;
-    inset: 0;
-  }
-
-  /* Sidebar: thin strip, fixed at bottom */
-  .sb {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    width: 100%;
-    height: calc(58px + env(safe-area-inset-bottom, 0px));
-    flex-direction: row;
-    flex-shrink: 0;
-    z-index: 100;
-    overflow: hidden;
-  }
-
-  .sb-brand  { display: none; }
-  .sb-month  { display: none; }
-  .nav-spacer{ display: none; }
-
-  .sb-nav {
-    flex-direction: row;
-    padding: 4px 0 0;
-    gap: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    width: 100%;
-    align-items: flex-start;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .sb-nav::-webkit-scrollbar { display: none; }
-
-  .nav-item {
-    flex-direction: column;
-    gap: 2px;
-    padding: 5px 2px 6px;
-    border-radius: 8px;
-    font-size: 9px;
-    flex: 1;
-    min-width: 44px;
-    color: rgba(255,255,255,.5);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
-  }
-  .nav-item .icon { font-size: 18px; width: auto; }
-  .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
-
-  /* Main: fill all width, scroll vertically, bottom padding for nav bar */
-  .main {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Pages must be block and visible when active */
-  .page        { display: none; }
-  .page.active { display: block; min-height: 50px; }
-
-  /* Month nav strip */
-  .month-controls { display: flex !important; }
-
-  /* Page spacing tighter on mobile */
-  .page-header        { padding: 14px 14px 0; }
-  .page-header h2     { font-size: var(--f-xl); }
-  .page-header .sub   { font-size: var(--f-xs); margin-top: 2px; }
-  .page-body          { padding: 12px 14px 24px; }
-
-  /* Stat cards: 2 wide + 1 full */
-  .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .stat-row .stat-card:nth-child(3) { grid-column: 1 / -1; }
-  .stat-card { padding: 12px 14px; }
-  .stat-card .s-value { font-size: var(--f-lg); }
-
-  /* Net summary grid: 2 cols */
-  .net-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .net-card .n-val { font-size: var(--f-lg); }
-
-  /* All two-col layouts stack */
-  .cols-2        { grid-template-columns: 1fr; }
-  .settings-grid { grid-template-columns: 1fr; }
-
-  /* Add expense form: stack clearly */
-  .add-row {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px;
-  }
-  .add-row .btn {
-    width: 100%;
-    height: 50px;
-    font-size: var(--f-lg);
-  }
-
-  /* MUST be 16px to prevent iOS auto-zoom on focus */
-  input, select, textarea { font-size: 16px !important; }
-  input  { height: 48px; }
-  select { height: 48px; }
-
-  /* Category grid: bigger tiles */
-  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap: 6px; }
-  .cat-btn  { padding: 10px 4px; font-size: 10px; }
-  .cat-btn .ci { font-size: 20px; }
-
-  /* Transaction items: always show actions on touch */
-  .tx-item    { padding: 10px 0; }
-  .tx-icon    { width: 38px; height: 38px; font-size: 17px; }
-  .tx-actions { opacity: 1 !important; }
-  .tx-action-btn { width: 38px; height: 38px; font-size: 15px; }
-
-  /* Modals: sheet from bottom */
-  .overlay  { padding: 0; align-items: flex-end; }
-  .modal    { max-width: 100%; border-radius: 16px 16px 0 0; max-height: 88vh; }
-  .cat-modal{ max-width: 100%; border-radius: 16px 16px 0 0; max-height: 88vh; }
-
-  /* Bank edit form */
-  .bank-edit-form { grid-template-columns: 1fr 1fr !important; gap: 8px; }
-
-  /* Trend chart scrollable */
-  #trend-chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .trend-months { min-width: 340px; }
-
-  /* Petrol/bank add forms: stack on mobile */
-  .panel-bd > div[style*="grid-template-columns"] {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px;
-  }
-  .panel-bd > div[style*="grid-template-columns"] .btn {
-    width: 100%; height: 48px;
-  }
-}
-
-/* Tiny phones (SE, 320px) */
-@media (max-width: 374px) {
-  .nav-item { min-width: 38px; font-size: 8px; }
-  .nav-item .icon { font-size: 16px; }
-}
-
-/* Tablet */
-@media (min-width: 681px) and (max-width: 900px) {
-  :root { --sb-w: 180px; }
-  .cols-2   { grid-template-columns: 1fr; }
-  .net-grid { grid-template-columns: repeat(2,1fr); }
-}
-
+</style>
 </head>
 <body class="fs-md">
 
@@ -1252,12 +1068,6 @@ body.dark .fs-btn.active { color: #000; }
      MAIN
 ══════════════════════════════════════════ -->
 <main class="main">
-  <!-- Mobile month nav (hidden on desktop via CSS, shown on mobile) -->
-  <div class="month-controls" id="mobile-month-nav" style="display:none">
-    <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
-    <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center">—</span>
-    <button class="month-arrow" id="next-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">›</button>
-  </div>
 
   <!-- ── EXPENSES ── -->
   <div class="page active" id="page-expenses">
@@ -1408,7 +1218,7 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-6">
         <div class="panel-hd"><span class="panel-title">Add income</span></div>
         <div class="panel-bd">
-          <div class="add-row" id="inc-add-row">
+          <div class="add-row" style="grid-template-columns:1fr 150px 150px 150px auto">
             <div>
               <label class="lbl">Description</label>
               <input type="text" id="inc-name" placeholder="Income description" maxlength="80"/>
@@ -1959,7 +1769,7 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Log a fill-up</span></div>
         <div class="panel-bd">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr 120px 120px 140px 120px auto;gap:12px;align-items:end">
             <div>
               <label class="lbl">Station / Note</label>
               <input type="text" id="pt-station" placeholder="e.g. Petronas Rawang" maxlength="60"/>
@@ -2140,35 +1950,5 @@ body.dark .fs-btn.active { color: #000; }
 <script src="features.js"></script>
 <script src="extras.js"></script>
 <script src="import-inline.js"></script>
-<script>
-// ── Service worker registration ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./service-worker.js');
-  });
-}
-
-// ── Mobile month nav sync ──
-function syncMobileMonthNav() {
-  var lbl = document.getElementById('month-label');
-  var lblM = document.getElementById('month-label-m');
-  if (lblM && lbl) lblM.textContent = lbl.textContent;
-}
-var origRender = render;
-render = function() {
-  origRender();
-  syncMobileMonthNav();
-};
-window.addEventListener('resize', function() {
-  var nav = document.getElementById('mobile-month-nav');
-  if (nav) nav.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
-});
-window.dispatchEvent(new Event('resize'));
-
-var pMM = document.getElementById('prev-month-m');
-var nMM = document.getElementById('next-month-m');
-if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
-if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
-</script>
 </body>
 </html>

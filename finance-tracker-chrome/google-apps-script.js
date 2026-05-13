@@ -138,14 +138,6 @@ function readTab(tabName) {
       var v = raw[i][ci];
       if (v === '' || v === null || v === undefined) { obj[col] = null; return; }
       hasValue = true;
-      // Google Sheets auto-converts date strings to Date objects — convert back
-      if (v instanceof Date) {
-        var yyyy = v.getFullYear();
-        var mm   = String(v.getMonth()+1).padStart(2,'0');
-        var dd   = String(v.getDate()).padStart(2,'0');
-        obj[col] = yyyy+'-'+mm+'-'+dd;
-        return;
-      }
       if (typeof v === 'number')  { obj[col] = v; return; }
       if (v === 'true')           { obj[col] = true;  return; }
       if (v === 'false')          { obj[col] = false; return; }

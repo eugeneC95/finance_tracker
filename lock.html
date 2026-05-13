@@ -121,7 +121,7 @@
   <div class="app-name">Finance Tracker</div>
   <div class="app-sub">Personal money manager</div>
 
-  <div class="pin-label">Enter password</div>
+  <div class="pin-label" id="pin-label">Create your PIN</div>
 
   <!-- Mobile: dot indicators -->
   <div class="dots" id="dots">
@@ -151,26 +151,47 @@
 
   <!-- Desktop: text input -->
   <div class="fallback">
-    <input type="password" id="pw-input" placeholder="••••••" maxlength="20"
-           autocomplete="current-password" autofocus/>
+    <input type="password" id="pw-input" placeholder="6 digits" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+           autocomplete="off" autofocus/>
   </div>
 
   <div class="err-msg" id="err"></div>
 </div>
 
 <script>
-// Password stored as SHA-256 hash — "145765"
-// Hash computed at build time so the raw password is never in source
-var HASH = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
+// PIN is stored only on this device (SHA-256). No default in source — first visit creates a PIN.
+var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
+var MAX = 6;
 
 var entered = '';
-var MAX     = 6;
+var pendingPin = '';
+var mode = 'login'; // 'login' | 'setup1' | 'setup2'
 var checking = false;
 
-// ── Hash function ──────────────────────────────────────────
+function getStoredHash() {
+  try { return localStorage.getItem(STORAGE_HASH_KEY); } catch (e) { return null; }
+}
+
+function setStoredHash(hex) {
+  try { localStorage.setItem(STORAGE_HASH_KEY, hex); } catch (e) {}
+}
+
 async function sha256(str) {
   var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+function setPinLabel(text) {
+  var el = document.getElementById('pin-label');
+  if (el) el.textContent = text;
+}
+
+function syncPlaceholder() {
+  var inp = document.getElementById('pw-input');
+  if (!inp) return;
+  if (mode === 'setup1') inp.placeholder = 'New PIN (6 digits)';
+  else if (mode === 'setup2') inp.placeholder = 'Confirm PIN';
+  else inp.placeholder = '6 digits';
 }
 
 // ── Check session: already unlocked this session? ──────────
@@ -179,10 +200,26 @@ async function sha256(str) {
     if (sessionStorage.getItem('ft-unlocked') === '1') {
       window.location.replace('./index.html');
     }
-  } catch(e) {}
+  } catch (e) {}
 })();
 
-// ── Update dot UI ──────────────────────────────────────────
+(function initMode() {
+  var stored = getStoredHash();
+  if (stored) {
+    mode = 'login';
+    setPinLabel('Enter PIN');
+  } else {
+    mode = 'setup1';
+    setPinLabel('Create your PIN');
+  }
+  syncPlaceholder();
+})();
+
+function unlockAndGo() {
+  try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
+  window.location.replace('./index.html');
+}
+
 function updateDots(error) {
   for (var i = 0; i < MAX; i++) {
     var d = document.getElementById('d' + i);
@@ -193,26 +230,69 @@ function updateDots(error) {
   }
 }
 
-// ── Submit ─────────────────────────────────────────────────
-async function submit(val) {
+function clearAfterError(msg) {
+  updateDots(true);
+  document.getElementById('err').textContent = msg || 'Try again';
+  setTimeout(function() {
+    entered = '';
+    updateDots(false);
+    document.getElementById('err').textContent = '';
+    var inp = document.getElementById('pw-input');
+    if (inp) inp.value = '';
+    checking = false;
+  }, 900);
+}
+
+async function tryLogin(val) {
   if (checking) return;
   checking = true;
-  var h = await sha256(val);
-  if (h === HASH) {
-    try { sessionStorage.setItem('ft-unlocked', '1'); } catch(e) {}
-    window.location.replace('./index.html');
-  } else {
-    updateDots(true);
-    document.getElementById('err').textContent = 'Incorrect password';
-    setTimeout(function() {
-      entered = '';
-      updateDots(false);
-      document.getElementById('err').textContent = '';
-      var inp = document.getElementById('pw-input');
-      if (inp) inp.value = '';
-      checking = false;
-    }, 900);
+  var stored = getStoredHash();
+  if (!stored) {
+    checking = false;
+    return;
   }
+  var h = await sha256(val);
+  if (h === stored) {
+    unlockAndGo();
+    return;
+  }
+  clearAfterError('Incorrect PIN');
+}
+
+function advanceSetup1(val) {
+  pendingPin = val;
+  entered = '';
+  mode = 'setup2';
+  setPinLabel('Confirm your PIN');
+  syncPlaceholder();
+  updateDots(false);
+  var inp = document.getElementById('pw-input');
+  if (inp) inp.value = '';
+  checking = false;
+}
+
+async function finishSetup(val) {
+  if (checking) return;
+  checking = true;
+  if (val !== pendingPin) {
+    clearAfterError('PINs did not match — start over');
+    mode = 'setup1';
+    pendingPin = '';
+    setPinLabel('Create your PIN');
+    syncPlaceholder();
+    return;
+  }
+  var h = await sha256(pendingPin);
+  setStoredHash(h);
+  unlockAndGo();
+}
+
+function onPinComplete(val) {
+  val = String(val || '').trim();
+  if (val.length !== MAX) return;
+  if (mode === 'login') tryLogin(val);
+  else if (mode === 'setup1') advanceSetup1(val);
+  else finishSetup(val);
 }
 
 // ── Number pad ─────────────────────────────────────────────
@@ -221,7 +301,7 @@ document.querySelectorAll('.pad-btn[data-n]').forEach(function(btn) {
     if (entered.length >= MAX || checking) return;
     entered += btn.dataset.n;
     updateDots(false);
-    if (entered.length === MAX) submit(entered);
+    if (entered.length === MAX) onPinComplete(entered);
   });
 });
 
@@ -235,16 +315,11 @@ document.getElementById('del-btn').addEventListener('click', function() {
 var inp = document.getElementById('pw-input');
 if (inp) {
   inp.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && inp.value) submit(inp.value);
-  });
-  inp.addEventListener('input', function() {
-    if (inp.value.length >= 4) {
-      // allow submit on Enter
-    }
-  });
-  // Also submit on Enter from text input
-  inp.addEventListener('keyup', function(e) {
-    if (e.key === 'Enter') submit(inp.value);
+    if (e.key !== 'Enter' || e.repeat) return;
+    var v = inp.value.trim();
+    if (v.length !== MAX) return;
+    e.preventDefault();
+    onPinComplete(v);
   });
 }
 </script>
