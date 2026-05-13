@@ -744,16 +744,75 @@ function importBackup(file) {
         showToast('Invalid backup file'); return;
       }
       const from = d.exported ? d.exported.slice(0,10) : 'unknown date';
-      if (!confirm('Restore from ' + from + '?\nThis REPLACES all current data.')) return;
+      const ans = (prompt(
+        'Restore from ' + from + '\n\n' +
+        'Type "merge"   — add entries; entries with the SAME date and amount are overwritten by the backup.\n' +
+        'Type "replace" — REPLACE all current data with the backup.\n',
+        'merge'
+      ) || '').trim().toLowerCase();
+      if (ans !== 'merge' && ans !== 'replace') { showToast('Import cancelled'); return; }
+
       bumpStorageReadGeneration();
-      expenses = d.expenses; incomes = d.incomes; banks = d.banks;
+
+      function keyDA(x) { return String(x.date) + '|' + Number(x.amount).toFixed(2); }
+      function mergeByDateAmount(existing, incoming) {
+        if (!Array.isArray(incoming) || !incoming.length) return { merged: existing.slice(), overwritten: 0, added: 0 };
+        const keys = new Set();
+        const ids  = new Set();
+        incoming.forEach(x => {
+          keys.add(keyDA(x));
+          if (x && x.id != null) ids.add(x.id);
+        });
+        let overwritten = 0;
+        const kept = existing.filter(x => {
+          const hit = keys.has(keyDA(x)) || (x && x.id != null && ids.has(x.id));
+          if (hit) overwritten++;
+          return !hit;
+        });
+        return { merged: kept.concat(incoming), overwritten: overwritten, added: incoming.length - overwritten };
+      }
+      function mergeById(existing, incoming) {
+        if (!Array.isArray(incoming) || !incoming.length) return existing.slice();
+        const ids = new Set(incoming.map(x => x && x.id).filter(id => id != null));
+        return existing.filter(x => x && x.id != null ? !ids.has(x.id) : true).concat(incoming);
+      }
+
+      let expRes = { overwritten: 0, added: 0 };
+      let incRes = { overwritten: 0, added: 0 };
+
+      if (ans === 'replace') {
+        expenses = d.expenses; incomes = d.incomes; banks = d.banks;
+        if (d.recurring    && typeof recurring    !== 'undefined') recurring    = d.recurring;
+        if (d.networthHist && typeof networthHist !== 'undefined') networthHist = d.networthHist;
+        if (d.budgets      && typeof budgets      !== 'undefined') budgets      = d.budgets;
+        if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = d.petrolLog;
+      } else {
+        expRes = mergeByDateAmount(expenses, d.expenses); expenses = expRes.merged;
+        incRes = mergeByDateAmount(incomes,  d.incomes);  incomes  = incRes.merged;
+        if (Array.isArray(d.banks)) banks = mergeById(banks, d.banks);
+        if (d.recurring    && typeof recurring    !== 'undefined') recurring    = mergeById(recurring, d.recurring);
+        if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = mergeById(petrolLog, d.petrolLog);
+        if (d.networthHist && typeof networthHist !== 'undefined') {
+          const nDates = new Set(d.networthHist.map(n => n.date));
+          networthHist = networthHist.filter(x => !nDates.has(x.date)).concat(d.networthHist);
+        }
+        if (d.budgets && typeof budgets !== 'undefined') {
+          budgets = Object.assign({}, budgets, d.budgets);
+        }
+      }
+
       saveExp(); saveInc(); saveBanks();
-      if (d.recurring    && typeof recurring    !== 'undefined') { recurring    = d.recurring;    if(typeof saveRec==='function') saveRec(); }
-      if (d.networthHist && typeof networthHist !== 'undefined') { networthHist = d.networthHist; if(typeof saveNWH==='function') saveNWH(); }
-      if (d.budgets      && typeof budgets      !== 'undefined') { budgets      = d.budgets;      if(typeof saveBud==='function') saveBud(); }
-      if (d.petrolLog    && typeof petrolLog    !== 'undefined') { petrolLog    = d.petrolLog;    if(typeof savePetrol==='function') savePetrol(); }
+      if (typeof saveRec    === 'function') saveRec();
+      if (typeof saveNWH    === 'function') saveNWH();
+      if (typeof saveBud    === 'function') saveBud();
+      if (typeof savePetrol === 'function') savePetrol();
       render();
-      showToast('Data restored');
+      if (ans === 'replace') {
+        showToast('Data replaced from backup');
+      } else {
+        showToast('Merged: +' + (expRes.added + incRes.added) + ' new, ' +
+                  (expRes.overwritten + incRes.overwritten) + ' overwritten by date+amount');
+      }
     } catch (err) {
       showToast('Could not read backup file');
     }
