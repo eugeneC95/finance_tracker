@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Hello</title>
+<style>
+  body { margin:0; padding:40px; font:16px/1.5 system-ui, sans-serif;
+         background:#1a1a1a; color:#fff; min-height:100vh; }
+  pre  { background:#000; padding:12px; border-radius:6px; overflow:auto; }
+  .ok  { color:#5f5; }
+  .bad { color:#f55; }
+</style>
+</head>
+<body>
+<h1>Finance Tracker — Smoke Test</h1>
+<p>If you see this dark page with text and a green "JS ran" line below, your
+browser and GitHub Pages are healthy. The issue is specific to
+<code>index.html</code>.</p>
+<p id="js-line" class="bad">JS did NOT run.</p>
+<pre id="info"></pre>
+<script>
+document.getElementById('js-line').textContent = 'JS ran successfully.';
+document.getElementById('js-line').className = 'ok';
+var info = {
+  ua: navigator.userAgent,
+  href: location.href,
+  hasServiceWorker: 'serviceWorker' in navigator,
+  controlledBy: (navigator.serviceWorker && navigator.serviceWorker.controller)
+                ? navigator.serviceWorker.controller.scriptURL : '(none)',
+  storageOk: (function(){ try { localStorage.setItem('t','1'); localStorage.removeItem('t'); return true; } catch(e){ return false; } })(),
+};
+document.getElementById('info').textContent = JSON.stringify(info, null, 2);
+</script>
+</body>
+</html>
