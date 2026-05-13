@@ -1330,20 +1330,6 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
-      <div class="card">
-        <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
-        <div class="panel-bd">
-          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:var(--s4);line-height:1.6">
-            Export all your data as a JSON file. Store it safely — import it back anytime to restore.
-          </p>
-          <div style="display:flex;gap:var(--s3)">
-            <button class="btn-ghost" id="export-btn">⬇ Export backup</button>
-            <button class="btn-ghost green" id="import-btn">⬆ Import backup</button>
-            <input type="file" id="import-file" accept=".json" style="display:none"/>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -1690,6 +1676,23 @@ body.dark .fs-btn.active { color: #000; }
               <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <button class="btn btn-primary" id="ab-now-btn" style="height:36px;font-size:var(--f-sm)">⬇ Backup now</button>
                 <span id="ab-status" style="font-size:var(--f-xs);color:var(--ink3)">Auto-backup is disabled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
+            <div class="panel-bd">
+              <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:var(--s4);line-height:1.6">
+                Export all your data as a JSON file. Store it safely — import it back anytime to restore.
+                On import you can <strong>merge</strong> (entries with the same date and amount are overwritten) or <strong>replace</strong> everything.
+              </p>
+              <div style="display:flex;gap:var(--s3);flex-wrap:wrap">
+                <button class="btn-ghost" id="export-btn">⬇ Export backup</button>
+                <button class="btn-ghost green" id="import-btn">⬆ Import backup</button>
+                <input type="file" id="import-file" accept=".json" style="display:none"/>
               </div>
             </div>
           </div>

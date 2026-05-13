@@ -598,16 +598,20 @@ function renderDayBreakdown() {
 // ╔══════════════════════════════════════════════════════════╗
 //   AUTO-BACKUP TO FOLDER
 // ╚══════════════════════════════════════════════════════════╝
-function performAutoBackup() {
-  if (!autoBackup.enabled) return;
+function downloadLocalBackup() {
   var payload = {
     version: 4,
     exported: new Date().toISOString(),
-    expenses: expenses, incomes: incomes, banks: banks,
-    recurring: recurring, networthHist: networthHist, budgets: budgets,
+    expenses:     (typeof expenses     !== 'undefined') ? expenses     : [],
+    incomes:      (typeof incomes      !== 'undefined') ? incomes      : [],
+    banks:        (typeof banks        !== 'undefined') ? banks        : [],
+    recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
+    networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
+    budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
+    petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
   };
   var json = JSON.stringify(payload, null, 2);
-  var blob = new Blob([json], {type:'application/json'});
+  var blob = new Blob([json], { type: 'application/json' });
   var url  = URL.createObjectURL(blob);
   var opts = {
     url:      url,
@@ -618,9 +622,20 @@ function performAutoBackup() {
   };
   chrome.downloads.download(opts, function(id) {
     URL.revokeObjectURL(url);
-    if (id) showToast('Auto-backup saved');
-    else    showToast('Auto-backup: check Downloads folder');
+    if (id) {
+      showToast('Backup saved (' + (payload.expenses.length + payload.incomes.length) + ' entries)');
+    } else {
+      showToast('Backup: check Downloads folder');
+    }
   });
+  return true;
+}
+
+// Daily auto-backup uses the same downloader; the toggle only gates the
+// automatic trigger, not the manual "Backup now" button below.
+function performAutoBackup() {
+  if (!autoBackup.enabled) return;
+  downloadLocalBackup();
 }
 
 function updateAutoBackupUI() {
@@ -637,16 +652,20 @@ function updateAutoBackupUI() {
   }
 }
 
-// Auto-backup on open (once per day)
+// Auto-backup on open (once per day). Marks "today done" only after the
+// download is triggered, so an early failure doesn't suppress tomorrow's run.
 (function checkAutoBackup() {
   var KEY = 'last_autobackup';
   chrome.storage.local.get([KEY], function(r) {
     var last  = r[KEY] || '';
     var today = new Date().toISOString().slice(0,10);
-    if (autoBackup.enabled && last !== today) {
-      chrome.storage.local.set({[KEY]: today});
-      setTimeout(performAutoBackup, 2000); // slight delay so data is loaded
-    }
+    if (!autoBackup.enabled || last === today) return;
+    setTimeout(function() {
+      try {
+        downloadLocalBackup();
+        chrome.storage.local.set({ [KEY]: today });
+      } catch (e) { console.warn('auto-backup', e); }
+    }, 2500);
   });
 })();
 
@@ -706,7 +725,7 @@ if (abFolder) abFolder.addEventListener('change', function(e) {
 });
 
 var abNowBtn = document.getElementById('ab-now-btn');
-if (abNowBtn) abNowBtn.addEventListener('click', performAutoBackup);
+if (abNowBtn) abNowBtn.addEventListener('click', downloadLocalBackup);
 
 // Nav tab triggers
 document.querySelectorAll('.nav-item').forEach(function(btn) {
