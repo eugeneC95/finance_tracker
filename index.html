@@ -1532,7 +1532,7 @@ body.dark .fs-btn.active { color: #041312; }
   #mom-exp { font-size: 10px !important; margin-top: 2px !important; }
 
   /* Add Expense form: amount becomes the hero input (fewer taps to commit).
-     Keep description / date small. The category grid stays 4-col. */
+     Keep description / date small. The category grid is 5-col on phone. */
   #page-expenses #exp-amount {
     height: 48px !important;
     font-size: 20px !important;
@@ -1587,28 +1587,28 @@ body.dark .fs-btn.active { color: #041312; }
   textarea { font-size: 16px !important; }
   input:not([type="checkbox"]):not([type="radio"])  { height: 48px; }
 
-  /* Category grid: 4 columns, compact tap targets */
+  /* Category grid: 5 columns, shorter rows (v22 layer adds !important bg) */
   .cat-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
   }
   .cat-btn {
-    padding: 10px 4px;
-    font-size: 10px;
+    padding: 6px 3px;
+    font-size: 9px;
     font-weight: 600;
-    min-height: 68px;
+    min-height: 48px;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 2px;
     line-height: 1.15;
     text-align: center;
     word-break: break-word;
     hyphens: auto;
   }
-  .cat-btn .ci { font-size: 20px; line-height: 1; }
+  .cat-btn .ci { font-size: 17px; line-height: 1; }
 
   /* Transaction items: always show actions on touch */
   .tx-item    { padding: 8px 0; }
@@ -1647,9 +1647,9 @@ body.dark .fs-btn.active { color: #041312; }
 @media (max-width: 374px) {
   .nav-item { font-size: 9px; padding: 4px 2px 6px; }
   .nav-item .icon { font-size: 16px; }
-  .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .cat-btn { padding: 8px 3px; font-size: 9px; min-height: 64px; }
-  .cat-btn .ci { font-size: 18px; }
+  .cat-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+  .cat-btn { padding: 5px 2px; font-size: 8px; min-height: 42px; }
+  .cat-btn .ci { font-size: 15px; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1887,6 +1887,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
     border-width: 1px !important;
     background: var(--card-bg) !important;
   }
+  /* Win over the rule above (!important) so selected state matches .pill.active */
+  .cat-btn.active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary-dk) !important;
+  }
+  body.dark .cat-btn.active {
+    background: var(--primary) !important;
+    color: #041312 !important;
+    border-color: var(--primary-dk) !important;
+  }
 
   /* --- Filter pills: pill all the way --- */
   .pill {
@@ -2119,7 +2130,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v34 · 2026-05-14';
+  var BUILD_VERSION    = 'v35 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2975,7 +2986,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v34 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v35 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3162,12 +3173,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v34 · 2026-05-14</div>
-<script src="app.js?v=34"></script>
-<script src="sync.js?v=34"></script>
-<script src="features.js?v=34"></script>
-<script src="extras.js?v=34"></script>
-<script src="import-inline.js?v=34"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v35 · 2026-05-14</div>
+<script src="app.js?v=35"></script>
+<script src="sync.js?v=35"></script>
+<script src="features.js?v=35"></script>
+<script src="extras.js?v=35"></script>
+<script src="import-inline.js?v=35"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
