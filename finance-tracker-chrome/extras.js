@@ -74,6 +74,16 @@ function buildCatSelects() {
 // ╔══════════════════════════════════════════════════════════╗
 //   PETROL TRACKER
 // ╚══════════════════════════════════════════════════════════╝
+/** Subsidised RON95-style ceiling; user can override per fill-up. */
+var DEFAULT_PETROL_PPL = 1.99;
+
+function ensurePetrolPplDefault() {
+  var pEl = document.getElementById('pt-ppl-in');
+  if (!pEl) return;
+  var raw = String(pEl.value != null ? pEl.value : '').trim();
+  if (raw === '' || raw === '-' || isNaN(parseFloat(raw))) pEl.value = String(DEFAULT_PETROL_PPL);
+}
+
 function updatePetrolHint() {
   var l   = parseFloat(document.getElementById('pt-litres-in') ? document.getElementById('pt-litres-in').value : '');
   var ppl = parseFloat(document.getElementById('pt-ppl-in')    ? document.getElementById('pt-ppl-in').value    : '');
@@ -109,7 +119,7 @@ function addPetrolEntry() {
 
   if (stEl) stEl.value = '';
   if (lEl)  lEl.value  = '';
-  if (pEl)  pEl.value  = '';
+  if (pEl)  pEl.value  = String(DEFAULT_PETROL_PPL);
   if (oEl)  oEl.value  = '';
   var hint = document.getElementById('pt-calc-hint');
   if (hint) hint.textContent = '';
@@ -145,6 +155,8 @@ function renderPetrolLog() {
   setEl('pt-litres', totalLitres.toFixed(1) + ' L');
   setEl('pt-ppl',    'RM ' + avgPpl.toFixed(3));
   setEl('pt-cpk',    cpk > 0 ? 'RM ' + cpk.toFixed(3) + '/km' : '—');
+
+  ensurePetrolPplDefault();
 
   var el = document.getElementById('pt-list');
   if (!el) return;

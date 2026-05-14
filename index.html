@@ -1642,6 +1642,12 @@ body.dark .fs-btn.active { color: #041312; }
   color: var(--ink3);
   line-height: 1.45;
 }
+#page-petrol .pt-form-card .pt-eff-note {
+  margin-top: 8px;
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  line-height: 1.5;
+}
 #page-petrol .panel-bd--flush {
   padding: 0;
 }
@@ -2668,7 +2674,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v46 · 2026-05-14';
+  var BUILD_VERSION    = 'v47 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3460,7 +3466,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v46 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v47 · 2026-05-14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3511,7 +3517,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
             <div>
               <label class="lbl" for="pt-ppl-in">Price/litre (RM)</label>
-              <input type="number" id="pt-ppl-in" placeholder="2.05" min="0" step="0.01"/>
+              <input type="number" id="pt-ppl-in" value="1.99" placeholder="1.99" min="0" step="0.01" title="Default 1.99 (subsidised RON95); change if you paid a different price"/>
             </div>
             <div>
               <label class="lbl" for="pt-odo">Odometer (km)</label>
@@ -3526,6 +3532,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
           </div>
           <div class="pt-calc-hint" id="pt-calc-hint"></div>
+          <p class="pt-eff-note">Efficiency is <strong>L/100 km</strong> for this fill: litres ÷ km since your <em>previous</em> fill that had an odometer. <strong>Cost/km</strong> uses litres (excluding the first odometer fill) ÷ total km from first to last odometer × your average RM/L — needs at least two odometer readings.</p>
         </div>
       </div>
 
@@ -3663,12 +3670,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v46 · 2026-05-14</div>
-<script src="app.js?v=46"></script>
-<script src="sync.js?v=46"></script>
-<script src="features.js?v=46"></script>
-<script src="extras.js?v=46"></script>
-<script src="import-inline.js?v=46"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v47 · 2026-05-14</div>
+<script src="app.js?v=47"></script>
+<script src="sync.js?v=47"></script>
+<script src="features.js?v=47"></script>
+<script src="extras.js?v=47"></script>
+<script src="import-inline.js?v=47"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
