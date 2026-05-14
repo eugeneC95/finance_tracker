@@ -2074,6 +2074,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
     if (m) m.textContent = 'Still loading? Your device may be stuck on an old offline copy.';
     if (a) a.style.display = 'block';
   }, 7000);
+  // If the bar never got ft-app-ready (dead JS) but the 7s diagnostic also did not run (background tab, etc.), hide the loading strip only — never hide while recovery links are visible.
+  setTimeout(function() {
+    var b = document.getElementById('ft-boot');
+    var a = document.getElementById('ft-boot-actions');
+    if (!b || b.style.display === 'none') return;
+    if (a && a.style.display !== 'none') return;
+    hideBar();
+  }, 25000);
 })();
 </script>
 
@@ -2130,7 +2138,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v35 · 2026-05-14';
+  var BUILD_VERSION    = 'v36 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2986,7 +2994,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v35 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v36 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3172,13 +3180,26 @@ body.dark .ft-fab { background: #fff; color: #000; }
 })();
 </script>
 
+<div id="mobile-nav-more-sheet" class="mobile-nav-sheet" aria-hidden="true">
+  <div class="mobile-nav-sheet__backdrop" tabindex="-1"></div>
+  <div class="mobile-nav-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="mobile-nav-more-title">
+    <div class="mobile-nav-sheet__hd" id="mobile-nav-more-title">More</div>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="search"><span class="mobile-nav-sheet__ico" aria-hidden="true">🔍</span> Search</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="recurring"><span class="mobile-nav-sheet__ico" aria-hidden="true">🔁</span> Recurring</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="trends"><span class="mobile-nav-sheet__ico" aria-hidden="true">📈</span> Trends</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="import"><span class="mobile-nav-sheet__ico" aria-hidden="true">📥</span> Import</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="petrol"><span class="mobile-nav-sheet__ico" aria-hidden="true">⛽</span> Petrol log</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="report"><span class="mobile-nav-sheet__ico" aria-hidden="true">📄</span> Report</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v35 · 2026-05-14</div>
-<script src="app.js?v=35"></script>
-<script src="sync.js?v=35"></script>
-<script src="features.js?v=35"></script>
-<script src="extras.js?v=35"></script>
-<script src="import-inline.js?v=35"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v36 · 2026-05-14</div>
+<script src="app.js?v=36"></script>
+<script src="sync.js?v=36"></script>
+<script src="features.js?v=36"></script>
+<script src="extras.js?v=36"></script>
+<script src="import-inline.js?v=36"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

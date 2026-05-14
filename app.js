@@ -148,14 +148,19 @@ function load() {
   const gen = _storageReadGen;
   chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS], r => {
     if (gen !== _storageReadGen) return;
-    expenses = r[KEY_EXP]   || [];
-    incomes  = r[KEY_INC]   || [];
-    banks    = r[KEY_BANKS] || [];
-    if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
-    applySettings();
-    render();
-    window.__ftAppReady = true;
-    try { window.dispatchEvent(new Event('ft-app-ready')); } catch (e) {}
+    try {
+      expenses = r[KEY_EXP]   || [];
+      incomes  = r[KEY_INC]   || [];
+      banks    = r[KEY_BANKS] || [];
+      if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
+      applySettings();
+      render();
+      window.__ftAppReady = true;
+    } catch (e) {
+      window.__ftAppReady = false;
+    } finally {
+      try { window.dispatchEvent(new Event('ft-app-ready')); } catch (e) {}
+    }
   });
 }
 function saveExp()   { chromeStorage.local.set({[KEY_EXP]:   expenses}); }
@@ -185,6 +190,18 @@ function buildCatButtons() {
     wrap.appendChild(btn);
   });
 }
+
+// Schedule storage load before later DOM wire-up so a missing control (e.g. HTML/JS mismatch) cannot block ft-app-ready.
+(function initFromStorage() {
+  try {
+    const ed = document.getElementById('exp-date');
+    const id = document.getElementById('inc-date');
+    if (ed) ed.value = todayStr();
+    if (id) id.value = todayStr();
+    buildCatButtons();
+  } catch (e) {}
+  load();
+})();
 
 // ── Settings ───────────────────────────────────────────────
 function applySettings() {
@@ -946,8 +963,3 @@ document.getElementById('import-file').addEventListener('change', e => importBac
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addBank(); })
 );
 
-// ── Init ───────────────────────────────────────────────────
-document.getElementById('exp-date').value = todayStr();
-document.getElementById('inc-date').value = todayStr();
-buildCatButtons();
-load();
