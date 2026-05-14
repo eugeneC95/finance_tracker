@@ -319,6 +319,52 @@ body {
   margin-bottom: var(--s2);
 }
 
+.ft-check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: var(--f-sm);
+  line-height: 1.45;
+  color: var(--ink2);
+  cursor: pointer;
+  user-select: none;
+}
+.ft-check-input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  border-radius: 6px;
+  border: 2px solid var(--line2);
+  background: var(--card-bg2);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.ft-check-input:hover { border-color: var(--ink3); }
+.ft-check-input:checked {
+  background: var(--primary);
+  border-color: var(--primary-dk);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+}
+.ft-check-input:checked::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 9px;
+  margin: 3px auto 0;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ft-check-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+body.dark .ft-check-input:checked::after { border-color: #041312; }
+
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -1184,8 +1230,8 @@ body.dark .fs-btn.active { color: #000; }
             </div>
           </div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
-          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+        <label class="ft-check-label">
+          <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
           <span>Also save as a recurring entry (auto-adds every month)</span>
         </label>
       </div>
@@ -1277,8 +1323,8 @@ body.dark .fs-btn.active { color: #000; }
             </div>
           </div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
-          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+        <label class="ft-check-label">
+          <input type="checkbox" id="inc-recurring" class="ft-check-input"/>
           <span>Also save as a recurring entry (auto-adds every month)</span>
         </label>
       </div>

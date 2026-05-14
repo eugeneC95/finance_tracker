@@ -498,6 +498,57 @@ body {
   margin-bottom: var(--s2);
 }
 
+/* Recurring option — custom checkbox (avoids default huge circle on mobile) */
+.ft-check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: var(--f-sm);
+  line-height: 1.45;
+  color: var(--ink2);
+  cursor: pointer;
+  user-select: none;
+}
+.ft-check-input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  border-radius: 6px;
+  border: 2px solid var(--line2);
+  background: var(--card-bg2);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.ft-check-input:hover {
+  border-color: var(--ink3);
+}
+.ft-check-input:checked {
+  background: var(--primary);
+  border-color: var(--primary-dk);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+}
+.ft-check-input:checked::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 9px;
+  margin: 3px auto 0;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ft-check-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+body.dark .ft-check-input:checked::after {
+  border-color: #041312;
+}
+
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -1296,7 +1347,7 @@ body.dark .fs-btn.active { color: #041312; }
     /* Reserve space for the iPhone status bar / Dynamic Island at the top and
        the floating bottom nav + home indicator at the bottom. */
     padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Sidebar: thin strip, truly fixed at the bottom of the viewport. */
@@ -1321,7 +1372,7 @@ body.dark .fs-btn.active { color: #041312; }
 
   .sb-nav {
     flex-direction: row;
-    padding: 4px 0 0;
+    padding: 2px 0 0;
     gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -1338,8 +1389,8 @@ body.dark .fs-btn.active { color: #041312; }
     flex: 0 0 25%;            /* exactly 4 items visible per screen */
     min-width: 0;
     flex-direction: column;
-    gap: 2px;
-    padding: 8px 4px 10px;
+    gap: 1px;
+    padding: 5px 2px 7px;
     border-radius: 8px;
     font-size: 10px;
     color: rgba(255,255,255,.55);
@@ -1349,7 +1400,7 @@ body.dark .fs-btn.active { color: #041312; }
     scroll-snap-align: start;
     scroll-snap-stop: always;
   }
-  .nav-item .icon { font-size: 20px; width: auto; }
+  .nav-item .icon { font-size: 18px; width: auto; line-height: 1; }
   .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
 
   /* Tiny right-edge fade so users see there's more to swipe to */
@@ -1531,9 +1582,10 @@ body.dark .fs-btn.active { color: #041312; }
   }
 
   /* MUST be 16px to prevent iOS auto-zoom on focus */
-  input, select, textarea { font-size: 16px !important; }
-  input  { height: 48px; }
-  select { height: 48px; }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea { font-size: 16px !important; }
+  input:not([type="checkbox"]):not([type="radio"])  { height: 48px; }
 
   /* Category grid: 4 columns, compact tap targets */
   .cat-grid {
@@ -1559,8 +1611,8 @@ body.dark .fs-btn.active { color: #041312; }
   .cat-btn .ci { font-size: 20px; line-height: 1; }
 
   /* Transaction items: always show actions on touch */
-  .tx-item    { padding: 10px 0; }
-  .tx-icon    { width: 38px; height: 38px; font-size: 17px; }
+  .tx-item    { padding: 8px 0; }
+  .tx-icon    { width: 32px; height: 32px; font-size: 15px; }
   .tx-actions { opacity: 1 !important; }
   .tx-action-btn { width: 32px; height: 32px; font-size: 13px; }
 
@@ -1587,14 +1639,14 @@ body.dark .fs-btn.active { color: #041312; }
   }
 
   #ft-build {
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 4px) !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px) + 4px) !important;
   }
 }
 
 /* Tiny phones (SE, 320px) */
 @media (max-width: 374px) {
-  .nav-item { font-size: 9px; padding: 6px 3px 8px; }
-  .nav-item .icon { font-size: 18px; }
+  .nav-item { font-size: 9px; padding: 4px 2px 6px; }
+  .nav-item .icon { font-size: 16px; }
   .cat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   .cat-btn { padding: 8px 3px; font-size: 9px; min-height: 64px; }
   .cat-btn .ci { font-size: 18px; }
@@ -1608,7 +1660,7 @@ body.dark .fs-btn.active { color: #041312; }
 .ft-fab {
   position: fixed;
   right: 16px;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px);
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px) + 14px);
   width: 56px;
   height: 56px;
   border-radius: 28px;
@@ -1728,7 +1780,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 @media (max-width: 680px) {
 
   body {
-    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
     background:
       radial-gradient(100% 400px at 50% -8%, rgba(15, 118, 110, 0.14), transparent 60%),
       #e2e7e3 !important;
@@ -1810,12 +1862,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
   }
 
   /* --- Inputs: rounded, soft fill, no border --- */
-  input, select, textarea {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
     border-radius: 14px !important;
     border: 1px solid transparent !important;
     background: var(--card-bg2) !important;
   }
-  input:focus, select:focus, textarea:focus {
+  input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
     border-color: var(--ink) !important;
     background: var(--card-bg) !important;
   }
@@ -1854,15 +1908,15 @@ body.dark .ft-fab { background: #fff; color: #000; }
   /* --- Transactions: calmer row rhythm (icon + text + amount + small actions) --- */
   .tx-item {
     align-items: flex-start;
-    padding: 12px 0 !important;
-    gap: 10px !important;
+    padding: 8px 0 !important;
+    gap: 8px !important;
   }
   .tx-icon {
     border-radius: 50% !important;
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 16px !important;
-    margin-top: 2px;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+    margin-top: 1px;
   }
   .tx-info { padding-top: 2px; }
   .tx-name { font-size: 14px !important; font-weight: 600; }
@@ -1910,11 +1964,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
   /* --- Bottom nav: floating capsule, lifted off screen edges --- */
   .sb {
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
     left: 8px !important;
     right: 8px !important;
     width: auto !important;
-    border-radius: 22px !important;
+    border-radius: 18px !important;
     overflow: hidden !important;
     background: rgba(20, 20, 20, .94) !important;
     -webkit-backdrop-filter: blur(20px);
@@ -1932,23 +1986,30 @@ body.dark .ft-fab { background: #fff; color: #000; }
   body.dark .sb::after {
     background: linear-gradient(to left, rgba(28,28,32,.94), transparent) !important;
   }
-  .sb-nav { padding: 5px 4px 7px !important; }
+  .sb-nav { padding: 2px 4px 3px !important; }
   .nav-item {
     color: rgba(255, 255, 255, .55) !important;
-    border-radius: 14px !important;
+    border-radius: 12px !important;
+    padding: 4px 2px 5px !important;
+    gap: 0 !important;
+    font-size: 9.5px !important;
+  }
+  .nav-item .icon {
+    font-size: 17px !important;
+    line-height: 1 !important;
   }
   .nav-item.active {
     background: rgba(255, 255, 255, .15) !important;
     color: #fff !important;
   }
 
-  /* --- FAB: lifted higher above the floating capsule, bigger shadow --- */
+  /* --- FAB: lifted above the floating capsule --- */
   .ft-fab {
-    bottom: calc(86px + env(safe-area-inset-bottom, 0px) + 12px) !important;
-    width: 60px !important;
-    height: 60px !important;
-    border-radius: 30px !important;
-    font-size: 34px !important;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px) + 10px) !important;
+    width: 54px !important;
+    height: 54px !important;
+    border-radius: 27px !important;
+    font-size: 30px !important;
     box-shadow:
       0 4px 12px rgba(0, 0, 0, .25),
       0 12px 28px rgba(0, 0, 0, .22) !important;
@@ -1956,7 +2017,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
   /* --- Bottom-right build stamp: align above the floating capsule --- */
   #ft-build {
-    bottom: calc(86px + env(safe-area-inset-bottom, 0px) + 6px) !important;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px) + 4px) !important;
   }
 
   /* --- Settings rows: gentler dividers --- */
@@ -2056,7 +2117,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var FT_LOCK_PIN      = '000000';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v31 · 2026-05-14';
+  var BUILD_VERSION    = 'v32 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2320,8 +2381,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
           </div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
-          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+        <label class="ft-check-label">
+          <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
           <span>Also save as a recurring entry (auto-adds every month)</span>
         </label>
       </div>
@@ -2413,8 +2474,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
           </div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:var(--f-sm);color:var(--ink2);cursor:pointer;user-select:none">
-          <input type="checkbox" id="exp-recurring" style="width:auto;height:auto;display:inline"/>
+        <label class="ft-check-label">
+          <input type="checkbox" id="inc-recurring" class="ft-check-input"/>
           <span>Also save as a recurring entry (auto-adds every month)</span>
         </label>
       </div>
@@ -2914,7 +2975,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v31 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v32 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3101,12 +3162,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v31 · 2026-05-14</div>
-<script src="app.js?v=31"></script>
-<script src="sync.js?v=31"></script>
-<script src="features.js?v=31"></script>
-<script src="extras.js?v=31"></script>
-<script src="import-inline.js?v=31"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v32 · 2026-05-14</div>
+<script src="app.js?v=32"></script>
+<script src="sync.js?v=32"></script>
+<script src="features.js?v=32"></script>
+<script src="extras.js?v=32"></script>
+<script src="import-inline.js?v=32"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

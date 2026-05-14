@@ -207,7 +207,7 @@ function applySettings() {
   let cs = document.getElementById('compact-style');
   if (!cs) { cs = document.createElement('style'); cs.id = 'compact-style'; document.head.appendChild(cs); }
   cs.textContent = settings.compact
-    ? '.tx-item{padding:5px 0!important}.tx-icon{width:28px!important;height:28px!important;font-size:13px!important}'
+    ? '.tx-item{padding:4px 0!important}.tx-icon{width:24px!important;height:24px!important;font-size:12px!important}'
     : '';
 }
 
