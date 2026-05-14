@@ -2674,7 +2674,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v47 · 2026-05-14';
+  var BUILD_VERSION    = 'v48 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3118,7 +3118,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <span id="ut-summary-mv" style="font-size:var(--f-lg);font-weight:700">RM 0.00</span>
         </div>
         <div class="panel-bd">
-          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. Backup version 5 includes holdings and NAV history. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
+          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. <strong>Google Sheets sync</strong> (after you redeploy <code style="font-size:11px">google-apps-script.js</code>) writes tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>. Backup version 5 includes holdings and NAV. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
           <div id="ut-root"></div>
         </div>
       </div>
@@ -3447,6 +3447,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 <strong>Setup (one time, ~5 minutes):</strong><br/>
                 1. Go to <strong>script.google.com</strong> → New project<br/>
                 2. Delete all existing code, paste everything from <strong>google-apps-script.js</strong> (in the zip)<br/>
+                &nbsp;&nbsp;· Creates tabs including <strong>UTHoldings</strong> and <strong>UTNav</strong> for unit trust sync on first save<br/>
                 3. Click Save → <strong>Deploy → New deployment</strong><br/>
                 4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
                 5. Click Deploy → Google will ask you to authorise → click Allow<br/>
@@ -3466,7 +3467,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v47 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v48 · 2026-05-14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3670,12 +3671,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v47 · 2026-05-14</div>
-<script src="app.js?v=47"></script>
-<script src="sync.js?v=47"></script>
-<script src="features.js?v=47"></script>
-<script src="extras.js?v=47"></script>
-<script src="import-inline.js?v=47"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v48 · 2026-05-14</div>
+<script src="app.js?v=48"></script>
+<script src="sync.js?v=48"></script>
+<script src="features.js?v=48"></script>
+<script src="extras.js?v=48"></script>
+<script src="import-inline.js?v=48"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

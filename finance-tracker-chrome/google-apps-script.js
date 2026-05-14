@@ -186,6 +186,8 @@ function saveAllData(payload) {
   writeTab('Budgets',   budgetsToRows(payload.budgets || {}), ['cat','amount']);
   writeTab('Petrol',    payload.petrolLog    || [], ['id','station','litres','ppl','odo','date','total']);
   writeTab('NetWorth',  payload.networthHist || [], ['date','total']);
+  writeTab('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','units','avgCost','purchaseDate','notes']);
+  writeTab('UTNav',     payload.unitTrustNav     || [], ['fundId','date','nav']);
 
   var meta = getOrCreateSheet('_Meta');
   meta.clearContents();
@@ -222,6 +224,8 @@ function loadAllData() {
     budgets:      rowsToBudgets(readTab('Budgets')),
     petrolLog:    readTab('Petrol'),
     networthHist: readTab('NetWorth'),
+    unitTrustHoldings: readTab('UTHoldings'),
+    unitTrustNav:      readTab('UTNav'),
   };
 }
 

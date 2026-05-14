@@ -65,6 +65,8 @@ function buildPayload() {
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
     petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
+    unitTrustHoldings: (typeof utHoldings !== 'undefined') ? utHoldings : [],
+    unitTrustNav:      (typeof utNavPoints !== 'undefined') ? utNavPoints : [],
   };
 }
 
@@ -349,6 +351,22 @@ function syncLoad(opts) {
         });
       }
 
+      if ('unitTrustHoldings' in p || 'unitTrustNav' in p) {
+        var arrH = Array.isArray(p.unitTrustHoldings) ? p.unitTrustHoldings : [];
+        var arrN = Array.isArray(p.unitTrustNav) ? p.unitTrustNav : [];
+        var localHasUt =
+          (typeof utHoldings !== 'undefined' && utHoldings.length > 0) ||
+          (typeof utNavPoints !== 'undefined' && utNavPoints.length > 0);
+        if (arrH.length > 0 || arrN.length > 0 || !localHasUt) {
+          if (typeof utHoldings !== 'undefined') {
+            utHoldings = typeof utSanitizeHoldings === 'function' ? utSanitizeHoldings(arrH) : [];
+          }
+          if (typeof utNavPoints !== 'undefined') {
+            utNavPoints = typeof utSanitizeNav === 'function' ? utSanitizeNav(arrN) : [];
+          }
+        }
+      }
+
       try {
         if (typeof viewMonth !== 'undefined') {
           var best = null;
@@ -372,6 +390,8 @@ function syncLoad(opts) {
       if (typeof saveBud === 'function') saveBud();
       if (typeof savePetrol === 'function') savePetrol();
       if (typeof saveNWH === 'function') saveNWH();
+      if (typeof saveUtHoldings === 'function') saveUtHoldings();
+      if (typeof saveUtNav === 'function') saveUtNav();
 
       syncState.lastLoaded = new Date().toISOString();
       setSyncStatus('ok', 'Loaded ' + fmtTime(syncState.lastLoaded));

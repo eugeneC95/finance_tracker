@@ -14,7 +14,7 @@ STACK
 - `app.js` — data model, persistence hooks, `fmt`, charts, `renderTxList`, `activateNavTab`, `EXP_CAT_GROUPS` (expense category groups for picker UI).
 - `features.js` — global search (`#search-input`, top sheet from 🔍 on Expenses, `renderSearch`), optional auto-backup UI + daily trigger, dedupe for import, Ctrl+F → open search on Expenses.
 - `extras.js` — supplementary behaviours (keep in parity when touching related flows).
-- `sync.js` — Sheet pull/push, chunked save path for large payloads on PWA.
+- `sync.js` — Sheet pull/push (`buildPayload`), chunked save; includes **unit trust** holdings + NAV when the deployed `google-apps-script.js` exposes `UTHoldings` / `UTNav` tabs.
 - `import-inline.js` — TNG/UOB-style wizard; precached by SW.
 - `service-worker.js` — `CACHE` name + `SHELL` list (must match files you ship offline).
 - Recovery: `nosw.html` (clear SW/cache), `lock.html` (legacy redirect recovery; primary UX uses `#ft-boot` overlay in index).
