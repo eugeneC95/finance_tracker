@@ -4,7 +4,7 @@ Last updated: 2026-05-14
 
 PURPOSE
 -------
-- Offline-first PWA: static HTML/CSS/JS, installable, local data in IndexedDB (via idb/chromium patterns in app).
+- Offline-first PWA: static HTML/CSS/JS, installable; PWA persists via `localStorage` (see `chromeStorage` adapter at top of `app.js`). Extension uses `chrome.storage.local`.
 - Optional cloud: Google Apps Script backend; user deploys `google-apps-script.js` from repo root (keep in sync with `sync.js`).
 - Mirror: `finance-tracker-chrome/` — same UI logic; `chrome.storage` + extension background for Sheets fetch (host_permissions avoid PWA POST/redirect body loss).
 
