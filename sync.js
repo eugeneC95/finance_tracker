@@ -165,14 +165,14 @@ function syncPing() {
 // Realistic datasets (~37 expense rows + other tabs) still URL-encode to
 // >6500 chars, so the code fell back to POST and hit the same bug.
 //
-// v17: if encodeURIComponent(json) >= SAVE_URL_LIMIT, send a sequential chain
-// of GET ?action=save_chunk&id=&seq=&total=&data=... (see google-apps-script.js).
-// Each chunk stays under URL limits; no POST body is used on the PWA path.
+// v17: if encodeURIComponent(json) >= SAVE_URL_LIMIT, send save_chunk GETs
+// (see google-apps-script.js). Chunks run in small parallel batches on the PWA
+// to cut wall-clock time vs strictly sequential requests.
 var SAVE_URL_LIMIT = 6500;
-// Raw JSON substring length per chunk. encodeURIComponent can expand UTF-8
-// heavily; 3000 raw chars could exceed URL limits and cause fetch failures
-// (opaque "network" errors on some browsers). 1600 keeps each request safer.
-var CHUNK_PAYLOAD_CHARS = 1600;
+// Raw JSON per chunk; balance URL limits vs number of round-trips.
+var CHUNK_PAYLOAD_CHARS = 2200;
+// How many save_chunk requests to run at once (PWA only; server uses LockService).
+var SAVE_CHUNK_PARALLEL = 4;
 
 function syncSaveChunked(fullJson) {
   var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
@@ -181,28 +181,55 @@ function syncSaveChunked(fullJson) {
   for (i = 0; i < fullJson.length; i += CHUNK_PAYLOAD_CHARS) {
     chunks.push(fullJson.slice(i, i + CHUNK_PAYLOAD_CHARS));
   }
-  if (chunks.length === 0) {
+  var total = chunks.length;
+  if (total === 0) {
     return Promise.resolve({ ok: false, error: 'Nothing to save' });
   }
-  // Return { ok:false } on API failure instead of throwing — otherwise syncSave's
-  // .catch() mislabels Apps Script errors as "Network error — working offline".
-  return chunks.reduce(function(chain, chunk, idx) {
-    return chain.then(function(prev) {
-      if (prev && prev.ok === false) return prev;
-      return scriptFetch(syncUrl, {
-        action: 'save_chunk',
-        id: sessionId,
-        seq: String(idx),
-        total: String(chunks.length),
-        data: chunk
-      }).then(function(data) {
-        if (!data || !data.ok) {
-          return { ok: false, error: (data && data.error) || 'Chunk save failed' };
-        }
-        return data;
-      });
+  var start = 0;
+  var lastGood = null;
+
+  function sendChunk(idx, chunk) {
+    return scriptFetch(syncUrl, {
+      action: 'save_chunk',
+      id: sessionId,
+      seq: String(idx),
+      total: String(total),
+      data: chunk
+    }).then(function(data) {
+      if (!data || !data.ok) {
+        return { ok: false, error: (data && data.error) || ('Chunk ' + (idx + 1) + '/' + total + ' failed') };
+      }
+      return data;
     });
-  }, Promise.resolve());
+  }
+
+  function runBatch() {
+    if (start >= total) {
+      return Promise.resolve(lastGood && lastGood.ok ? lastGood : { ok: false, error: 'Chunk save incomplete' });
+    }
+    var end = Math.min(start + SAVE_CHUNK_PARALLEL, total);
+    var batch = [];
+    for (var j = start; j < end; j++) {
+      batch.push(sendChunk(j, chunks[j]));
+    }
+    return Promise.all(batch).then(function(results) {
+      var k;
+      var winner = null;
+      for (k = 0; k < results.length; k++) {
+        if (results[k] && results[k].ok === false) return results[k];
+        if (results[k] && results[k].ok) lastGood = results[k];
+        if (results[k] && results[k].ok && (results[k].saveChunkTotal || results[k].duplicate)) {
+          winner = results[k];
+          break;
+        }
+      }
+      if (winner) return winner;
+      start = end;
+      return runBatch();
+    });
+  }
+
+  return runBatch();
 }
 
 function syncSave(silent) {
@@ -466,10 +493,10 @@ function syncAutoLoad() {
   // pull forever (Sheet data incl. unit trust never applied on the website).
   if (!syncUrl) return;
   _autoLoadFired = true;
-  // Tiny delay so the first paint isn't blocked by the network round-trip.
+  // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
     syncLoad({ skipConfirm: true, silent: true, autoStart: true });
-  }, 400);
+  }, 120);
 }
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
@@ -480,7 +507,7 @@ var syncTimer = null;
 function scheduleAutoSync() {
   if (!syncUrl) return;
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(function() { syncSave(true); }, 4000);
+  syncTimer = setTimeout(function() { syncSave(true); }, 2800);
 }
 
 // Patch save* functions to trigger auto-sync. app.js defines saveExp/Inc/Banks

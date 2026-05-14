@@ -71,8 +71,8 @@ function buildPayload() {
 
 // ── Core fetch ─────────────────────────────────────────────
 // GET for ping / load / save (query) / save_chunk. Extension fetches go
-// through background.js (SYNC_FETCH) to dodge Apps Script CORS; POST is still
-// supported there for other callers, but syncSave uses GET + chunking like the PWA.
+// through background.js (SYNC_FETCH). Large saves use POST body there; PWA
+// uses GET + parallel save_chunk batches (POST body lost on redirect).
 function scriptFetch(url, params, body) {
   url = canonicalSyncExecUrl(url);
   var qs = Object.keys(params)
@@ -175,13 +175,14 @@ function syncPing() {
 }
 
 // ── Save ───────────────────────────────────────────────────
-// Same contract as ../sync.js: GET ?action=save for small payloads; chunked
-// GET save_chunk when URL-encoded JSON exceeds SAVE_URL_LIMIT. The extension
-// could POST large bodies via background.js, but chunking keeps one code path
-// and matches the deployed Apps Script (save_chunk).
+// Same contract as ../sync.js for small payloads (GET save). Large payloads:
+// extension uses one POST via background.js (body survives redirect); PWA uses
+// parallel-batched save_chunk GETs (POST body is dropped on redirect).
 var SAVE_URL_LIMIT = 6500;
-// Keep chunks small after URL-encoding (see ../sync.js).
-var CHUNK_PAYLOAD_CHARS = 1600;
+var CHUNK_PAYLOAD_CHARS = 2200;
+var SAVE_CHUNK_PARALLEL = 4;
+// Max JSON chars to send in one extension POST (runtime messaging / Apps Script limits).
+var EXT_POST_SAVE_MAX_CHARS = 2500000;
 
 function syncSaveChunked(fullJson) {
   var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
@@ -190,26 +191,55 @@ function syncSaveChunked(fullJson) {
   for (i = 0; i < fullJson.length; i += CHUNK_PAYLOAD_CHARS) {
     chunks.push(fullJson.slice(i, i + CHUNK_PAYLOAD_CHARS));
   }
-  if (chunks.length === 0) {
+  var total = chunks.length;
+  if (total === 0) {
     return Promise.resolve({ ok: false, error: 'Nothing to save' });
   }
-  return chunks.reduce(function(chain, chunk, idx) {
-    return chain.then(function(prev) {
-      if (prev && prev.ok === false) return prev;
-      return scriptFetch(syncUrl, {
-        action: 'save_chunk',
-        id: sessionId,
-        seq: String(idx),
-        total: String(chunks.length),
-        data: chunk
-      }).then(function(data) {
-        if (!data || !data.ok) {
-          return { ok: false, error: (data && data.error) || 'Chunk save failed' };
-        }
-        return data;
-      });
+  var start = 0;
+  var lastGood = null;
+
+  function sendChunk(idx, chunk) {
+    return scriptFetch(syncUrl, {
+      action: 'save_chunk',
+      id: sessionId,
+      seq: String(idx),
+      total: String(total),
+      data: chunk
+    }).then(function(data) {
+      if (!data || !data.ok) {
+        return { ok: false, error: (data && data.error) || ('Chunk ' + (idx + 1) + '/' + total + ' failed') };
+      }
+      return data;
     });
-  }, Promise.resolve());
+  }
+
+  function runBatch() {
+    if (start >= total) {
+      return Promise.resolve(lastGood && lastGood.ok ? lastGood : { ok: false, error: 'Chunk save incomplete' });
+    }
+    var end = Math.min(start + SAVE_CHUNK_PARALLEL, total);
+    var batch = [];
+    for (var j = start; j < end; j++) {
+      batch.push(sendChunk(j, chunks[j]));
+    }
+    return Promise.all(batch).then(function(results) {
+      var k;
+      var winner = null;
+      for (k = 0; k < results.length; k++) {
+        if (results[k] && results[k].ok === false) return results[k];
+        if (results[k] && results[k].ok) lastGood = results[k];
+        if (results[k] && results[k].ok && (results[k].saveChunkTotal || results[k].duplicate)) {
+          winner = results[k];
+          break;
+        }
+      }
+      if (winner) return winner;
+      start = end;
+      return runBatch();
+    });
+  }
+
+  return runBatch();
 }
 
 function syncSave(silent) {
@@ -233,6 +263,11 @@ function syncSave(silent) {
 
   if (encoded.length < SAVE_URL_LIMIT) {
     promise = scriptFetch(syncUrl, { action: 'save', data: json });
+  } else if (
+    typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id &&
+    json.length <= EXT_POST_SAVE_MAX_CHARS
+  ) {
+    promise = scriptFetch(syncUrl, { action: 'save' }, json);
   } else {
     promise = syncSaveChunked(json);
   }
@@ -468,7 +503,7 @@ function syncAutoLoad() {
   _autoLoadFired = true;
   setTimeout(function() {
     syncLoad({ skipConfirm: true, silent: true, autoStart: true });
-  }, 400);
+  }, 120);
 }
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
@@ -479,7 +514,7 @@ var syncTimer = null;
 function scheduleAutoSync() {
   if (!syncUrl) return;
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(function() { syncSave(true); }, 4000);
+  syncTimer = setTimeout(function() { syncSave(true); }, 2800);
 }
 
 // Patch save* functions to trigger auto-sync (see ../sync.js).
