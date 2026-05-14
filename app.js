@@ -957,7 +957,7 @@ document.getElementById('cat-detail-overlay').addEventListener('click', e => {
 
 // ── Nav ────────────────────────────────────────────────────
 // Desktop: full sidebar. Mobile (≤680px): five dock slots + More sheet.
-const MOBILE_OVERFLOW_TABS = new Set(['search', 'recurring', 'trends', 'import', 'petrol', 'report']);
+const MOBILE_OVERFLOW_TABS = new Set(['recurring', 'trends', 'petrol', 'report']);
 
 function closeMobileNavMore() {
   const sheet = document.getElementById('mobile-nav-more-sheet');

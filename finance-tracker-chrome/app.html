@@ -894,6 +894,13 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
    SETTINGS
    ============================================================ */
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
+.settings-span-2 { grid-column: 1 / -1; }
+.exp-global-search-card #search-results {
+  margin-top: var(--s3);
+  max-height: min(42vh, 400px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .setting-row {
   display: flex;
@@ -1244,17 +1251,11 @@ body.dark .fs-btn.active { color: #000; }
     <button class="nav-item" data-tab="assets">
       <span class="icon">🏦</span> Assets
     </button>
-    <button class="nav-item" data-tab="search">
-      <span class="icon">🔍</span> Search
-    </button>
     <button class="nav-item" data-tab="recurring">
       <span class="icon">🔁</span> Recurring
     </button>
     <button class="nav-item" data-tab="trends">
       <span class="icon">📈</span> Trends
-    </button>
-    <button class="nav-item" data-tab="import">
-      <span class="icon">📥</span> Import
     </button>
     <button class="nav-item" data-tab="petrol">
       <span class="icon">⛽</span> Petrol Log
@@ -1378,6 +1379,18 @@ body.dark .fs-btn.active { color: #000; }
             <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
             <span>Also save as a recurring entry (auto-adds every month)</span>
           </label>
+        </div>
+      </div>
+
+      <div class="card mb-5 exp-global-search-card">
+        <div class="panel-hd">
+          <span class="panel-title">Search all months</span>
+          <span style="font-size:var(--f-xs);color:var(--ink3)">Name or category · Ctrl+F</span>
+        </div>
+        <div class="panel-bd">
+          <label class="lbl" for="search-input" style="margin-bottom:6px">Find transactions</label>
+          <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
+          <div id="search-results"></div>
         </div>
       </div>
 
@@ -1553,22 +1566,6 @@ body.dark .fs-btn.active { color: #000; }
     </div>
   </div>
 
-  <!-- ── SEARCH ── -->
-  <div class="page" id="page-search">
-    <div class="page-header">
-      <h2>Search</h2>
-      <div class="sub">Find any transaction across all months</div>
-    </div>
-    <div class="page-body">
-      <div class="card mb-5">
-        <div class="panel-bd">
-          <input type="text" id="search-input" placeholder="Search by name or category… (Ctrl+F)" style="font-size:var(--f-lg);height:48px"/>
-        </div>
-      </div>
-      <div id="search-results"></div>
-    </div>
-  </div>
-
   <!-- ── RECURRING ── -->
   <div class="page" id="page-recurring">
     <div class="page-header">
@@ -1690,123 +1687,113 @@ body.dark .fs-btn.active { color: #000; }
     </div>
   </div>
 
-  <!-- ── IMPORT ── -->
-  <div class="page" id="page-import">
-    <div class="page-header">
-      <h2>Import</h2>
-      <div class="sub">Bring in transactions from TNG eWallet or UOB Bank</div>
-    </div>
-    <div class="page-body">
-
-      <!-- Step 1 -->
-      <div id="iw1">
-        <div class="src-grid">
-          <div class="src-card" id="iw-tng-card">
-            <div class="src-icon">💳</div>
-            <div class="src-name">TNG eWallet</div>
-            <div class="src-desc">Paste statement text from PDF email</div>
-          </div>
-          <div class="src-card" id="iw-uob-card">
-            <div class="src-icon">🏦</div>
-            <div class="src-name">UOB Bank</div>
-            <div class="src-desc">Upload XLS or CSV from internet banking</div>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
-      </div>
-
-      <!-- Step 2 -->
-      <div id="iw2" style="display:none;max-width:680px">
-        <div id="iw-tng-input" style="display:none">
-          <div class="info-box mb-4">
-            <div class="ib-title">📖 How to get your TNG statement</div>
-            <ol>
-              <li>Open TNG app → <strong>Profile</strong> → <strong>Transaction History</strong></li>
-              <li>Tap the ✉️ email icon — TNG will email you a PDF statement</li>
-              <li>Open the PDF, select all text, copy and paste below</li>
-            </ol>
-          </div>
-          <div class="card mb-4">
-            <div class="panel-hd"><span class="panel-title">Paste TNG statement text</span></div>
-            <div class="panel-bd">
-              <textarea id="iw-tng-text" rows="10" placeholder="Paste your TNG PDF text here...&#10;&#10;Example:&#10;01 Jan 2025  Successful  DuitNow Payment  MAMAK CORNER  -12.50  234.10&#10;02 Jan 2025  Successful  Payment  SHELL PETROL  -80.00  154.10"></textarea>
-              <div class="err" id="iw-tng-err"></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="iw-uob-input" style="display:none">
-          <div class="info-box mb-4">
-            <div class="ib-title">📖 How to export from UOB</div>
-            <ol>
-              <li>Log in at <code>pib.uob.com.my</code></li>
-              <li>Go to <strong>Account</strong> → <strong>Account Activities</strong></li>
-              <li>Select account &amp; date range → <strong>Download</strong> → choose <strong>CSV</strong> or <strong>Excel</strong></li>
-              <li>Upload that file below</li>
-            </ol>
-          </div>
-          <div class="card mb-4">
-            <div class="panel-hd"><span class="panel-title">Upload UOB statement</span></div>
-            <div class="panel-bd">
-              <div class="file-drop" id="iw-drop">
-                <input type="file" id="iw-file" accept=".xls,.xlsx,.csv" style="display:none"/>
-                <div class="fd-icon">📂</div>
-                <div class="fd-name" id="iw-drop-lbl">Click or drag &amp; drop your file here</div>
-                <div class="fd-hint">XLS · XLSX · CSV from UOB internet banking</div>
-              </div>
-              <div class="err" id="iw-uob-err"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button class="btn-ghost" id="iw-back2">← Back</button>
-          <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div id="iw3" style="display:none">
-        <div class="iw-summary" id="iw-summary"></div>
-        <div class="iw-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th style="text-align:right">Amount</th>
-                <th>Type</th>
-                <th>Category</th>
-              </tr>
-            </thead>
-            <tbody id="iw-tbody"></tbody>
-          </table>
-        </div>
-        <div class="btn-row">
-          <button class="btn-ghost" id="iw-back3">← Start over</button>
-          <button class="btn btn-green" id="iw-import">✓ Import selected</button>
-        </div>
-      </div>
-
-      <!-- Step 4 -->
-      <div id="iw4" style="display:none;text-align:center;padding:var(--s10) 0">
-        <div style="font-size:52px;margin-bottom:var(--s4)">🎉</div>
-        <div style="font-size:var(--f-2xl);font-weight:700;margin-bottom:var(--s3)" id="iw-done-h">Import complete!</div>
-        <div style="font-size:var(--f-md);color:var(--ink2);margin-bottom:var(--s8)" id="iw-done-sub"></div>
-        <button class="btn btn-primary" id="iw-again">Import more</button>
-      </div>
-
-    </div>
-  </div>
-
   <!-- ── SETTINGS ── -->
   <div class="page" id="page-settings">
     <div class="page-header">
       <h2>Settings</h2>
-      <div class="sub">Customise your experience</div>
+      <div class="sub">Customise your experience — statement import (TNG · UOB) lives below</div>
     </div>
     <div class="page-body">
       <div class="settings-grid">
+
+        <div class="settings-span-2">
+          <div class="card mb-5">
+            <div class="panel-hd">
+              <span class="panel-title">Import transactions</span>
+              <span style="font-size:var(--f-xs);color:var(--ink3)">TNG eWallet or UOB — separate from JSON backup</span>
+            </div>
+            <div class="panel-bd">
+              <div id="iw1">
+                <div class="src-grid">
+                  <div class="src-card" id="iw-tng-card">
+                    <div class="src-icon">💳</div>
+                    <div class="src-name">TNG eWallet</div>
+                    <div class="src-desc">Paste statement text from PDF email</div>
+                  </div>
+                  <div class="src-card" id="iw-uob-card">
+                    <div class="src-icon">🏦</div>
+                    <div class="src-name">UOB Bank</div>
+                    <div class="src-desc">Upload XLS or CSV from internet banking</div>
+                  </div>
+                </div>
+                <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
+              </div>
+              <div id="iw2" style="display:none;max-width:680px">
+                <div id="iw-tng-input" style="display:none">
+                  <div class="info-box mb-4">
+                    <div class="ib-title">📖 How to get your TNG statement</div>
+                    <ol>
+                      <li>Open TNG app → <strong>Profile</strong> → <strong>Transaction History</strong></li>
+                      <li>Tap the ✉️ email icon — TNG will email you a PDF statement</li>
+                      <li>Open the PDF, select all text, copy and paste below</li>
+                    </ol>
+                  </div>
+                  <div class="card mb-4">
+                    <div class="panel-hd"><span class="panel-title">Paste TNG statement text</span></div>
+                    <div class="panel-bd">
+                      <textarea id="iw-tng-text" rows="10" placeholder="Paste your TNG PDF text here..."></textarea>
+                      <div class="err" id="iw-tng-err"></div>
+                    </div>
+                  </div>
+                </div>
+                <div id="iw-uob-input" style="display:none">
+                  <div class="info-box mb-4">
+                    <div class="ib-title">📖 How to export from UOB</div>
+                    <ol>
+                      <li>Log in at <code>pib.uob.com.my</code></li>
+                      <li>Go to <strong>Account</strong> → <strong>Account Activities</strong></li>
+                      <li>Select account &amp; date range → <strong>Download</strong> → choose <strong>CSV</strong> or <strong>Excel</strong></li>
+                      <li>Upload that file below</li>
+                    </ol>
+                  </div>
+                  <div class="card mb-4">
+                    <div class="panel-hd"><span class="panel-title">Upload UOB statement</span></div>
+                    <div class="panel-bd">
+                      <div class="file-drop" id="iw-drop">
+                        <input type="file" id="iw-file" accept=".xls,.xlsx,.csv" style="display:none"/>
+                        <div class="fd-icon">📂</div>
+                        <div class="fd-name" id="iw-drop-lbl">Click or drag &amp; drop your file here</div>
+                        <div class="fd-hint">XLS · XLSX · CSV from UOB internet banking</div>
+                      </div>
+                      <div class="err" id="iw-uob-err"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn-ghost" id="iw-back2">← Back</button>
+                  <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
+                </div>
+              </div>
+              <div id="iw3" style="display:none">
+                <div class="iw-summary" id="iw-summary"></div>
+                <div class="iw-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th style="text-align:right">Amount</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                      </tr>
+                    </thead>
+                    <tbody id="iw-tbody"></tbody>
+                  </table>
+                </div>
+                <div class="btn-row">
+                  <button class="btn-ghost" id="iw-back3">← Start over</button>
+                  <button class="btn btn-green" id="iw-import">✓ Import selected</button>
+                </div>
+              </div>
+              <div id="iw4" style="display:none;text-align:center;padding:var(--s10) 0">
+                <div style="font-size:52px;margin-bottom:var(--s4)">🎉</div>
+                <div style="font-size:var(--f-2xl);font-weight:700;margin-bottom:var(--s3)" id="iw-done-h">Import complete!</div>
+                <div style="font-size:var(--f-md);color:var(--ink2);margin-bottom:var(--s8)" id="iw-done-sub"></div>
+                <button class="btn btn-primary" id="iw-again">Import more</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div class="card">
           <div class="panel-hd"><span class="panel-title">Appearance</span></div>

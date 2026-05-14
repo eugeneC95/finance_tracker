@@ -724,34 +724,38 @@ if (abFolder) abFolder.addEventListener('change', function(e) {
 var abNowBtn = document.getElementById('ab-now-btn');
 if (abNowBtn) abNowBtn.addEventListener('click', downloadLocalBackup);
 
-// Nav tab triggers
+// Nav tab triggers (trends needs a chart pass when opened)
 document.querySelectorAll('.nav-item').forEach(function(btn) {
   btn.addEventListener('click', function() {
     var tab = btn.dataset.tab;
     if (tab === 'trends') setTimeout(renderTrends, 30);
-    if (tab === 'search') {
-      setTimeout(function() {
-        renderSearch();
-        var si = document.getElementById('search-input');
-        if (si) si.focus();
-      }, 10);
-    }
   });
 });
 
-// Keyboard shortcut: Ctrl+F opens search
+// Keyboard shortcut: Ctrl+F focuses global search on Expenses
 document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey||e.metaKey) && e.key==='f') {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     var si = document.getElementById('search-input');
     if (si) {
       e.preventDefault();
-      document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-      var searchTab = document.querySelector('[data-tab="search"]');
-      if (searchTab) searchTab.classList.add('active');
-      var searchPage = document.getElementById('page-search');
-      if (searchPage) searchPage.classList.add('active');
-      si.focus();
+      if (typeof activateNavTab === 'function') activateNavTab('expenses');
+      else {
+        document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+        var expTab = document.querySelector('[data-tab="expenses"]');
+        var expPage = document.getElementById('page-expenses');
+        if (expTab) expTab.classList.add('active');
+        if (expPage) expPage.classList.add('active');
+      }
+      setTimeout(function() {
+        try {
+          si.focus();
+          si.select();
+        } catch (err) {
+          si.focus();
+        }
+        if (typeof renderSearch === 'function') renderSearch();
+      }, 60);
     }
   }
   if (e.key === 'Escape') {
