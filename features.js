@@ -197,6 +197,10 @@ function addBudget() {
 // ╚══════════════════════════════════════════════════════════╝
 var searchQuery = '';
 
+function searchTxStr(v) {
+  return String(v == null ? '' : v).toLowerCase();
+}
+
 function renderSearch() {
   var el = document.getElementById('search-results');
   if (!el) return;
@@ -207,8 +211,8 @@ function renderSearch() {
     return;
   }
 
-  var allExp = expenses.filter(function(e){ return e.name.toLowerCase().includes(q) || e.cat.toLowerCase().includes(q); });
-  var allInc = incomes.filter(function(i){  return i.name.toLowerCase().includes(q) || i.cat.toLowerCase().includes(q); });
+  var allExp = expenses.filter(function(e){ return searchTxStr(e.name).includes(q) || searchTxStr(e.cat).includes(q); });
+  var allInc = incomes.filter(function(i){ return searchTxStr(i.name).includes(q) || searchTxStr(i.cat).includes(q); });
   var all = allExp.map(function(e){ return Object.assign({},e,{_type:'exp'}); })
     .concat(allInc.map(function(i){ return Object.assign({},i,{_type:'inc'}); }))
     .sort(function(a,b){ return b.date.localeCompare(a.date) || b.id-a.id; });
@@ -255,10 +259,10 @@ function renderSearch() {
     info.className = 'tx-info';
     var nm = document.createElement('div');
     nm.className = 'tx-name';
-    nm.innerHTML = esc(entry.name).replace(re, '<mark style="background:#fef08a;border-radius:2px;padding:0 1px">$1</mark>');
+    nm.innerHTML = esc(entry.name != null ? entry.name : '').replace(re, '<mark style="background:#fef08a;border-radius:2px;padding:0 1px">$1</mark>');
     var meta = document.createElement('div');
     meta.className = 'tx-meta';
-    meta.textContent = entry.cat + ' · ' + dlbl;
+    meta.textContent = String(entry.cat != null ? entry.cat : '') + ' · ' + dlbl;
     info.appendChild(nm); info.appendChild(meta);
     row.appendChild(info);
 
