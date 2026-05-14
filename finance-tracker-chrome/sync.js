@@ -88,8 +88,9 @@ function scriptFetch(url, params, body) {
       opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
       opts.body    = body;
     }
+    try { if (fullUrl.length > 6000) console.log('[sync] URL ' + fullUrl.length + ' chars'); } catch (e) {}
     return fetch(fullUrl, opts).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' from Apps Script');
       return r.text().then(function(text) {
         var t = (text || '').trim();
         if (!t) throw new Error('Empty response from server');
@@ -178,7 +179,8 @@ function syncPing() {
 // could POST large bodies via background.js, but chunking keeps one code path
 // and matches the deployed Apps Script (save_chunk).
 var SAVE_URL_LIMIT = 6500;
-var CHUNK_PAYLOAD_CHARS = 3000;
+// Keep chunks small after URL-encoding (see ../sync.js).
+var CHUNK_PAYLOAD_CHARS = 1600;
 
 function syncSaveChunked(fullJson) {
   var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
@@ -252,6 +254,7 @@ function syncSave(silent) {
     .catch(function(err) {
       console.error('Sync save error:', err);
       var raw = (err && err.message) ? String(err.message) : '';
+      try { if (raw) localStorage.setItem('ft.lastSyncError', raw + ' @ ' + new Date().toISOString()); } catch (e) {}
       var low = raw.toLowerCase();
       var looksOffline =
         !raw ||
@@ -433,8 +436,8 @@ function syncLoad(opts) {
       }
     })
     .catch(function(err) {
-      setSyncStatus('error', 'Network error loading data');
       var detail = (err && err.message) ? err.message : 'check connection';
+      setSyncStatus('error', 'Load failed: ' + detail);
       if (!opts.silent) showToast('Load failed: ' + detail);
       console.error('Sync load error:', err);
     });

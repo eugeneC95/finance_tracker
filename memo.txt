@@ -62,3 +62,4 @@ HISTORY / GOTCHAS (short)
 Open
 ----
 - After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck).
+- If save still fails on the website: check `localStorage` key `ft.lastSyncError`; paste Apps Script URL only up to `/exec` (no `?…`); redeploy `google-apps-script.js` so `save_chunk` is live.

@@ -34,9 +34,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   fetch(url, opts)
     .then(r => {
       // Follow redirects — Apps Script always redirects to googleusercontent.com
-      return r.text();
+      return r.text().then(text => ({ ok: r.ok, status: r.status, text }));
     })
-    .then(text => {
+    .then(({ ok, status, text }) => {
+      if (!ok) {
+        sendResponse({ ok: false, error: 'HTTP ' + status + ' from Apps Script' });
+        return;
+      }
       try {
         const json = JSON.parse(text);
         sendResponse({ ok: true, data: json });

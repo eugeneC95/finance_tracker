@@ -88,8 +88,11 @@ function scriptFetch(url, params, body) {
     opts.body = body;
   }
 
+  // Log URL length so users can diagnose 414/CORS easily via console.
+  try { if (fullUrl.length > 6000) console.log('[sync] URL ' + fullUrl.length + ' chars'); } catch (e) {}
+
   return fetch(fullUrl, opts).then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' from Apps Script');
     return r.text().then(function(text) {
       var t = (text || '').trim();
       if (!t) throw new Error('Empty response from server');
@@ -165,8 +168,10 @@ function syncPing() {
 // of GET ?action=save_chunk&id=&seq=&total=&data=... (see google-apps-script.js).
 // Each chunk stays under URL limits; no POST body is used on the PWA path.
 var SAVE_URL_LIMIT = 6500;
-// Raw JSON substring length per chunk (encodeURIComponent expands non-ASCII).
-var CHUNK_PAYLOAD_CHARS = 3000;
+// Raw JSON substring length per chunk. encodeURIComponent can expand UTF-8
+// heavily; 3000 raw chars could exceed URL limits and cause fetch failures
+// (opaque "network" errors on some browsers). 1600 keeps each request safer.
+var CHUNK_PAYLOAD_CHARS = 1600;
 
 function syncSaveChunked(fullJson) {
   var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
@@ -242,6 +247,7 @@ function syncSave(silent) {
     .catch(function(err) {
       console.error('Sync save error:', err);
       var raw = (err && err.message) ? String(err.message) : '';
+      try { if (raw) localStorage.setItem('ft.lastSyncError', raw + ' @ ' + new Date().toISOString()); } catch (e) {}
       var low = raw.toLowerCase();
       var looksOffline =
         !raw ||
@@ -422,8 +428,8 @@ function syncLoad(opts) {
       }
     })
     .catch(function(err) {
-      setSyncStatus('error', 'Network error loading data');
       var detail = (err && err.message) ? err.message : 'check connection';
+      setSyncStatus('error', 'Load failed: ' + detail);
       if (!opts.silent) showToast('Load failed: ' + detail);
       console.error('Sync load error:', err);
     });
