@@ -3,9 +3,10 @@ Finance Tracker — living handoff (read/save to resume work)
 Last updated: 2026-05-14
 
 <<<MEMO_AUTO_SUMMARY>>>
-Generated: 2026-05-14T15:53:53.420Z
+Generated: 2026-05-14T15:54:15.455Z
 
 Recent commits (newest first):
+  - c37ffa2 (2026-05-14) chore(memo): auto git log block + update script and optional post-commit hook
   - e6c677c (2026-05-14) Sync: auto-pull on focus, Sheet-overwrite UT, in-flight guard; shorter save error copy; v60 cache bump
   - 2879723 (2026-05-14) Speed up Sheet sync: parallel save_chunk batches, larger chunks, faster auto-load/debounce; extension POST for large saves
   - 2e78628 (2026-05-14) Auto-load Sheet on open (autoStart bypasses empty-cloud skips); silent pull; pull after URL change; bump v56
@@ -23,7 +24,6 @@ Recent commits (newest first):
   - d9208e3 (2026-05-14) feat(assets): unit trust holdings with manual NAV and CSV import
   - b14b419 (2026-05-14) fix(search): coerce name/cat to string before toLowerCase
   - b4cecf0 (2026-05-14) fix(ui): remake Petrol log layout for mobile and desktop
-  - f4fd633 (2026-05-14) fix(search): close sheet on tab change; wire chrome nav
 <<<END_MEMO_AUTO_SUMMARY>>>
 
 PURPOSE
