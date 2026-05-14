@@ -131,11 +131,11 @@ function humanizeSaveApiError(raw) {
   if (/no data received/i.test(raw)) {
     return 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
   }
-  if (/unknown action:\s*save_chunk/i.test(raw)) {
+  if (/^unknown action:/i.test(raw.trim())) {
     return (
-      'Google Apps Script was mis-reading the save action (fixed in server apiVersion 5). ' +
-      'Open script.google.com → paste this repo’s google-apps-script.js → Deploy → Manage deployments → Edit → New version → Deploy. ' +
-      'Then Test connection — you should see apiVersion 5 — and try Save again.'
+      raw.trim() +
+      ' — redeploy this repo’s google-apps-script.js (Deploy → New version) and use a sync URL that ends at …/exec (no ? or # after it). ' +
+      'Ping should show apiVersion 5+.'
     );
   }
   return raw;
@@ -311,11 +311,13 @@ function syncSave(silent) {
 }
 
 // ── Load ───────────────────────────────────────────────────
-// opts.skipConfirm — used by auto-load on startup (no "REPLACE all data?" prompt)
+// opts.skipConfirm — silent pulls (no "REPLACE all data?" prompt)
 // opts.silent       — suppress success toasts (errors still show unless silent)
-// opts.autoStart    — from syncAutoLoad: always apply Sheet (skip "empty cloud" safety skips)
+// opts.autoStart    — Sheet is source of truth: skip "empty / tiny cloud" safety skips
+var syncLoadInFlight = false;
 function syncLoad(opts) {
   opts = opts || {};
+  if (syncLoadInFlight) return;
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
   if (!syncUrl) {
     if (!opts.silent) showToast('No sync URL — add it in Settings');
@@ -339,6 +341,7 @@ function syncLoad(opts) {
 
   if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
 
+  syncLoadInFlight = true;
   setSyncStatus('loading', opts.skipConfirm ? 'Syncing from cloud…' : 'Loading from Google Sheets…');
 
   scriptFetch(syncUrl, { action: 'load' })
@@ -346,9 +349,11 @@ function syncLoad(opts) {
       if (!data.ok) {
         setSyncStatus('error', 'Load failed: ' + (data.error || 'unknown'));
         if (!opts.silent) showToast('Load failed');
+        syncLoadInFlight = false;
         return;
       }
 
+      try {
       var p = data.payload || {};
 
       var BAD_SHEET_DATE = '1900-01-02';
@@ -430,16 +435,11 @@ function syncLoad(opts) {
       if ('unitTrustHoldings' in p || 'unitTrustNav' in p) {
         var arrH = Array.isArray(p.unitTrustHoldings) ? p.unitTrustHoldings : [];
         var arrN = Array.isArray(p.unitTrustNav) ? p.unitTrustNav : [];
-        var localHasUt =
-          (typeof utHoldings !== 'undefined' && utHoldings.length > 0) ||
-          (typeof utNavPoints !== 'undefined' && utNavPoints.length > 0);
-        if (!opts.skipConfirm || arrH.length > 0 || arrN.length > 0 || !localHasUt) {
-          if (typeof utHoldings !== 'undefined') {
-            utHoldings = typeof utSanitizeHoldings === 'function' ? utSanitizeHoldings(arrH) : [];
-          }
-          if (typeof utNavPoints !== 'undefined') {
-            utNavPoints = typeof utSanitizeNav === 'function' ? utSanitizeNav(arrN) : [];
-          }
+        if (typeof utHoldings !== 'undefined') {
+          utHoldings = typeof utSanitizeHoldings === 'function' ? utSanitizeHoldings(arrH) : [];
+        }
+        if (typeof utNavPoints !== 'undefined') {
+          utNavPoints = typeof utSanitizeNav === 'function' ? utSanitizeNav(arrN) : [];
         }
       }
 
@@ -485,8 +485,12 @@ function syncLoad(opts) {
       } else if (!opts.silent) {
         showToast(opts.skipConfirm ? 'Synced ' + rowCount + ' rows from cloud' : 'Data loaded from Google Sheets');
       }
+      } finally {
+        syncLoadInFlight = false;
+      }
     })
     .catch(function(err) {
+      syncLoadInFlight = false;
       var detail = (err && err.message) ? err.message : 'check connection';
       setSyncStatus('error', 'Load failed: ' + detail);
       if (!opts.silent) showToast('Load failed: ' + detail);
@@ -507,6 +511,20 @@ function syncAutoLoad() {
 }
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
+
+function scheduleDebouncedSheetPull_() {
+  clearTimeout(scheduleDebouncedSheetPull_._t);
+  scheduleDebouncedSheetPull_._t = setTimeout(function() {
+    if (!syncUrl || syncLoadInFlight) return;
+    syncLoad({ skipConfirm: true, silent: true, autoStart: true });
+  }, 500);
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') scheduleDebouncedSheetPull_();
+});
+window.addEventListener('pageshow', function(ev) {
+  if (ev.persisted) scheduleDebouncedSheetPull_();
+});
 
 // ── Auto-sync (debounced, triggered by save functions) ──────
 var syncTimer = null;
@@ -576,7 +594,7 @@ function updateSyncUI() {
   if (syncState.message) {
     msg.textContent = syncState.message;
   } else {
-    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open the app; auto-saves 4 s after changes' : 'Not configured';
+    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open or return to the app; auto-saves 4 s after changes' : 'Not configured';
   }
   msg.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
 }
