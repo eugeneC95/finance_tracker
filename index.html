@@ -333,6 +333,99 @@ body {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
+.nav-item--mobile-only {
+  display: none;
+}
+
+/* Mobile “More” sheet (opened from bottom nav on narrow screens) */
+.mobile-nav-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100004;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, visibility 0.2s;
+}
+.mobile-nav-sheet.open {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+}
+.mobile-nav-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+.mobile-nav-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(72vh, 520px);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-nav-sheet.open .mobile-nav-sheet__panel {
+  transform: translateY(0);
+}
+.mobile-nav-sheet__grab {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line2);
+  margin: 8px auto 12px;
+}
+.mobile-nav-sheet__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+body.mobile-nav-sheet-open {
+  overflow: hidden;
+}
+.mobile-nav-sheet__btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 14px;
+  border: none;
+  background: var(--card-bg2);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-nav-sheet__btn:last-child {
+  margin-bottom: 0;
+}
+.mobile-nav-sheet__btn .icon {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.mobile-nav-sheet__btn:active {
+  transform: scale(0.98);
+}
+
 .sb-month {
   padding: var(--s4) var(--s3) var(--s6);
   border-top: 1px solid rgba(255,255,255,.08);
@@ -1374,19 +1467,26 @@ body.dark .fs-btn.active { color: #041312; }
     flex-direction: row;
     padding: 2px 0 0;
     gap: 0;
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
     scrollbar-width: none;
     width: 100%;
     align-items: stretch;
+    justify-content: space-between;
   }
   .sb-nav::-webkit-scrollbar { display: none; }
 
+  .nav-item[data-mobile-overflow="1"] {
+    display: none !important;
+  }
+  .nav-item--mobile-only {
+    display: flex !important;
+  }
+
   .nav-item {
-    flex: 0 0 25%;            /* exactly 4 items visible per screen */
+    flex: 1 1 0;
     min-width: 0;
     flex-direction: column;
     gap: 1px;
@@ -1396,24 +1496,13 @@ body.dark .fs-btn.active { color: #041312; }
     color: rgba(255,255,255,.55);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: clip;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    text-overflow: ellipsis;
   }
   .nav-item .icon { font-size: 18px; width: auto; line-height: 1; }
   .nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
 
-  /* Tiny right-edge fade so users see there's more to swipe to */
-  .sb::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 24px;
-    pointer-events: none;
-    background: linear-gradient(to left, var(--sb-bg), transparent);
-    z-index: 2;
-  }
-  .sb { position: fixed; }  /* re-affirm so ::after positions correctly */
+  .sb::after { display: none; }
+  .sb { position: fixed; }
 
   /* Main: a normal block in document flow. Page scrolls the window
      naturally, which is the only thing iOS Safari handles reliably. */
@@ -1991,13 +2080,19 @@ body.dark .ft-fab { background: #fff; color: #000; }
     background: rgba(28, 28, 32, .94) !important;
   }
   .sb::after {
-    width: 20px !important;
-    background: linear-gradient(to left, rgba(20,20,20,.94), transparent) !important;
+    display: none !important;
   }
-  body.dark .sb::after {
-    background: linear-gradient(to left, rgba(28,28,32,.94), transparent) !important;
+  .sb-nav {
+    padding: 2px 4px 3px !important;
+    overflow-x: visible !important;
+    justify-content: space-between !important;
   }
-  .sb-nav { padding: 2px 4px 3px !important; }
+  .nav-item[data-mobile-overflow="1"] {
+    display: none !important;
+  }
+  .nav-item--mobile-only {
+    display: flex !important;
+  }
   .nav-item {
     color: rgba(255, 255, 255, .55) !important;
     border-radius: 12px !important;
@@ -2138,7 +2233,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v36 · 2026-05-14';
+  var BUILD_VERSION    = 'v37 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2268,23 +2363,26 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <span class="icon">🏦</span> Assets
     </button>
     <p class="nav-section-label" role="presentation">Tools</p>
-    <button class="nav-item" data-tab="search">
+    <button class="nav-item" data-tab="search" data-mobile-overflow="1">
       <span class="icon">🔍</span> Search
     </button>
-    <button class="nav-item" data-tab="recurring">
+    <button class="nav-item" data-tab="recurring" data-mobile-overflow="1">
       <span class="icon">🔁</span> Recurring
     </button>
-    <button class="nav-item" data-tab="trends">
+    <button class="nav-item" data-tab="trends" data-mobile-overflow="1">
       <span class="icon">📈</span> Trends
     </button>
-    <button class="nav-item" data-tab="import">
+    <button class="nav-item" data-tab="import" data-mobile-overflow="1">
       <span class="icon">📥</span> Import
     </button>
-    <button class="nav-item" data-tab="petrol">
+    <button class="nav-item" data-tab="petrol" data-mobile-overflow="1">
       <span class="icon">⛽</span> Petrol Log
     </button>
-    <button class="nav-item" data-tab="report">
+    <button class="nav-item" data-tab="report" data-mobile-overflow="1">
       <span class="icon">📄</span> Report
+    </button>
+    <button type="button" class="nav-item nav-item--mobile-only" id="nav-more-open" aria-label="More sections" aria-expanded="false" aria-controls="mobile-nav-more-sheet">
+      <span class="icon">⋯</span> More
     </button>
     <div class="nav-spacer"></div>
     <p class="nav-section-label" role="presentation">App</p>
@@ -2994,7 +3092,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v36 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v37 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3180,13 +3278,27 @@ body.dark .ft-fab { background: #fff; color: #000; }
 })();
 </script>
 
+<div id="mobile-nav-more-sheet" class="mobile-nav-sheet" aria-hidden="true" role="dialog" aria-modal="true" aria-label="More sections">
+  <div class="mobile-nav-sheet__backdrop" aria-hidden="true"></div>
+  <div class="mobile-nav-sheet__panel">
+    <div class="mobile-nav-sheet__grab" aria-hidden="true"></div>
+    <div class="mobile-nav-sheet__title">Tools</div>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="search"><span class="icon">🔍</span> Search</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="recurring"><span class="icon">🔁</span> Recurring</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="trends"><span class="icon">📈</span> Trends</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="import"><span class="icon">📥</span> Import</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="petrol"><span class="icon">⛽</span> Petrol log</button>
+    <button type="button" class="mobile-nav-sheet__btn" data-tab="report"><span class="icon">📄</span> Report</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v36 · 2026-05-14</div>
-<script src="app.js?v=36"></script>
-<script src="sync.js?v=36"></script>
-<script src="features.js?v=36"></script>
-<script src="extras.js?v=36"></script>
-<script src="import-inline.js?v=36"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v37 · 2026-05-14</div>
+<script src="app.js?v=37"></script>
+<script src="sync.js?v=37"></script>
+<script src="features.js?v=37"></script>
+<script src="extras.js?v=37"></script>
+<script src="import-inline.js?v=37"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

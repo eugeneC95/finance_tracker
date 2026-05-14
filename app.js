@@ -901,37 +901,91 @@ document.getElementById('cat-detail-overlay').addEventListener('click', e => {
 });
 
 // ── Nav ────────────────────────────────────────────────────
-// On mobile the nav is a horizontal swipe strip (4 items per screen).
-// Scroll the tapped item to the left edge so the user always sees their
-// current tab while the next pages remain swipe-discoverable.
+// Desktop: full sidebar. Mobile (≤680px): five dock slots + More sheet.
+const MOBILE_OVERFLOW_TABS = new Set(['search', 'recurring', 'trends', 'import', 'petrol', 'report']);
+
+function closeMobileNavMore() {
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  const opener = document.getElementById('nav-more-open');
+  if (sheet) {
+    sheet.classList.remove('open');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+  if (opener) opener.setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('mobile-nav-sheet-open');
+}
+
+function openMobileNavMore() {
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  const opener = document.getElementById('nav-more-open');
+  if (!sheet || !(window.matchMedia && window.matchMedia('(max-width: 680px)').matches)) return;
+  sheet.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  if (opener) opener.setAttribute('aria-expanded', 'true');
+  document.body.classList.add('mobile-nav-sheet-open');
+}
+
+function activateNavTab(tab) {
+  if (!tab) return;
+  const page = document.getElementById('page-' + tab);
+  if (!page) return;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  page.classList.add('active');
+  const moreOpen = document.getElementById('nav-more-open');
+  if (MOBILE_OVERFLOW_TABS.has(tab)) {
+    if (moreOpen) moreOpen.classList.add('active');
+  } else {
+    const dock = document.querySelector('.nav-item[data-tab="' + tab + '"]');
+    if (dock) dock.classList.add('active');
+  }
+  scrollNavItemIntoView(document.querySelector('.nav-item.active'));
+  closeMobileNavMore();
+  if (tab === 'petrol' && typeof renderPetrolLog === 'function') setTimeout(renderPetrolLog, 10);
+  if (tab === 'report' && typeof renderReport === 'function') setTimeout(renderReport, 10);
+}
+
 function scrollNavItemIntoView(btn) {
   if (!btn) return;
-  var strip = btn.closest('.sb-nav');
+  const strip = btn.closest('.sb-nav');
   if (!strip) return;
-  if (window.matchMedia && window.matchMedia('(max-width: 680px)').matches) {
-    try {
-      var stripWidth = strip.clientWidth;
-      var itemsPerPage = 4;
-      var index = Array.prototype.indexOf.call(strip.children, btn);
-      if (index < 0) return;
-      var pageIndex = Math.floor(index / itemsPerPage);
-      strip.scrollTo({ left: pageIndex * stripWidth, behavior: 'smooth' });
-    } catch (e) {}
-  }
 }
-document.querySelectorAll('.nav-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('page-' + btn.dataset.tab).classList.add('active');
-    scrollNavItemIntoView(btn);
-  });
+
+document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => activateNavTab(btn.dataset.tab));
 });
 
-// Ensure the initially-active tab is parked at the left edge on first paint.
-window.addEventListener('load', function() {
-  var active = document.querySelector('.nav-item.active');
+const navMoreOpen = document.getElementById('nav-more-open');
+if (navMoreOpen) {
+  navMoreOpen.addEventListener('click', e => {
+    e.preventDefault();
+    const sheet = document.getElementById('mobile-nav-more-sheet');
+    if (sheet && sheet.classList.contains('open')) closeMobileNavMore();
+    else openMobileNavMore();
+  });
+}
+
+const mobileNavSheet = document.getElementById('mobile-nav-more-sheet');
+if (mobileNavSheet) {
+  const backdrop = mobileNavSheet.querySelector('.mobile-nav-sheet__backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeMobileNavMore);
+  mobileNavSheet.querySelectorAll('.mobile-nav-sheet__btn[data-tab]').forEach(b => {
+    b.addEventListener('click', () => activateNavTab(b.dataset.tab));
+  });
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  if (sheet && sheet.classList.contains('open')) closeMobileNavMore();
+});
+
+window.addEventListener('resize', () => {
+  if (window.matchMedia && !window.matchMedia('(max-width: 680px)').matches) closeMobileNavMore();
+});
+
+window.addEventListener('load', () => {
+  const active = document.querySelector('.nav-item.active');
   if (active) scrollNavItemIntoView(active);
 });
 
