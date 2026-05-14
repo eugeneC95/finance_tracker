@@ -133,9 +133,8 @@ function humanizeSaveApiError(raw) {
   }
   if (/unknown action:\s*save_chunk/i.test(raw)) {
     return (
-      'Your web app URL may include extra ?query after /exec, which duplicates ?action= and breaks saves. ' +
-      'In Settings, paste only the URL up to /exec (no ?…), tap Test connection, then try Save again. ' +
-      'If it still fails, Deploy → Manage deployments → New version with this repo’s google-apps-script.js.'
+      'Apps Script is probably still on an old deployment (no save_chunk). Deploy → Manage deployments → Edit → Version: New version → Deploy, using this repo’s google-apps-script.js. ' +
+      'If you already redeployed, check Settings: the URL must end at /exec with nothing after it (no ?…); tap Test connection, then Save again.'
     );
   }
   return raw;
@@ -217,6 +216,13 @@ function syncSave(silent) {
     return;
   }
 
+  var canon = canonicalSyncExecUrl(syncUrl);
+  if (canon !== syncUrl) {
+    persistSyncUrl(canon);
+    var urlEl = document.getElementById('sync-url-input');
+    if (urlEl) urlEl.value = syncUrl;
+  }
+
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
   var json    = JSON.stringify(buildPayload());
@@ -276,6 +282,13 @@ function syncLoad(opts) {
   if (!syncUrl) {
     if (!opts.silent) showToast('No sync URL — add it in Settings');
     return;
+  }
+
+  var canonL = canonicalSyncExecUrl(syncUrl);
+  if (canonL !== syncUrl) {
+    persistSyncUrl(canonL);
+    var urlElL = document.getElementById('sync-url-input');
+    if (urlElL) urlElL.value = syncUrl;
   }
 
   if (!opts.skipConfirm) {
@@ -382,7 +395,7 @@ function syncLoad(opts) {
         var localHasUt =
           (typeof utHoldings !== 'undefined' && utHoldings.length > 0) ||
           (typeof utNavPoints !== 'undefined' && utNavPoints.length > 0);
-        if (arrH.length > 0 || arrN.length > 0 || !localHasUt) {
+        if (!opts.skipConfirm || arrH.length > 0 || arrN.length > 0 || !localHasUt) {
           if (typeof utHoldings !== 'undefined') {
             utHoldings = typeof utSanitizeHoldings === 'function' ? utSanitizeHoldings(arrH) : [];
           }
@@ -448,8 +461,8 @@ function syncLoad(opts) {
 var _autoLoadFired = false;
 function syncAutoLoad() {
   if (_autoLoadFired) return;
-  _autoLoadFired = true;
   if (!syncUrl) return;
+  _autoLoadFired = true;
   setTimeout(function() {
     syncLoad({ skipConfirm: true, silent: false });
   }, 400);
