@@ -180,25 +180,29 @@ function renderPetrolLog() {
 
     var row = document.createElement('tr');
 
-    function td(txt, bold) {
+    function td(txt, bold, label) {
       var c = document.createElement('td');
       c.textContent = txt;
       if (bold) c.style.fontWeight = '600';
+      if (label) c.setAttribute('data-label', label);
       return c;
     }
 
-    row.appendChild(td(e.date));
-    row.appendChild(td(e.station || '—'));
-    row.appendChild(td(e.litres.toFixed(2) + ' L'));
-    row.appendChild(td('RM ' + e.ppl.toFixed(3)));
-    row.appendChild(td(fmt(e.total), true));
-    row.appendChild(td(e.odo ? e.odo.toLocaleString() + ' km' : '—'));
-    row.appendChild(td(effStr));
+    row.appendChild(td(e.date, false, 'Date'));
+    row.appendChild(td(e.station || '—', false, 'Station'));
+    row.appendChild(td(e.litres.toFixed(2) + ' L', false, 'Litres'));
+    row.appendChild(td('RM ' + e.ppl.toFixed(3), false, 'RM/L'));
+    row.appendChild(td(fmt(e.total), true, 'Total'));
+    row.appendChild(td(e.odo ? e.odo.toLocaleString() + ' km' : '—', false, 'Odometer'));
+    row.appendChild(td(effStr, false, 'Efficiency'));
 
     var delTd  = document.createElement('td');
+    delTd.className = 'pt-td--actions';
     var delBtn = document.createElement('button');
+    delBtn.type = 'button';
     delBtn.className = 'del-btn';
     delBtn.textContent = '✕';
+    delBtn.setAttribute('aria-label', 'Delete fill-up');
     (function(id) {
       delBtn.addEventListener('click', function() {
         if (confirm('Delete this fill-up?')) deletePetrolEntry(id);

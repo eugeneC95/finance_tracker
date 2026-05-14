@@ -87,6 +87,7 @@ input, select, textarea { font-family: inherit; }
   --radius  : 10px;
   --radius-sm: 7px;
   --shadow  : 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+  --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
 }
 
 /* ── Dark theme ── */
@@ -101,6 +102,7 @@ body.dark {
   --ink3     : #56565E;
   --brand    : #F0F0F5;
   --sb-bg    : #000000;
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.25);
 }
 
 /* ── Font size modes ── */
@@ -1320,13 +1322,183 @@ body.dark .fs-btn.active { color: #000; }
 .nw-empty { text-align: center; padding: var(--s8) 0; color: var(--ink3); font-size: var(--f-sm); }
 
 
-/* ── Petrol log table ── */
-.pt-table { width:100%; border-collapse:collapse; font-size:var(--f-sm); }
-.pt-table th { background:var(--card-bg2); padding:10px 16px; text-align:left; font-size:var(--f-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--ink3); border-bottom:1px solid var(--line); }
-.pt-table td { padding:10px 16px; border-bottom:1px solid var(--line); vertical-align:middle; }
-.pt-table tr:last-child td { border-bottom:none; }
-.pt-table .del-btn { background:none; border:none; cursor:pointer; color:var(--ink3); font-size:16px; }
-.pt-table .del-btn:hover { color:var(--red); }
+/* ── Petrol log page ── */
+#page-petrol .page-body--petrol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+#page-petrol .pt-stat-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+#page-petrol .pt-form-card .pt-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 12px;
+  align-items: end;
+}
+#page-petrol .pt-form-card .pt-form-actions {
+  display: flex;
+  align-items: flex-end;
+}
+#page-petrol .pt-form-card .pt-calc-hint {
+  margin-top: 10px;
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  line-height: 1.45;
+}
+#page-petrol .panel-bd--flush {
+  padding: 0;
+}
+#page-petrol .pt-list-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+#page-petrol .pt-list-scroll .empty {
+  padding: var(--s8) var(--s5);
+}
+/* Table */
+.pt-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: var(--f-sm);
+}
+.pt-table th {
+  background: var(--card-bg2);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.pt-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.pt-table td:nth-child(2) {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pt-table tr:last-child td { border-bottom: none; }
+.pt-table .del-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -6px -8px -6px 0;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--ink3);
+  font-size: 18px;
+  line-height: 1;
+}
+.pt-table .del-btn:hover { color: var(--red); }
+.pt-table .del-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+@media (min-width: 681px) {
+  #page-petrol .pt-list-scroll {
+    max-height: min(58vh, 520px);
+    overflow-y: auto;
+  }
+  #page-petrol .pt-list-scroll .pt-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 1px 0 var(--line);
+  }
+}
+@media (max-width: 680px) {
+  #page-petrol .page-body--petrol {
+    gap: 14px;
+    padding-bottom: 28px;
+  }
+  #page-petrol .page-body--petrol > .pt-stat-row { order: 2; margin-bottom: 0; }
+  #page-petrol .page-body--petrol > .pt-form-card { order: 1; margin-bottom: 0 !important; }
+  #page-petrol .page-body--petrol > .pt-history-card { order: 3; }
+  #page-petrol .pt-stat-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  #page-petrol .pt-stat-row .stat-card:nth-child(n) { grid-column: auto; }
+  #page-petrol .pt-form-card .pt-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  #page-petrol .pt-form-card .pt-form-actions {
+    justify-content: stretch;
+  }
+  #page-petrol .pt-form-card .pt-form-actions .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+  #page-petrol .pt-list-scroll {
+    overflow-x: visible;
+  }
+  #page-petrol .pt-list-scroll .pt-table {
+    min-width: 0;
+  }
+  #page-petrol .pt-table thead { display: none; }
+  #page-petrol .pt-table,
+  #page-petrol .pt-table tbody,
+  #page-petrol .pt-table tr,
+  #page-petrol .pt-table td {
+    display: block;
+    width: 100%;
+  }
+  #page-petrol .pt-table tr {
+    margin-bottom: 12px;
+    padding: 4px 0 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  #page-petrol .pt-table tr:last-child {
+    margin-bottom: 0;
+    padding-bottom: 4px;
+    border-bottom: none;
+  }
+  #page-petrol .pt-table td {
+    border: none;
+    padding: 8px 16px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: right;
+    white-space: normal !important;
+    max-width: none !important;
+  }
+  #page-petrol .pt-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink3);
+    text-align: left;
+  }
+  #page-petrol .pt-table td.pt-td--actions {
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+  #page-petrol .pt-table td.pt-td--actions::before {
+    content: none;
+  }
+}
 
 /* ── Report ── */
 @media print {
@@ -2002,7 +2174,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v43 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v45 · 2026-05-14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -2023,51 +2195,54 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-petrol">
     <div class="page-header">
       <h2>Petrol Log</h2>
+      <p class="sub">Log fill-ups, see totals, and track cost per km when odometer readings are present.</p>
     </div>
-    <div class="page-body">
-      <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="page-body page-body--petrol">
+      <div class="stat-row pt-stat-row">
         <div class="stat-card"><div class="s-label">Total spent</div><div class="s-value red" id="pt-total">RM 0</div></div>
         <div class="stat-card"><div class="s-label">Total litres</div><div class="s-value" id="pt-litres">0 L</div></div>
         <div class="stat-card"><div class="s-label">Avg price/litre</div><div class="s-value" id="pt-ppl">RM 0</div></div>
         <div class="stat-card"><div class="s-label">Cost per km</div><div class="s-value" id="pt-cpk">RM 0</div></div>
       </div>
 
-      <div class="card mb-5">
+      <div class="card mb-5 pt-form-card">
         <div class="panel-hd"><span class="panel-title">Log a fill-up</span></div>
         <div class="panel-bd">
-          <div style="display:grid;grid-template-columns:1fr 120px 120px 140px 120px auto;gap:12px;align-items:end">
+          <div class="pt-form-grid">
             <div>
-              <label class="lbl">Station / Note</label>
+              <label class="lbl" for="pt-station">Station / Note</label>
               <input type="text" id="pt-station" placeholder="e.g. Petronas Rawang" maxlength="60"/>
             </div>
             <div>
-              <label class="lbl">Litres</label>
+              <label class="lbl" for="pt-litres-in">Litres</label>
               <input type="number" id="pt-litres-in" placeholder="0.00" min="0" step="0.01"/>
             </div>
             <div>
-              <label class="lbl">Price/litre (RM)</label>
+              <label class="lbl" for="pt-ppl-in">Price/litre (RM)</label>
               <input type="number" id="pt-ppl-in" placeholder="2.05" min="0" step="0.01"/>
             </div>
             <div>
-              <label class="lbl">Odometer (km)</label>
+              <label class="lbl" for="pt-odo">Odometer (km)</label>
               <input type="number" id="pt-odo" placeholder="e.g. 54320" min="0" step="1"/>
             </div>
             <div>
-              <label class="lbl">Date</label>
+              <label class="lbl" for="pt-date">Date</label>
               <input type="date" id="pt-date"/>
             </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary" id="add-pt-btn">Log</button>
+            <div class="pt-form-actions">
+              <button type="button" class="btn btn-primary" id="add-pt-btn">Log fill-up</button>
             </div>
           </div>
-          <div style="margin-top:10px;font-size:var(--f-sm);color:var(--ink3)" id="pt-calc-hint"></div>
+          <div class="pt-calc-hint" id="pt-calc-hint"></div>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card pt-history-card">
         <div class="panel-hd"><span class="panel-title">Fill-up history</span></div>
-        <div class="panel-bd" style="padding:0">
-          <div id="pt-list"></div>
+        <div class="panel-bd panel-bd--flush">
+          <div class="pt-list-scroll" role="region" aria-label="Fill-up history">
+            <div id="pt-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2160,10 +2335,10 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js"></script>
-<script src="sync.js"></script>
-<script src="features.js"></script>
-<script src="extras.js"></script>
-<script src="import-inline.js"></script>
+<script src="app.js?v=45"></script>
+<script src="sync.js?v=45"></script>
+<script src="features.js?v=45"></script>
+<script src="extras.js?v=45"></script>
+<script src="import-inline.js?v=45"></script>
 </body>
 </html>
