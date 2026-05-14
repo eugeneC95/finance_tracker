@@ -113,8 +113,9 @@ function humanizeSaveApiError(raw) {
   }
   if (/unknown action:\s*save_chunk/i.test(raw)) {
     return (
-      'Apps Script is probably still on an old deployment (no save_chunk). Deploy → Manage deployments → Edit → Version: New version → Deploy, using this repo’s google-apps-script.js. ' +
-      'If you already redeployed, check Settings: the URL must end at /exec with nothing after it (no ?…); tap Test connection, then Save again.'
+      'Google Apps Script was mis-reading the save action (fixed in server apiVersion 5). ' +
+      'Open script.google.com → paste this repo’s google-apps-script.js → Deploy → Manage deployments → Edit → New version → Deploy. ' +
+      'Then Test connection — you should see apiVersion 5 — and try Save again.'
     );
   }
   return raw;
@@ -138,6 +139,7 @@ function syncPing() {
         if (isNaN(av) || av < 2) hint = ' — redeploy script (ping missing apiVersion)';
         else if (av < 3) hint = ' — redeploy script for unit trust on Sheets (UTHoldings / UTNav)';
         else if (av < 4) hint = ' — redeploy script so UTHoldings uses total paid RM (totalCost incl. fees)';
+        else if (av < 5) hint = ' — redeploy script v5 (fixes save_chunk when action is a string)';
         setSyncStatus('ok', (data.message || 'Connected') + hint);
         showToast('Connected to Google Sheets');
       } else {

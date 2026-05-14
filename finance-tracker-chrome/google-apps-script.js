@@ -36,18 +36,30 @@ function getOrCreateSheet(tabName) {
 }
 
 // Web app URL must not include ?query — clients may append &action=… twice otherwise.
-// e.parameters.action can be an array; e.parameter.action may still not === 'save_chunk'.
+// e.parameters.action is either a string OR an array (one entry per repeated ?action=).
+// BUG (fixed v5): if it is a string like "save_chunk", then action[length-1] is only the
+// last CHARACTER ("k"), so save_chunk never matched and the server returned Unknown action.
 function normalizeAction_(e) {
-  var a = 'ping';
-  if (e && e.parameters && e.parameters.action && e.parameters.action.length) {
-    a = e.parameters.action[e.parameters.action.length - 1];
-  } else if (e && e.parameter && e.parameter.action) {
-    a = e.parameter.action;
+  function clean(s) {
+    return String(s == null ? '' : s).replace(/^\s+|\s+$/g, '').toLowerCase();
   }
-  if (a && typeof a !== 'string' && a.length !== undefined) {
-    try { a = a[a.length - 1]; } catch (x) {}
+  var raw = null;
+  if (e && e.parameters && e.parameters.action != null && e.parameters.action !== '') {
+    var x = e.parameters.action;
+    if (typeof x === 'string') {
+      raw = x;
+    } else if (typeof x === 'number') {
+      raw = String(x);
+    } else if (typeof x.length === 'number' && x.length > 0) {
+      var piece = x[x.length - 1];
+      raw = typeof piece === 'string' ? piece : String(piece);
+    }
   }
-  return String(a || 'ping').trim().toLowerCase();
+  if ((raw == null || raw === '') && e && e.parameter && e.parameter.action) {
+    raw = e.parameter.action;
+  }
+  var a = clean(raw || 'ping');
+  return a || 'ping';
 }
 
 // ── Request entry points ───────────────────────────────────
@@ -93,7 +105,7 @@ function handleSaveChunk_(e) {
           }
         }
         if (allGone) {
-          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 4 };
+          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 5 };
         }
         return { ok: true, partial: true, need: i };
       }
@@ -106,7 +118,7 @@ function handleSaveChunk_(e) {
       cache.remove(keyPrefix + i);
     }
     saveAllData(payload);
-    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 4 };
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 5 };
   } catch (err) {
     return { ok: false, error: err.toString() };
   } finally {
@@ -123,7 +135,7 @@ function doGet(e) {
       result = {
         ok: true,
         message: 'Finance Tracker connected successfully',
-        apiVersion: 4,
+        apiVersion: 5,
       };
 
     } else if (action === 'save') {
@@ -135,7 +147,7 @@ function doGet(e) {
         // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
         var payload = JSON.parse(raw);
         saveAllData(payload);
-        result = { ok: true, saved: new Date().toISOString(), apiVersion: 4 };
+        result = { ok: true, saved: new Date().toISOString(), apiVersion: 5 };
       }
 
     } else if (action === 'save_chunk') {
@@ -166,7 +178,7 @@ function doPost(e) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);
       return ContentService
-        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 4 }))
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 5 }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (err) {
