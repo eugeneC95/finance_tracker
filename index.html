@@ -112,22 +112,24 @@ input, select, textarea { font-family: inherit; }
    ============================================================ */
 :root {
   /* Colours – light */
-  --page-bg  : #F2F2F0;
+  --page-bg  : #eef1ee;
   --card-bg  : #FFFFFF;
-  --card-bg2 : #F8F8F6;
-  --line     : #E6E6E2;
-  --line2    : #CBCBC6;
-  --ink      : #1A1A1A;
-  --ink2     : #5A5A54;
-  --ink3     : #9A9A94;
-  --brand    : #1A1A1A;
-  --green    : #1A9E6E;
-  --red      : #E24B4A;
-  --blue     : #2563EB;
+  --card-bg2 : #f4f6f4;
+  --line     : #e2e5e2;
+  --line2    : #c5c9c4;
+  --ink      : #141816;
+  --ink2     : #4a524c;
+  --ink3     : #8a938c;
+  --brand    : #0f3d34;
+  --primary  : #0f766e;
+  --primary-dk: #0d5c56;
+  --green    : #15803d;
+  --red      : #dc2626;
+  --blue     : #2563eb;
 
   /* Sidebar */
-  --sb-bg    : #1A1A1A;
-  --sb-w     : 224px;
+  --sb-bg    : #0f1612;
+  --sb-w     : 232px;
 
   /* Space scale */
   --s1  : 4px;
@@ -148,23 +150,30 @@ input, select, textarea { font-family: inherit; }
   --f-2xl: 28px;
 
   /* Misc */
-  --radius  : 10px;
-  --radius-sm: 7px;
-  --shadow  : 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+  --radius  : 12px;
+  --radius-sm: 8px;
+  --shadow  : 0 1px 2px rgba(15,22,18,.06), 0 4px 16px rgba(15,22,18,.08);
+  --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
 }
 
 /* ── Dark theme ── */
 body.dark {
-  --page-bg  : #111113;
-  --card-bg  : #1C1C1F;
-  --card-bg2 : #252528;
-  --line     : #2E2E32;
-  --line2    : #48484E;
-  --ink      : #F0F0F5;
-  --ink2     : #AEAEB8;
-  --ink3     : #56565E;
-  --brand    : #F0F0F5;
-  --sb-bg    : #000000;
+  --page-bg  : #0c0e0d;
+  --card-bg  : #161a18;
+  --card-bg2 : #1c221f;
+  --line     : #2a322e;
+  --line2    : #3d4843;
+  --ink      : #eef2ef;
+  --ink2     : #b4bcb7;
+  --ink3     : #6a736e;
+  --brand    : #d1fae5;
+  --primary  : #2dd4bf;
+  --primary-dk: #14b8a6;
+  --green    : #4ade80;
+  --red      : #f87171;
+  --blue     : #60a5fa;
+  --sb-bg    : #050807;
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.25);
 }
 
 /* ── Font size modes ── */
@@ -179,6 +188,10 @@ html, body { height: 100%; }
 html {
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
 body {
   display: flex;
@@ -221,6 +234,21 @@ body {
   overflow-y: auto;
 }
 
+.nav-section-label {
+  display: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 10px 10px 4px;
+  margin: 0;
+  pointer-events: none;
+}
+@media (min-width: 641px) {
+  .nav-section-label { display: block; }
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -238,8 +266,10 @@ body {
 }
 .nav-item .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
 .nav-item:hover  { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
-.nav-item.active { background: rgba(255,255,255,.14); color: #fff; }
-.nav-spacer { flex: 1; }
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
 
 .sb-month {
   padding: var(--s4) var(--s3) var(--s6);
@@ -293,8 +323,25 @@ body {
 
 /* Page header */
 .page-header {
+  position: relative;
   padding: var(--s8) var(--s8) 0;
+  padding-left: calc(var(--s8) + 6px);
   margin-bottom: var(--s6);
+}
+.page-header::before {
+  content: '';
+  position: absolute;
+  left: var(--s5);
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--primary), var(--green));
+  opacity: 0.85;
+}
+@media (max-width: 640px) {
+  .page-header { padding-left: 18px; }
+  .page-header::before { left: 10px; }
 }
 .page-header h2 {
   font-size: var(--f-2xl);
@@ -306,6 +353,8 @@ body {
   font-size: var(--f-sm);
   color: var(--ink3);
   margin-top: var(--s1);
+  max-width: 52ch;
+  line-height: 1.45;
 }
 
 /* Page body */
@@ -407,7 +456,13 @@ textarea {
   -webkit-appearance: none;
 }
 input::placeholder { color: var(--ink3); }
-input:focus, select:focus { border-color: var(--line2); background: var(--card-bg); }
+input:focus, select:focus { border-color: var(--primary); background: var(--card-bg); }
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
 
 textarea {
   height: auto;
@@ -433,11 +488,19 @@ textarea {
   white-space: nowrap;
   transition: opacity .15s, transform .1s;
 }
-.btn:hover  { opacity: .84; }
-.btn:active { transform: scale(.97); }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.btn:hover  { opacity: .88; }
+.btn:active { transform: scale(.98); }
 
-.btn-primary { background: var(--brand); color: var(--card-bg); }
-body.dark .btn-primary { color: #000; }
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dk) 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
+}
+body.dark .btn-primary { color: #041312; }
 .btn-green   { background: var(--green); color: #fff; }
 .btn-ghost   {
   background: none;
@@ -475,8 +538,8 @@ body.dark .btn-primary { color: #000; }
 }
 .cat-btn .ci { font-size: 20px; line-height: 1; }
 .cat-btn:hover  { border-color: var(--line2); background: var(--card-bg); color: var(--ink); }
-.cat-btn.active { border-color: var(--brand); background: var(--brand); color: #fff; }
-body.dark .cat-btn.active { color: #000; }
+.cat-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; }
+body.dark .cat-btn.active { color: #041312; }
 
 /* Add-expense input row */
 .add-row {
@@ -570,8 +633,8 @@ body.dark .tx-action-btn.edit:hover { background: #1a2d3d; border-color: #1e3a5f
   color: var(--ink2);
   transition: all .12s;
 }
-.pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
-body.dark .pill.active { color: #000; }
+.pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+body.dark .pill.active { color: #041312; }
 .pill:hover:not(.active) { border-color: var(--line2); color: var(--ink); }
 
 /* Empty state */
@@ -694,7 +757,7 @@ body.dark .bar-track { background: var(--card-bg2); }
   box-shadow: var(--shadow);
 }
 .src-card:hover  { border-color: var(--line2); }
-.src-card.active { border-color: var(--brand); }
+.src-card.active { border-color: var(--primary); }
 .src-icon { font-size: 38px; margin-bottom: var(--s3); }
 .src-name { font-size: var(--f-lg); font-weight: 700; margin-bottom: var(--s1); }
 .src-desc { font-size: var(--f-xs); color: var(--ink3); }
@@ -801,7 +864,7 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
   cursor: pointer;
   transition: background .2s, border-color .2s;
 }
-.toggle input:checked + .toggle-track { background: var(--brand); border-color: var(--brand); }
+.toggle input:checked + .toggle-track { background: var(--primary); border-color: var(--primary); }
 .toggle-knob {
   position: absolute;
   top: 2px; left: 2px;
@@ -825,8 +888,8 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
   color: var(--ink2);
   transition: all .12s;
 }
-.fs-btn.active { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
-body.dark .fs-btn.active { color: #000; }
+.fs-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+body.dark .fs-btn.active { color: #041312; }
 
 .cur-input {
   width: 80px !important;
@@ -845,6 +908,40 @@ body.dark .fs-btn.active { color: #000; }
   line-height: 1.7;
 }
 .about-card strong { color: var(--ink); }
+
+.sync-help-details {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg2);
+  overflow: hidden;
+}
+.sync-help-details[open] { background: var(--card-bg); }
+.sync-help-summary {
+  cursor: pointer;
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--primary);
+  padding: 12px 14px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.sync-help-summary::-webkit-details-marker { display: none; }
+.sync-help-summary::after {
+  content: '▾';
+  font-size: 10px;
+  opacity: 0.6;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.sync-help-details[open] .sync-help-summary::after { transform: rotate(-180deg); }
+.sync-help-details .about-card {
+  margin: 0 12px 12px;
+  border-radius: var(--radius-sm);
+}
 
 /* ============================================================
    MODALS (edit + category drill-down)
@@ -1222,6 +1319,7 @@ body.dark .fs-btn.active { color: #000; }
   /* v16 — mobile-first layout & typography */
   .page-header {
     padding: 12px 12px 0;
+    padding-left: 18px;
     margin-bottom: 8px;
   }
   .page-header h2 {
@@ -1854,7 +1952,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v23 · 2026-05-14';
+  var BUILD_VERSION    = 'v28 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -1991,10 +2089,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="sb-brand">
     <div class="logo">💰</div>
     <div class="name">Finance Tracker</div>
-    <div class="tagline">Personal money manager</div>
+    <div class="tagline">Simple · private · works offline</div>
   </div>
 
   <nav class="sb-nav">
+    <p class="nav-section-label" role="presentation">Money</p>
     <button class="nav-item active" data-tab="expenses">
       <span class="icon">💸</span> Expenses
     </button>
@@ -2004,6 +2103,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <button class="nav-item" data-tab="assets">
       <span class="icon">🏦</span> Assets
     </button>
+    <p class="nav-section-label" role="presentation">Tools</p>
     <button class="nav-item" data-tab="search">
       <span class="icon">🔍</span> Search
     </button>
@@ -2023,6 +2123,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <span class="icon">📄</span> Report
     </button>
     <div class="nav-spacer"></div>
+    <p class="nav-section-label" role="presentation">App</p>
     <button class="nav-item" data-tab="pin-settings">
       <span class="icon">🔒</span> PIN Lock
     </button>
@@ -2056,7 +2157,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page active" id="page-expenses">
     <div class="page-header">
       <h2>Expenses</h2>
-      <div class="sub">Track where your money goes</div>
+      <div class="sub">Add entries, switch months, and review spending at a glance</div>
     </div>
     <div class="page-body">
 
@@ -2178,7 +2279,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-income">
     <div class="page-header">
       <h2>Income</h2>
-      <div class="sub">Track what you earn each month</div>
+      <div class="sub">Log earnings and compare them to spending for this month</div>
     </div>
     <div class="page-body">
 
@@ -2266,7 +2367,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-assets">
     <div class="page-header">
       <h2>Assets</h2>
-      <div class="sub">Bank accounts &amp; net worth overview</div>
+      <div class="sub">Balances, accounts, and your net snapshot in one place</div>
     </div>
     <div class="page-body">
 
@@ -2565,7 +2666,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-settings">
     <div class="page-header">
       <h2>Settings</h2>
-      <div class="sub">Customise your experience</div>
+      <div class="sub">Look &amp; feel, backups, and optional Google Sheets sync</div>
     </div>
     <div class="page-body">
       <div class="settings-grid">
@@ -2691,9 +2792,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </span>
             </div>
             <div class="panel-bd">
-              <div style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.7">
-                Syncs all your data to a private Google Sheet in your own Google account.
-                Auto-saves 3 seconds after every change. Data never leaves your Google account.
+              <div style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.65">
+                Keeps a private copy in <strong>your</strong> Google Sheet. After you paste the web app URL, use <strong>Test connection</strong>, then edits auto-save to the cloud.
               </div>
 
               <div style="margin-bottom:12px">
@@ -2708,7 +2808,9 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 <button class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
               </div>
 
-              <div class="about-card" style="font-size:var(--f-xs);line-height:1.9">
+              <details class="sync-help-details">
+                <summary class="sync-help-summary">Full setup &amp; troubleshooting</summary>
+                <div class="about-card" style="font-size:var(--f-xs);line-height:1.9">
                 <strong>Setup (one time, ~5 minutes):</strong><br/>
                 1. Go to <strong>script.google.com</strong> → New project<br/>
                 2. Delete all existing code, paste everything from <strong>google-apps-script.js</strong> (in the zip)<br/>
@@ -2720,7 +2822,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
                 • Re-deploy: Deploy → Manage deployments → Edit → New version → Deploy<br/>
                 • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
-              </div>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -2730,7 +2833,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v23 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v28 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -2966,12 +3069,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v23 · 2026-05-14</div>
-<script src="app.js?v=23"></script>
-<script src="sync.js?v=27"></script>
-<script src="features.js?v=23"></script>
-<script src="extras.js?v=23"></script>
-<script src="import-inline.js?v=23"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v28 · 2026-05-14</div>
+<script src="app.js?v=28"></script>
+<script src="sync.js?v=28"></script>
+<script src="features.js?v=28"></script>
+<script src="extras.js?v=28"></script>
+<script src="import-inline.js?v=28"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
