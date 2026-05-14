@@ -187,6 +187,11 @@ function syncSave(silent) {
         var msg = (data && data.error) || 'unknown';
         if (/no data received/i.test(msg)) {
           msg = 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
+        } else if (/unknown action:\s*save_chunk/i.test(msg)) {
+          msg =
+            'Your Apps Script web app is an old version — it does not support chunked saves. ' +
+            'In Google Apps Script: Deploy → Manage deployments → Edit → New version (paste code from repo google-apps-script.js). ' +
+            'Large datasets need save_chunk; until then only very small saves work.';
         }
         setSyncStatus('error', 'Save failed: ' + msg);
         if (!silent) showToast('Save failed — ' + msg);
@@ -361,24 +366,30 @@ function scheduleAutoSync() {
   syncTimer = setTimeout(function() { syncSave(true); }, 4000);
 }
 
-// Patch chrome.storage saves to trigger auto-sync
+// Patch save* functions to trigger auto-sync (see ../sync.js).
 (function() {
-  var origExp   = saveExp;
-  var origInc   = saveInc;
-  var origBanks = saveBanks;
+  function wrapSave(name) {
+    var cur = typeof window[name] === 'function' ? window[name] : null;
+    if (!cur || cur.__ftSyncHooked) return;
+    var orig = cur;
+    window[name] = function() {
+      orig.apply(this, arguments);
+      scheduleAutoSync();
+    };
+    window[name].__ftSyncHooked = true;
+  }
 
-  saveExp = function() {
-    origExp();
-    scheduleAutoSync();
-  };
-  saveInc = function() {
-    origInc();
-    scheduleAutoSync();
-  };
-  saveBanks = function() {
-    origBanks();
-    scheduleAutoSync();
-  };
+  wrapSave('saveExp');
+  wrapSave('saveInc');
+  wrapSave('saveBanks');
+
+  function hookDeferredSaves() {
+    wrapSave('saveRec');
+    wrapSave('saveBud');
+    wrapSave('savePetrol');
+    wrapSave('saveNWH');
+  }
+  setTimeout(hookDeferredSaves, 0);
 })();
 
 // ── UI ─────────────────────────────────────────────────────
