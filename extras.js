@@ -4,23 +4,18 @@
 //   STORAGE
 // ╚══════════════════════════════════════════════════════════╝
 var KEY_PETROL = 'petrol_v1';
-var KEY_PIN    = 'pin_v1';
 
 var petrolLog = [];
-var pinState  = { hash: null, enabled: false };
 
 function loadExtras() {
-  chromeStorage.local.get([KEY_PETROL, KEY_PIN], function(r) {
+  chromeStorage.local.get([KEY_PETROL], function(r) {
     petrolLog = r[KEY_PETROL] || [];
-    pinState  = r[KEY_PIN]    || { hash: null, enabled: false };
-    updatePinStatusUI();
     renderPetrolLog();
     buildCatSelects();
   });
 }
 
 function savePetrol() { chromeStorage.local.set({[KEY_PETROL]: petrolLog}); }
-function savePinSt()  { chromeStorage.local.set({[KEY_PIN]:    pinState}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   CATEGORY SELECT REBUILD
@@ -344,115 +339,6 @@ function renderReport() {
 }
 
 // ╔══════════════════════════════════════════════════════════╗
-//   PIN LOCK
-// ╚══════════════════════════════════════════════════════════╝
-var pinUnlocked = false;
-
-function initPinLock() {
-  chromeStorage.local.get([KEY_PIN], function(r) {
-    try {
-      pinState = r[KEY_PIN] || { hash: null, enabled: false };
-      updatePinStatusUI();
-      if (pinState.enabled && pinState.hash) {
-        showPinOverlay();
-      } else {
-        pinUnlocked = true;
-      }
-    } catch (e) {
-      console.warn('initPinLock', e);
-      pinUnlocked = true;
-    }
-  });
-}
-
-function showPinOverlay() {
-  var ov = document.getElementById('pin-overlay');
-  if (ov) {
-    ov.style.display = 'flex';
-    ov.style.flexDirection = 'column';
-    ov.style.alignItems = 'center';
-    ov.style.justifyContent = 'center';
-  }
-  var pe = document.getElementById('pin-entry');
-  if (pe) {
-    try { pe.focus(); } catch (e) {}
-  }
-}
-
-function hidePinOverlay() {
-  var ov = document.getElementById('pin-overlay');
-  if (ov) ov.style.display = 'none';
-  pinUnlocked = true;
-}
-
-async function hashPin(pin) {
-  if (!window.crypto || !crypto.subtle) {
-    throw new Error('Secure crypto unavailable — open this site with HTTPS');
-  }
-  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'ft2024'));
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-}
-
-async function submitPin() {
-  var val = document.getElementById('pin-entry') ? document.getElementById('pin-entry').value : '';
-  if (!val || val.length !== 4 || !/^\d{4}$/.test(val)) {
-    showPinError('Enter a 4-digit PIN'); return;
-  }
-  try {
-    var h = await hashPin(val);
-    if (h === pinState.hash) {
-      hidePinOverlay();
-      if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
-    } else {
-      showPinError('Incorrect PIN');
-      if (document.getElementById('pin-entry')) document.getElementById('pin-entry').value = '';
-    }
-  } catch (e) {
-    showPinError('Could not verify PIN');
-    console.warn('submitPin', e);
-  }
-}
-
-function showPinError(msg) {
-  var el = document.getElementById('pin-error');
-  if (el) { el.textContent = msg; setTimeout(function(){ el.textContent=''; }, 2000); }
-}
-
-async function setNewPin() {
-  var nv = document.getElementById('pin-new')     ? document.getElementById('pin-new').value     : '';
-  var cv = document.getElementById('pin-confirm') ? document.getElementById('pin-confirm').value  : '';
-  if (!nv || nv.length !== 4 || !/^\d{4}$/.test(nv)) { showToast('PIN must be exactly 4 digits'); return; }
-  if (nv !== cv) { showToast('PINs do not match'); return; }
-  try {
-    pinState.hash    = await hashPin(nv);
-    pinState.enabled = true;
-    savePinSt();
-  } catch (e) {
-    showToast('Could not set PIN — try another browser or check HTTPS');
-    console.warn('setNewPin', e);
-    return;
-  }
-  if (document.getElementById('pin-new'))     document.getElementById('pin-new').value     = '';
-  if (document.getElementById('pin-confirm')) document.getElementById('pin-confirm').value  = '';
-  updatePinStatusUI();
-  showToast('PIN set — you will be asked next time you open the app');
-}
-
-function clearPin() {
-  if (!confirm('Remove PIN lock?')) return;
-  pinState = { hash: null, enabled: false };
-  savePinSt(); updatePinStatusUI(); showToast('PIN removed');
-}
-
-function updatePinStatusUI() {
-  var txt = document.getElementById('pin-status-txt');
-  if (txt) {
-    txt.textContent = pinState.enabled ? 'enabled' : 'disabled';
-    txt.style.color  = pinState.enabled ? 'var(--green)' : 'var(--ink2)';
-  }
-}
-
-// ╔══════════════════════════════════════════════════════════╗
 //   WIRING
 // ╚══════════════════════════════════════════════════════════╝
 // Petrol
@@ -473,18 +359,6 @@ if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 var printBtn = document.getElementById('print-report-btn');
 if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
 
-// PIN settings
-var setPinBtn   = document.getElementById('set-pin-btn');
-var clearPinBtn = document.getElementById('clear-pin-btn');
-if (setPinBtn)   setPinBtn.addEventListener('click', setNewPin);
-if (clearPinBtn) clearPinBtn.addEventListener('click', clearPin);
-
-// PIN overlay
-var pinSubmit = document.getElementById('pin-submit-btn');
-var pinEntry  = document.getElementById('pin-entry');
-if (pinSubmit) pinSubmit.addEventListener('click', submitPin);
-if (pinEntry)  pinEntry.addEventListener('keydown', function(e){ if(e.key==='Enter') submitPin(); });
-
 // Nav triggers for petrol/report pages
 document.querySelectorAll('.nav-item').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -494,12 +368,4 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
   });
 });
 
-// ╔══════════════════════════════════════════════════════════╗
-//   INIT
-// ╚══════════════════════════════════════════════════════════╝
-if (document.readyState === 'complete') setTimeout(function() { initPinLock(); }, 0);
-else window.addEventListener('load', function ftPinInit() {
-  window.removeEventListener('load', ftPinInit);
-  initPinLock();
-});
 loadExtras();

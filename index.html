@@ -45,19 +45,17 @@
 //   sessionStorage  ('ft-unlocked')    — same-session token
 //   localStorage    ('ft_unlock_bridge') — short-lived bridge (~45 s)
 //
-// ?reset=1 clears every lock-related key in storage so the user can
-// reset a forgotten PIN, then re-renders the overlay in "create" mode.
+// ?reset=1 clears session unlock and the short-lived bridge so the lock
+// overlay appears again on the next paint (PIN is fixed in source).
 (function(){
   var BRIDGE_KEY = 'ft_unlock_bridge';
   var BRIDGE_MS  = 45000;
   window.__ftUnlocked    = false;
-  window.__ftForceCreate = false;
   try {
     if (/[?&]reset=1\b/.test(window.location.search)) {
       try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e0) {}
       try { sessionStorage.removeItem('ft-unlocked'); } catch (e0b) {}
       try { localStorage.removeItem(BRIDGE_KEY); } catch (e0c) {}
-      window.__ftForceCreate = true;
       try { history.replaceState(null, '', window.location.pathname); } catch (e0d) {}
     }
     if (/[?&]debug=1\b/.test(window.location.search)) {
@@ -2015,7 +2013,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <div class="lk-logo">💰</div>
     <div class="lk-name">Finance Tracker</div>
     <div class="lk-sub">Personal money manager</div>
-    <div class="lk-label" id="lk-label">Create your PIN</div>
+    <div class="lk-label" id="lk-label">Enter PIN</div>
     <div class="lk-dots">
       <div class="lk-dot" id="lk-d0"></div>
       <div class="lk-dot" id="lk-d1"></div>
@@ -2053,10 +2051,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 // <head> via window.__ftUnlocked). No location.replace — when the PIN is
 // correct we just remove the overlay and let the dashboard render in place.
 (function lockController(){
-  var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
+  // Built-in 6-digit PIN (same flow as before: compared via SHA-256). Anyone
+  // with the source can read it — change here if you want a different code.
+  var FT_LOCK_PIN      = '000000';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v30 · 2026-05-14';
+  var BUILD_VERSION    = 'v31 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2072,8 +2072,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
   if (window.__ftUnlocked) { hide(); return; }
 
-  function getStored() { try { return localStorage.getItem(STORAGE_HASH_KEY); } catch (e) { return null; } }
-  function setStored(h) { try { localStorage.setItem(STORAGE_HASH_KEY, h); } catch (e) {} }
+  // Leftover from older "choose your own PIN" builds — not used anymore.
+  try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e) {}
 
   async function sha256(s) {
     if (!window.crypto || !window.crypto.subtle) throw new Error('crypto.subtle unavailable (needs HTTPS)');
@@ -2081,18 +2081,15 @@ body.dark .ft-fab { background: #fff; color: #000; }
     return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
   }
 
-  var entered = '', pendingPin = '', checking = false;
-  var stored = window.__ftForceCreate ? null : getStored();
-  var mode = stored ? 'login' : 'setup1';
+  var expectedHashPromise = sha256(FT_LOCK_PIN);
+  var entered = '', checking = false;
 
   function $(id){ return document.getElementById(id); }
   function setLabel(t){ var e = $('lk-label'); if (e) e.textContent = t; }
   function setError(t){ var e = $('lk-err');   if (e) e.textContent = t || ''; }
   function setPlaceholder(){
     var i = $('lk-input'); if (!i) return;
-    i.placeholder = (mode === 'setup1') ? 'New PIN (6 digits)'
-                  : (mode === 'setup2') ? 'Confirm PIN'
-                  : '6 digits';
+    i.placeholder = '6 digits';
   }
   function updateDots(err){
     for (var i = 0; i < MAX; i++) {
@@ -2111,6 +2108,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     }, 900);
   }
   function unlock(){
+    checking = false;
     try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
     try { localStorage.setItem(BRIDGE_KEY, String(Date.now())); } catch (e2) {}
     window.__ftUnlocked = true;
@@ -2126,35 +2124,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
     if (checking) return;
     checking = true;
     try {
-      if (mode === 'login') {
-        var s = getStored();
-        if (!s) { checking = false; return; }
-        var h = await sha256(val);
-        if (h === s) { unlock(); return; }
-        reset('Incorrect PIN'); return;
-      }
-      if (mode === 'setup1') {
-        pendingPin = val; entered = ''; mode = 'setup2';
-        setLabel('Confirm your PIN'); setPlaceholder(); updateDots(false);
-        var i = $('lk-input'); if (i) i.value = '';
-        checking = false; return;
-      }
-      if (mode === 'setup2') {
-        if (val !== pendingPin) {
-          mode = 'setup1'; pendingPin = '';
-          setLabel('Create your PIN'); setPlaceholder();
-          reset('PINs did not match — start over'); return;
-        }
-        var h2 = await sha256(pendingPin);
-        setStored(h2); unlock(); return;
-      }
+      var h = await sha256(val);
+      var want = await expectedHashPromise;
+      if (h === want) { unlock(); return; }
+      reset('Incorrect PIN');
     } catch (e) {
       reset('Error: ' + (e && e.message || e));
     }
   }
 
   // Wire up
-  setLabel(mode === 'login' ? 'Enter PIN' : 'Create your PIN');
+  setLabel('Enter PIN');
   setPlaceholder();
   var ver = $('lk-ver'); if (ver) ver.textContent = BUILD_VERSION;
   show();
@@ -2228,9 +2208,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
     </button>
     <div class="nav-spacer"></div>
     <p class="nav-section-label" role="presentation">App</p>
-    <button class="nav-item" data-tab="pin-settings">
-      <span class="icon">🔒</span> PIN Lock
-    </button>
     <button class="nav-item" data-tab="settings">
       <span class="icon">⚙️</span> Settings
     </button>
@@ -2937,14 +2914,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v30 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v31 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
                 <button class="btn-ghost" id="ft-force-refresh-btn" title="Unregister the service worker, clear the cache, and reload. Useful if the app looks stuck on an old build.">🔄 Force refresh app</button>
-                <button class="btn-ghost" id="ft-reset-pin-btn" title="Forget the saved PIN and start over.">🔑 Reset PIN</button>
+                <button class="btn-ghost" id="ft-reset-pin-btn" title="End this unlocked session; you will need to enter the PIN again after reload.">🔑 Lock again</button>
               </div>
               <div id="ft-force-refresh-status" style="margin-top:8px;font-size:var(--f-xs);color:var(--ink3)"></div>
             </div>
@@ -3026,42 +3003,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
     </div>
   </div>
 
-  <!-- ── PIN SETTINGS ── -->
-  <div class="page" id="page-pin-settings">
-    <div class="page-header">
-      <h2>PIN Lock</h2>
-      <div class="sub">Protect your finance data with a 4-digit PIN</div>
-    </div>
-    <div class="page-body" style="max-width:440px">
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Set PIN</span></div>
-        <div class="panel-bd">
-          <div id="pin-status" style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:16px;padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line)">
-            PIN lock is currently <strong id="pin-status-txt">disabled</strong>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <label class="lbl">New PIN (4 digits)</label>
-              <input type="password" id="pin-new" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
-            </div>
-            <div>
-              <label class="lbl">Confirm PIN</label>
-              <input type="password" id="pin-confirm" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
-            </div>
-            <div style="display:flex;gap:10px">
-              <button class="btn btn-primary" id="set-pin-btn">Set PIN</button>
-              <button class="btn-ghost" id="clear-pin-btn">Remove PIN</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="about-card" style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-        <strong>How PIN lock works:</strong><br/>
-        When enabled, you'll be asked for your PIN each time you open the dashboard. The PIN hash is stored only on this device (in your browser). It is not sent to GitHub or Google. If you forget it, clear site data for this app or remove the stored key from your browser.
-      </div>
-    </div>
-  </div>
-
 </main>
 
 <!-- ══════════════════════════════════════════
@@ -3135,19 +3076,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 
-<!-- ── PIN LOCK SCREEN ── -->
-<div id="pin-overlay" style="display:none;box-sizing:border-box;position:fixed;inset:0;width:100%;min-height:100%;min-height:-webkit-fill-available;background:#e8e8e4;z-index:100000;flex-direction:column;align-items:center;justify-content:center;gap:24px;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));box-shadow:inset 0 0 0 2px #333">
-  <div style="font-size:40px">🔒</div>
-  <div style="font-size:var(--f-xl);font-weight:700;color:var(--ink)">Finance Tracker</div>
-  <div style="font-size:var(--f-sm);color:var(--ink3)">Enter your PIN to continue</div>
-  <div style="display:flex;gap:12px">
-    <input type="password" id="pin-entry" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*"
-      style="width:140px;height:56px;text-align:center;font-size:28px;letter-spacing:10px;border:2px solid var(--line);border-radius:var(--radius);background:var(--card-bg);color:var(--ink);outline:none"/>
-  </div>
-  <button class="btn btn-primary" id="pin-submit-btn" style="min-width:140px;height:48px;font-size:var(--f-lg)">Unlock</button>
-  <div id="pin-error" style="color:var(--red);font-size:var(--f-sm);height:20px"></div>
-</div>
-
 <!-- v21: Floating quick-add button (mobile only via CSS) -->
 <button id="ft-fab" class="ft-fab" type="button" aria-label="Quick add expense">+</button>
 <script>
@@ -3173,12 +3101,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v30 · 2026-05-14</div>
-<script src="app.js?v=30"></script>
-<script src="sync.js?v=30"></script>
-<script src="features.js?v=30"></script>
-<script src="extras.js?v=30"></script>
-<script src="import-inline.js?v=30"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v31 · 2026-05-14</div>
+<script src="app.js?v=31"></script>
+<script src="sync.js?v=31"></script>
+<script src="features.js?v=31"></script>
+<script src="extras.js?v=31"></script>
+<script src="import-inline.js?v=31"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -3258,18 +3186,15 @@ if (nMM) nMM.addEventListener('click', function() { document.getElementById('nex
   });
 })();
 
-// ── Reset PIN: forget saved hash, force "create PIN" overlay on next load ──
+// ── Lock again: clear session unlock so the 6-digit overlay returns ──
 (function wireResetPin(){
   var btn = document.getElementById('ft-reset-pin-btn');
   if (!btn) return;
   btn.addEventListener('click', function() {
-    if (!confirm('Forget the saved PIN? You will be asked to create a new one next time you open the app.\n\nYour data stays intact.')) return;
-    try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e) {}
+    if (!confirm('Lock the app for this session? After reload you will need to enter the PIN again.\n\nYour data stays intact.')) return;
     try { sessionStorage.removeItem('ft-unlocked'); } catch (e) {}
     try { localStorage.removeItem('ft_unlock_bridge'); } catch (e) {}
-    var u = new URL(window.location.href);
-    u.searchParams.set('reset', '1');
-    window.location.replace(u.toString());
+    window.location.reload();
   });
 })();
 </script>

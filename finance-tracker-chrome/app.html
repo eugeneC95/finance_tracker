@@ -1078,9 +1078,6 @@ body.dark .fs-btn.active { color: #000; }
       <span class="icon">📄</span> Report
     </button>
     <div class="nav-spacer"></div>
-    <button class="nav-item" data-tab="pin-settings">
-      <span class="icon">🔒</span> PIN Lock
-    </button>
     <button class="nav-item" data-tab="settings">
       <span class="icon">⚙️</span> Settings
     </button>
@@ -1862,42 +1859,6 @@ body.dark .fs-btn.active { color: #000; }
     </div>
   </div>
 
-  <!-- ── PIN SETTINGS ── -->
-  <div class="page" id="page-pin-settings">
-    <div class="page-header">
-      <h2>PIN Lock</h2>
-      <div class="sub">Protect your finance data with a 4-digit PIN</div>
-    </div>
-    <div class="page-body" style="max-width:440px">
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Set PIN</span></div>
-        <div class="panel-bd">
-          <div id="pin-status" style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:16px;padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line)">
-            PIN lock is currently <strong id="pin-status-txt">disabled</strong>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:12px">
-            <div>
-              <label class="lbl">New PIN (4 digits)</label>
-              <input type="password" id="pin-new" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
-            </div>
-            <div>
-              <label class="lbl">Confirm PIN</label>
-              <input type="password" id="pin-confirm" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*" style="letter-spacing:6px;font-size:20px;text-align:center"/>
-            </div>
-            <div style="display:flex;gap:10px">
-              <button class="btn btn-primary" id="set-pin-btn">Set PIN</button>
-              <button class="btn-ghost" id="clear-pin-btn">Remove PIN</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="about-card" style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-        <strong>How PIN lock works:</strong><br/>
-        When enabled, you'll be asked for your PIN each time you open the dashboard. The PIN hash stays in Chrome on this device only — not on GitHub or Google. If you forget it, remove the extension and reinstall, or clear extension storage.
-      </div>
-    </div>
-  </div>
-
 </main>
 
 <!-- ══════════════════════════════════════════
@@ -1970,19 +1931,6 @@ body.dark .fs-btn.active { color: #000; }
   </div>
 </div>
 
-
-<!-- ── PIN LOCK SCREEN ── -->
-<div id="pin-overlay" style="display:none;box-sizing:border-box;position:fixed;inset:0;width:100%;min-height:100%;min-height:-webkit-fill-available;background:var(--page-bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:24px;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))">
-  <div style="font-size:40px">🔒</div>
-  <div style="font-size:var(--f-xl);font-weight:700;color:var(--ink)">Finance Tracker</div>
-  <div style="font-size:var(--f-sm);color:var(--ink3)">Enter your PIN to continue</div>
-  <div style="display:flex;gap:12px">
-    <input type="password" id="pin-entry" maxlength="4" placeholder="••••" inputmode="numeric" pattern="[0-9]*"
-      style="width:140px;height:56px;text-align:center;font-size:28px;letter-spacing:10px;border:2px solid var(--line);border-radius:var(--radius);background:var(--card-bg);color:var(--ink);outline:none"/>
-  </div>
-  <button class="btn btn-primary" id="pin-submit-btn" style="min-width:140px;height:48px;font-size:var(--f-lg)">Unlock</button>
-  <div id="pin-error" style="color:var(--red);font-size:var(--f-sm);height:20px"></div>
-</div>
 
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
