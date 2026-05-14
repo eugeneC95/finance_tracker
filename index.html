@@ -2112,12 +2112,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
 // <head> via window.__ftUnlocked). No location.replace — when the PIN is
 // correct we just remove the overlay and let the dashboard render in place.
 (function lockController(){
-  // Built-in 6-digit PIN (same flow as before: compared via SHA-256). Anyone
-  // with the source can read it — change here if you want a different code.
-  var FT_LOCK_PIN      = '145765';
+  // Unlock compares SHA-256(entered PIN) to this constant. The PIN itself is
+  // not stored in source — only its digest (UTF-8 bytes, same as TextEncoder).
+  // To change: run  node -e "console.log(require('crypto').createHash('sha256').update('123456','utf8').digest('hex'))"
+  // and paste the 64-char hex below. (Six-digit PINs are still guessable offline.)
+  var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v33 · 2026-05-14';
+  var BUILD_VERSION    = 'v34 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2142,7 +2144,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
     return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
   }
 
-  var expectedHashPromise = sha256(FT_LOCK_PIN);
   var entered = '', checking = false;
 
   function $(id){ return document.getElementById(id); }
@@ -2186,8 +2187,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     checking = true;
     try {
       var h = await sha256(val);
-      var want = await expectedHashPromise;
-      if (h === want) { unlock(); return; }
+      if (h === LOCK_PIN_SHA256_HEX) { unlock(); return; }
       reset('Incorrect PIN');
     } catch (e) {
       reset('Error: ' + (e && e.message || e));
@@ -2975,7 +2975,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v33 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v34 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3162,12 +3162,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v33 · 2026-05-14</div>
-<script src="app.js?v=33"></script>
-<script src="sync.js?v=33"></script>
-<script src="features.js?v=33"></script>
-<script src="extras.js?v=33"></script>
-<script src="import-inline.js?v=33"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v34 · 2026-05-14</div>
+<script src="app.js?v=34"></script>
+<script src="sync.js?v=34"></script>
+<script src="features.js?v=34"></script>
+<script src="extras.js?v=34"></script>
+<script src="import-inline.js?v=34"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
