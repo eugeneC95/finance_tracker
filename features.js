@@ -634,6 +634,13 @@ function setExpSearchOpen(open) {
   var pop = expSearchPop();
   var tgl = expSearchToggle();
   if (!pop) return;
+  if (!open) {
+    var ae = document.activeElement;
+    if (ae && pop.contains(ae)) {
+      if (tgl) tgl.focus();
+      else try { ae.blur(); } catch (err) {}
+    }
+  }
   pop.classList.toggle('open', !!open);
   pop.setAttribute('aria-hidden', open ? 'false' : 'true');
   if (tgl) tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -652,6 +659,8 @@ function openExpSearch(opts) {
     return;
   }
   setTimeout(function() {
+    var popAfter = expSearchPop();
+    if (!popAfter || !popAfter.classList.contains('open')) return;
     try {
       si.focus();
       if (opts.selectAll) si.select();
