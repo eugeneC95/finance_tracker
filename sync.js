@@ -10,7 +10,7 @@ var KEY_SYNC_STATE = 'sync_state_v1';
 
 // Baked-in default (override anytime in Settings; empty stored value uses this again)
 var DEFAULT_SYNC_URL =
-  'https://script.google.com/macros/s/AKfycbwkuc6feabs9fUZ44t_IBRsh_0za_YYbbQwPzUeid1aBFe3RxQeG6ayNLfpsx5VbbMA/exec';
+  'https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec';
 
 var syncUrl   = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
