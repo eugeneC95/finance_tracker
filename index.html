@@ -2368,7 +2368,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="lk-card">
     <div class="lk-logo">💰</div>
     <div class="lk-name">Finance Tracker</div>
-    <div class="lk-sub">Personal money manager</div>
     <div class="lk-label" id="lk-label">Enter PIN</div>
     <div class="lk-dots">
       <div class="lk-dot" id="lk-d0"></div>
@@ -2414,7 +2413,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v42 · 2026-05-14';
+  var BUILD_VERSION    = 'v43 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2591,7 +2590,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page active" id="page-expenses">
     <div class="page-header">
       <h2>Expenses</h2>
-      <div class="sub">Add entries, switch months, and review spending at a glance</div>
     </div>
     <div class="page-body">
 
@@ -2613,10 +2611,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
       <!-- Budget overview -->
       <div class="card mb-5">
-        <div class="panel-hd">
-          <span class="panel-title">Budget targets</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Set monthly limits per category</span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
         <div class="panel-bd">
           <div id="budget-panel"></div>
           <div style="display:grid;grid-template-columns:1fr 160px auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
@@ -2650,10 +2645,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
       <!-- Add expense card -->
       <div class="card mb-6">
-        <div class="panel-hd">
-          <span class="panel-title">Add expense</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Pick a category, fill in details, press Add</span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Add expense</span></div>
         <div class="panel-bd">
           <div class="cat-groups" id="cat-btns"></div>
           <div class="exp-add-form">
@@ -2680,16 +2672,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
           <label class="ft-check-label exp-add-recurring">
             <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
-            <span>Also save as a recurring entry (auto-adds every month)</span>
+            <span>Save as recurring monthly</span>
           </label>
         </div>
       </div>
 
       <div class="card mb-5 exp-global-search-card">
-        <div class="panel-hd">
-          <span class="panel-title">Search all months</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Name or category · <kbd style="font-size:10px;border:1px solid var(--line);padding:1px 5px;border-radius:4px">Ctrl</kbd>+<kbd style="font-size:10px;border:1px solid var(--line);padding:1px 5px;border-radius:4px">F</kbd></span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Search all months</span></div>
         <div class="panel-bd">
           <label class="lbl" for="search-input" style="margin-bottom:6px">Find transactions</label>
           <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
@@ -2713,10 +2702,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <!-- Right: chart -->
         <div>
           <div class="card">
-            <div class="panel-hd">
-              <span class="panel-title">By category</span>
-              <span style="font-size:var(--f-xs);color:var(--ink3)">Click to drill down</span>
-            </div>
+            <div class="panel-hd"><span class="panel-title">By category</span></div>
             <div class="panel-bd">
               <div class="bar-chart" id="bar-chart"></div>
             </div>
@@ -2731,7 +2717,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-income">
     <div class="page-header">
       <h2>Income</h2>
-      <div class="sub">Log earnings and compare them to spending for this month</div>
     </div>
     <div class="page-body">
 
@@ -2786,7 +2771,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
         <label class="ft-check-label">
           <input type="checkbox" id="inc-recurring" class="ft-check-input"/>
-          <span>Also save as a recurring entry (auto-adds every month)</span>
+          <span>Save as recurring monthly</span>
         </label>
       </div>
 
@@ -3166,37 +3151,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 <div class="toggle-track"></div>
                 <div class="toggle-knob"></div>
               </label>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="card">
-            <div class="panel-hd"><span class="panel-title">Auto backup</span></div>
-            <div class="panel-bd">
-              <div class="setting-row">
-                <div>
-                  <div class="s-lbl">Auto-backup on open</div>
-                  <div class="s-sub">Saves a JSON backup once per day when you open the app</div>
-                </div>
-                <label class="toggle">
-                  <input type="checkbox" id="ab-toggle"/>
-                  <div class="toggle-track"></div>
-                  <div class="toggle-knob"></div>
-                </label>
-              </div>
-              <div class="setting-row">
-                <div>
-                  <div class="s-lbl">Sub-folder name</div>
-                  <div class="s-sub">Optional folder inside Downloads, e.g. <strong>Finance</strong></div>
-                </div>
-                <input type="text" id="ab-folder" placeholder="Finance" maxlength="60"
-                  style="width:140px;height:34px;font-size:var(--f-sm);padding:0 10px"/>
-              </div>
-              <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <button class="btn btn-primary" id="ab-now-btn" style="height:36px;font-size:var(--f-sm)">⬇ Backup now</button>
-                <span id="ab-status" style="font-size:var(--f-xs);color:var(--ink3)">Auto-backup is disabled</span>
-              </div>
             </div>
           </div>
         </div>

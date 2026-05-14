@@ -7,7 +7,6 @@ const KEY_REC      = 'recurring_v1';
 const KEY_NWH      = 'networth_history_v1';
 const KEY_BUD      = 'budgets_v1';
 const KEY_LAST_CAT = 'lastcat_v1';
-const KEY_AUTOBACK = 'autobackup_v1';
 
 // ╔══════════════════════════════════════════════════════════╗
 //   STATE (shared with app.js via globals)
@@ -15,17 +14,15 @@ const KEY_AUTOBACK = 'autobackup_v1';
 var recurring    = [];   // [{id,name,amount,type,cat,day,active,lastApplied}]
 var networthHist = [];   // [{date,total}]
 var budgets      = {};   // {catName: amount}
-var autoBackup   = { enabled: false, folder: '' };
 
 // ╔══════════════════════════════════════════════════════════╗
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
-  chrome.storage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_AUTOBACK], function(r) {
+  chrome.storage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT], function(r) {
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
-    autoBackup   = r[KEY_AUTOBACK] || { enabled: false, folder: '' };
 
     // Restore last used category
     var lastCat = r[KEY_LAST_CAT];
@@ -38,7 +35,6 @@ function loadFeatures() {
     var changed = applyRecurring();
     renderRecurring();
     renderBudgets();
-    updateAutoBackupUI();
     if (changed) render();
   });
 }
@@ -46,7 +42,6 @@ function loadFeatures() {
 function saveRec()  { chrome.storage.local.set({[KEY_REC]:  recurring}); }
 function saveNWH()  { chrome.storage.local.set({[KEY_NWH]:  networthHist}); }
 function saveBud()  { chrome.storage.local.set({[KEY_BUD]:  budgets}); }
-function saveAB()   { chrome.storage.local.set({[KEY_AUTOBACK]: autoBackup}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   REMEMBER LAST CATEGORY
@@ -595,80 +590,6 @@ function renderDayBreakdown() {
 }
 
 // ╔══════════════════════════════════════════════════════════╗
-//   AUTO-BACKUP TO FOLDER
-// ╚══════════════════════════════════════════════════════════╝
-function downloadLocalBackup() {
-  var payload = {
-    version: 4,
-    exported: new Date().toISOString(),
-    expenses:     (typeof expenses     !== 'undefined') ? expenses     : [],
-    incomes:      (typeof incomes      !== 'undefined') ? incomes      : [],
-    banks:        (typeof banks        !== 'undefined') ? banks        : [],
-    recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
-    networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
-    budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
-    petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
-  };
-  var json = JSON.stringify(payload, null, 2);
-  var blob = new Blob([json], { type: 'application/json' });
-  var url  = URL.createObjectURL(blob);
-  var opts = {
-    url:      url,
-    filename: (autoBackup.folder ? autoBackup.folder.replace(/\/$/, '') + '/' : '') +
-              'finance-tracker-' + new Date().toISOString().slice(0,10) + '.json',
-    saveAs:   false,
-    conflictAction: 'uniquify',
-  };
-  chrome.downloads.download(opts, function(id) {
-    URL.revokeObjectURL(url);
-    if (id) {
-      showToast('Backup saved (' + (payload.expenses.length + payload.incomes.length) + ' entries)');
-    } else {
-      showToast('Backup: check Downloads folder');
-    }
-  });
-  return true;
-}
-
-// Daily auto-backup uses the same downloader; the toggle only gates the
-// automatic trigger, not the manual "Backup now" button below.
-function performAutoBackup() {
-  if (!autoBackup.enabled) return;
-  downloadLocalBackup();
-}
-
-function updateAutoBackupUI() {
-  var toggle = document.getElementById('ab-toggle');
-  var folder = document.getElementById('ab-folder');
-  var status = document.getElementById('ab-status');
-  if (toggle) toggle.checked   = autoBackup.enabled;
-  if (folder) folder.value     = autoBackup.folder || '';
-  if (status) {
-    status.textContent = autoBackup.enabled
-      ? 'Auto-backup ON — saves daily when you open the app'
-      : 'Auto-backup is disabled';
-    status.style.color = autoBackup.enabled ? 'var(--green)' : 'var(--ink3)';
-  }
-}
-
-// Auto-backup on open (once per day). Marks "today done" only after the
-// download is triggered, so an early failure doesn't suppress tomorrow's run.
-(function checkAutoBackup() {
-  var KEY = 'last_autobackup';
-  chrome.storage.local.get([KEY], function(r) {
-    var last  = r[KEY] || '';
-    var today = new Date().toISOString().slice(0,10);
-    if (!autoBackup.enabled || last === today) return;
-    setTimeout(function() {
-      try {
-        downloadLocalBackup();
-        chrome.storage.local.set({ [KEY]: today });
-      } catch (e) { console.warn('auto-backup', e); }
-    }, 2500);
-  });
-})();
-
-// ╔══════════════════════════════════════════════════════════╗
 //   DUPLICATE DETECTION (called from import-inline.js)
 // ╚══════════════════════════════════════════════════════════╝
 function deduplicateImportRows(rows) {
@@ -707,24 +628,6 @@ if (searchInput) searchInput.addEventListener('input', function(e) {
   searchQuery = e.target.value;
   renderSearch();
 });
-
-// Auto-backup settings
-var abToggle = document.getElementById('ab-toggle');
-if (abToggle) abToggle.addEventListener('change', function(e) {
-  autoBackup.enabled = e.target.checked;
-  saveAB(); updateAutoBackupUI();
-  showToast(autoBackup.enabled ? 'Auto-backup enabled' : 'Auto-backup disabled');
-});
-
-var abFolder = document.getElementById('ab-folder');
-if (abFolder) abFolder.addEventListener('change', function(e) {
-  autoBackup.folder = e.target.value.trim();
-  saveAB(); updateAutoBackupUI();
-  showToast('Backup folder updated');
-});
-
-var abNowBtn = document.getElementById('ab-now-btn');
-if (abNowBtn) abNowBtn.addEventListener('click', downloadLocalBackup);
 
 // Nav tab triggers (trends needs a chart pass when opened)
 document.querySelectorAll('.nav-item').forEach(function(btn) {
