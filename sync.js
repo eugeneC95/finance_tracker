@@ -131,7 +131,10 @@ function syncPing() {
       if (data.ok) {
         persistSyncUrl(url);
         if (urlEl) urlEl.value = syncUrl;
-        var hint = Number(data.apiVersion) >= 2 ? '' : ' — redeploy script (ping missing apiVersion)';
+        var av = Number(data.apiVersion);
+        var hint = '';
+        if (isNaN(av) || av < 2) hint = ' — redeploy script (ping missing apiVersion)';
+        else if (av < 3) hint = ' — redeploy script for unit trust on Sheets (UTHoldings / UTNav)';
         setSyncStatus('ok', (data.message || 'Connected') + hint);
         showToast('Connected to Google Sheets');
       } else {
@@ -219,7 +222,14 @@ function syncSave(silent) {
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
         persistSyncState();
-        if (!silent) showToast('Saved to Google Sheets');
+        if (!silent) {
+          var av = Number(data.apiVersion);
+          if (isNaN(av) || av < 3) {
+            showToast('Saved — redeploy Apps Script (google-apps-script.js v3) for unit trust tabs UTHoldings & UTNav.');
+          } else {
+            showToast('Saved to Google Sheets');
+          }
+        }
       } else {
         var msg = humanizeSaveApiError((data && data.error) || 'unknown');
         setSyncStatus('error', 'Save failed: ' + msg);

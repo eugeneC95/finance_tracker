@@ -93,7 +93,7 @@ function handleSaveChunk_(e) {
           }
         }
         if (allGone) {
-          return { ok: true, saved: new Date().toISOString(), duplicate: true };
+          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 3 };
         }
         return { ok: true, partial: true, need: i };
       }
@@ -106,7 +106,7 @@ function handleSaveChunk_(e) {
       cache.remove(keyPrefix + i);
     }
     saveAllData(payload);
-    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total };
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 3 };
   } catch (err) {
     return { ok: false, error: err.toString() };
   } finally {
@@ -123,7 +123,7 @@ function doGet(e) {
       result = {
         ok: true,
         message: 'Finance Tracker connected successfully',
-        apiVersion: 2,
+        apiVersion: 3,
       };
 
     } else if (action === 'save') {
@@ -135,7 +135,7 @@ function doGet(e) {
         // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
         var payload = JSON.parse(raw);
         saveAllData(payload);
-        result = { ok: true, saved: new Date().toISOString() };
+        result = { ok: true, saved: new Date().toISOString(), apiVersion: 3 };
       }
 
     } else if (action === 'save_chunk') {
@@ -166,7 +166,7 @@ function doPost(e) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);
       return ContentService
-        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString() }))
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 3 }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (err) {
