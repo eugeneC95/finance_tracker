@@ -722,11 +722,32 @@ body.dark .btn-primary { color: #041312; }
 /* ============================================================
    CATEGORY BUTTON GRID
    ============================================================ */
+.cat-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+.cat-group {
+  margin: 0;
+}
+.cat-group:not(:first-child) {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+.cat-group__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink3);
+  margin: 0 0 var(--s2) 2px;
+}
 .cat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: var(--s2);
-  margin-bottom: var(--s5);
+  margin-bottom: 0;
 }
 .cat-btn {
   display: flex;
@@ -1677,6 +1698,17 @@ body.dark .fs-btn.active { color: #041312; }
   input:not([type="checkbox"]):not([type="radio"])  { height: 48px; }
 
   /* Category grid: 5 columns, shorter rows (v22 layer adds !important bg) */
+  .cat-groups {
+    gap: 14px;
+    margin-bottom: var(--s4);
+  }
+  .cat-group:not(:first-child) {
+    padding-top: 12px;
+  }
+  .cat-group__label {
+    font-size: 9px;
+    margin-bottom: 6px;
+  }
   .cat-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
@@ -2233,7 +2265,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v37 · 2026-05-14';
+  var BUILD_VERSION    = 'v38 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2479,7 +2511,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <span style="font-size:var(--f-xs);color:var(--ink3)">Pick a category, fill in details, press Add</span>
         </div>
         <div class="panel-bd">
-          <div class="cat-grid" id="cat-btns"></div>
+          <div class="cat-groups" id="cat-btns"></div>
           <div class="add-row">
             <div>
               <label class="lbl">Description</label>
@@ -3092,7 +3124,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v37 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v38 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3293,12 +3325,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v37 · 2026-05-14</div>
-<script src="app.js?v=37"></script>
-<script src="sync.js?v=37"></script>
-<script src="features.js?v=37"></script>
-<script src="extras.js?v=37"></script>
-<script src="import-inline.js?v=37"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v38 · 2026-05-14</div>
+<script src="app.js?v=38"></script>
+<script src="sync.js?v=38"></script>
+<script src="features.js?v=38"></script>
+<script src="extras.js?v=38"></script>
+<script src="import-inline.js?v=38"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

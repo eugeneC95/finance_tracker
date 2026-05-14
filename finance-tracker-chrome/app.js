@@ -51,6 +51,19 @@ const EXP_CATS = {
   'Other':         { icon:'📦', color:'#B4B2A9' },
 };
 
+/** Display order for “Add expense” category chips: frequent / similar items first. */
+const EXP_CAT_GROUPS = [
+  { title: 'Everyday & dining', cats: ['Food', 'Groceries', 'Eating out', 'Coffee'] },
+  { title: 'Shopping & gear', cats: ['Shopping', 'Clothing', 'Electronics'] },
+  { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Renovation'] },
+  { title: 'Health & self-care', cats: ['Health', 'Fitness', 'Grooming'] },
+  { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax'] },
+  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Toll', 'Car Expenses', 'Car Insurance', 'Transport', 'Grab', 'Flight'] },
+  { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
+  { title: 'Family & giving', cats: ['Education', 'Childcare', 'Pet care', 'Donation', 'Zakat'] },
+  { title: 'Other', cats: ['Other'] },
+];
+
 const INC_CATS = {
   'Salary':      { icon:'💼', color:'#1D9E75' },
   'Bonus':       { icon:'🎯', color:'#2DBE8A' },
@@ -144,7 +157,12 @@ function buildCatButtons() {
   const wrap = document.getElementById('cat-btns');
   if (!wrap) return;
   wrap.innerHTML = '';
-  Object.entries(EXP_CATS).forEach(([name, {icon}]) => {
+  wrap.className = 'cat-groups';
+
+  function makeCatButton(name) {
+    const meta = EXP_CATS[name];
+    if (!meta) return null;
+    const { icon } = meta;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
@@ -158,8 +176,49 @@ function buildCatButtons() {
       selectedCat = name;
       wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === name));
     });
-    wrap.appendChild(btn);
+    return btn;
+  }
+
+  const listed = new Set();
+  EXP_CAT_GROUPS.forEach(group => {
+    const grid = document.createElement('div');
+    grid.className = 'cat-grid';
+    group.cats.forEach(name => {
+      const btn = makeCatButton(name);
+      if (!btn) return;
+      listed.add(name);
+      grid.appendChild(btn);
+    });
+    if (!grid.childElementCount) return;
+    const sec = document.createElement('section');
+    sec.className = 'cat-group';
+    const lab = document.createElement('div');
+    lab.className = 'cat-group__label';
+    lab.textContent = group.title;
+    sec.appendChild(lab);
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
   });
+
+  const orphans = Object.keys(EXP_CATS).filter(k => !listed.has(k));
+  if (orphans.length) {
+    const grid = document.createElement('div');
+    grid.className = 'cat-grid';
+    orphans.forEach(name => {
+      const btn = makeCatButton(name);
+      if (btn) grid.appendChild(btn);
+    });
+    if (grid.childElementCount) {
+      const sec = document.createElement('section');
+      sec.className = 'cat-group';
+      const lab = document.createElement('div');
+      lab.className = 'cat-group__label';
+      lab.textContent = 'More categories';
+      sec.appendChild(lab);
+      sec.appendChild(grid);
+      wrap.appendChild(sec);
+    }
+  }
 }
 
 // ── Settings ───────────────────────────────────────────────

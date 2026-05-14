@@ -431,11 +431,32 @@ body.dark .btn-primary { color: #000; }
 /* ============================================================
    CATEGORY BUTTON GRID
    ============================================================ */
+.cat-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+.cat-group {
+  margin: 0;
+}
+.cat-group:not(:first-child) {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+.cat-group__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink3);
+  margin: 0 0 var(--s2) 2px;
+}
 .cat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: var(--s2);
-  margin-bottom: var(--s5);
+  margin-bottom: 0;
 }
 .cat-btn {
   display: flex;
@@ -1211,7 +1232,7 @@ body.dark .fs-btn.active { color: #000; }
           <span style="font-size:var(--f-xs);color:var(--ink3)">Pick a category, fill in details, press Add</span>
         </div>
         <div class="panel-bd">
-          <div class="cat-grid" id="cat-btns"></div>
+          <div class="cat-groups" id="cat-btns"></div>
           <div class="add-row">
             <div>
               <label class="lbl">Description</label>
