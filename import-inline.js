@@ -192,7 +192,7 @@ function iwReset() {
   document.getElementById('iw-uob-input').style.display='none';
   if(document.getElementById('iw-tng-text')) document.getElementById('iw-tng-text').value='';
   const fe=document.getElementById('iw-file'); if(fe) fe.value='';
-  document.getElementById('iw-drop-lbl').textContent='Click or drag & drop your file';
+  document.getElementById('iw-drop-lbl').textContent='Drop file or tap to choose';
   document.getElementById('iw-tng-err').textContent='';
   document.getElementById('iw-uob-err').textContent='';
   iwGoStep(1);

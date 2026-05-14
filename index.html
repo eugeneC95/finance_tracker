@@ -1174,7 +1174,92 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
    ============================================================ */
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
 .settings-span-2 { grid-column: 1 / -1; }
-.exp-global-search-card #search-results {
+
+.page-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.page-header__top h2 { flex: 1; min-width: 0; margin: 0; }
+.exp-search-toggle {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-bg);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink2);
+  transition: background .15s, border-color .15s;
+}
+.exp-search-toggle:hover { background: var(--card-bg2); border-color: var(--line2); }
+
+.exp-search-pop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+.exp-search-pop.open { pointer-events: auto; }
+.exp-search-pop__backdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0,0,0,.14);
+  opacity: 0;
+  transition: opacity .2s ease;
+  cursor: pointer;
+}
+.exp-search-pop.open .exp-search-pop__backdrop { opacity: 1; }
+.exp-search-pop__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 12px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0,0,0,.12);
+  transform: translateY(-102%);
+  transition: transform .22s ease;
+}
+.exp-search-pop.open .exp-search-pop__panel { transform: translateY(0); }
+.exp-search-pop__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.exp-search-pop__toolbar input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: var(--f-md);
+  background: var(--card-bg2);
+  color: var(--ink);
+}
+.exp-search-pop__close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-bg2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink2);
+}
+.exp-search-pop #search-results {
   margin-top: var(--s3);
   max-height: min(42vh, 400px);
   overflow-y: auto;
@@ -1542,7 +1627,7 @@ body.dark .fs-btn.active { color: #041312; }
 
 /* ── Report ── */
 @media print {
-  .sb, .page-header .sub, #print-report-btn, .page-header + div { display:none !important; }
+  .sb, .page-header .sub, #print-report-btn, .page-header + div, .exp-search-pop, .exp-search-toggle { display:none !important; }
   .main { width:100% !important; }
   #page-report { display:block !important; }
   .page:not(#page-report) { display:none !important; }
@@ -2413,7 +2498,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v43 · 2026-05-14';
+  var BUILD_VERSION    = 'v44 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2589,7 +2674,20 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <!-- ── EXPENSES ── -->
   <div class="page active" id="page-expenses">
     <div class="page-header">
-      <h2>Expenses</h2>
+      <div class="page-header__top">
+        <h2>Expenses</h2>
+        <button type="button" class="exp-search-toggle" id="exp-search-toggle" aria-expanded="false" aria-controls="exp-search-pop" title="Search all months (Ctrl+F)">🔍</button>
+      </div>
+    </div>
+    <div id="exp-search-pop" class="exp-search-pop" aria-hidden="true" role="dialog" aria-label="Search transactions">
+      <button type="button" class="exp-search-pop__backdrop" id="exp-search-backdrop" tabindex="-1" aria-label="Close search"></button>
+      <div class="exp-search-pop__panel" role="search">
+        <div class="exp-search-pop__toolbar">
+          <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
+          <button type="button" class="exp-search-pop__close" id="exp-search-close" aria-label="Close search">✕</button>
+        </div>
+        <div id="search-results"></div>
+      </div>
     </div>
     <div class="page-body">
 
@@ -2674,15 +2772,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
             <span>Save as recurring monthly</span>
           </label>
-        </div>
-      </div>
-
-      <div class="card mb-5 exp-global-search-card">
-        <div class="panel-hd"><span class="panel-title">Search all months</span></div>
-        <div class="panel-bd">
-          <label class="lbl" for="search-input" style="margin-bottom:6px">Find transactions</label>
-          <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
-          <div id="search-results"></div>
         </div>
       </div>
 
@@ -2786,10 +2875,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
         <div>
           <div class="card">
-            <div class="panel-hd">
-              <span class="panel-title">By source</span>
-              <span style="font-size:var(--f-xs);color:var(--ink3)">Click to drill down</span>
-            </div>
+            <div class="panel-hd"><span class="panel-title">By source</span></div>
             <div class="panel-bd">
               <div class="bar-chart" id="inc-chart"></div>
             </div>
@@ -2804,7 +2890,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-assets">
     <div class="page-header">
       <h2>Assets</h2>
-      <div class="sub">Balances, accounts, and your net snapshot in one place</div>
     </div>
     <div class="page-body">
 
@@ -2858,7 +2943,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-recurring">
     <div class="page-header">
       <h2>Recurring</h2>
-      <div class="sub">Auto-entries that apply on a specific day each month</div>
     </div>
     <div class="page-body">
       <div class="card mb-5">
@@ -2922,10 +3006,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       </div>
 
       <div class="card">
-        <div class="panel-hd">
-          <span class="panel-title">Active recurring entries</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Applied automatically on the date you set each month</span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Active recurring entries</span></div>
         <div class="panel-bd">
           <div id="rec-list"></div>
         </div>
@@ -2937,7 +3018,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-trends">
     <div class="page-header">
       <h2>Trends</h2>
-      <div class="sub">Spending &amp; income over the last 6 months</div>
     </div>
     <div class="page-body">
       <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
@@ -2954,20 +3034,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
       </div>
 
       <div class="card mb-5">
-        <div class="panel-hd">
-          <span class="panel-title">Spending by day of week</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Average spend per day · last 3 months</span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Spending by day of week</span></div>
         <div class="panel-bd">
           <div class="bar-chart" id="day-breakdown"></div>
         </div>
       </div>
 
       <div class="card mb-5">
-        <div class="panel-hd">
-          <span class="panel-title">Net worth history</span>
-          <span style="font-size:var(--f-xs);color:var(--ink3)">Snapshot taken each time you update a bank balance</span>
-        </div>
+        <div class="panel-hd"><span class="panel-title">Net worth history</span></div>
         <div class="panel-bd">
           <div id="networth-chart"></div>
         </div>
@@ -2979,17 +3053,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-settings">
     <div class="page-header">
       <h2>Settings</h2>
-      <div class="sub">Look &amp; feel, backups, statement import (TNG · UOB), and optional Google Sheets sync</div>
     </div>
     <div class="page-body">
       <div class="settings-grid">
 
         <div class="settings-span-2">
           <div class="card mb-5">
-            <div class="panel-hd">
-              <span class="panel-title">Import transactions</span>
-              <span style="font-size:var(--f-xs);color:var(--ink3)">TNG eWallet or UOB — separate from JSON backup below</span>
-            </div>
+            <div class="panel-hd"><span class="panel-title">Import transactions</span></div>
             <div class="panel-bd">
               <!-- Step 1 -->
               <div id="iw1">
@@ -2997,12 +3067,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   <div class="src-card" id="iw-tng-card">
                     <div class="src-icon">💳</div>
                     <div class="src-name">TNG eWallet</div>
-                    <div class="src-desc">Paste statement text from PDF email</div>
                   </div>
                   <div class="src-card" id="iw-uob-card">
                     <div class="src-icon">🏦</div>
                     <div class="src-name">UOB Bank</div>
-                    <div class="src-desc">Upload XLS or CSV from internet banking</div>
                   </div>
                 </div>
                 <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
@@ -3011,41 +3079,41 @@ body.dark .ft-fab { background: #fff; color: #000; }
               <!-- Step 2 -->
               <div id="iw2" style="display:none;max-width:680px">
                 <div id="iw-tng-input" style="display:none">
-                  <div class="info-box mb-4">
-                    <div class="ib-title">📖 How to get your TNG statement</div>
-                    <ol>
+                  <details class="sync-help-details mb-4">
+                    <summary class="sync-help-summary">How to get TNG data</summary>
+                    <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
                       <li>Open TNG app → <strong>Profile</strong> → <strong>Transaction History</strong></li>
                       <li>Tap the ✉️ email icon — TNG will email you a PDF statement</li>
                       <li>Open the PDF, select all text, copy and paste below</li>
                     </ol>
-                  </div>
+                  </details>
                   <div class="card mb-4">
                     <div class="panel-hd"><span class="panel-title">Paste TNG statement text</span></div>
                     <div class="panel-bd">
-                      <textarea id="iw-tng-text" rows="10" placeholder="Paste your TNG PDF text here...&#10;&#10;Example:&#10;01 Jan 2025  Successful  DuitNow Payment  MAMAK CORNER  -12.50  234.10&#10;02 Jan 2025  Successful  Payment  SHELL PETROL  -80.00  154.10"></textarea>
+                      <textarea id="iw-tng-text" rows="10" placeholder="Paste text from your TNG statement PDF…"></textarea>
                       <div class="err" id="iw-tng-err"></div>
                     </div>
                   </div>
                 </div>
 
                 <div id="iw-uob-input" style="display:none">
-                  <div class="info-box mb-4">
-                    <div class="ib-title">📖 How to export from UOB</div>
-                    <ol>
+                  <details class="sync-help-details mb-4">
+                    <summary class="sync-help-summary">How to export from UOB</summary>
+                    <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
                       <li>Log in at <code>pib.uob.com.my</code></li>
                       <li>Go to <strong>Account</strong> → <strong>Account Activities</strong></li>
                       <li>Select account &amp; date range → <strong>Download</strong> → choose <strong>CSV</strong> or <strong>Excel</strong></li>
                       <li>Upload that file below</li>
                     </ol>
-                  </div>
+                  </details>
                   <div class="card mb-4">
                     <div class="panel-hd"><span class="panel-title">Upload UOB statement</span></div>
                     <div class="panel-bd">
                       <div class="file-drop" id="iw-drop">
                         <input type="file" id="iw-file" accept=".xls,.xlsx,.csv" style="display:none"/>
                         <div class="fd-icon">📂</div>
-                        <div class="fd-name" id="iw-drop-lbl">Click or drag &amp; drop your file here</div>
-                        <div class="fd-hint">XLS · XLSX · CSV from UOB internet banking</div>
+                        <div class="fd-name" id="iw-drop-lbl">Drop file or click to choose</div>
+                        <div class="fd-hint">CSV · XLS · XLSX</div>
                       </div>
                       <div class="err" id="iw-uob-err"></div>
                     </div>
@@ -3098,7 +3166,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="setting-row">
               <div>
                 <div class="s-lbl">Dark mode</div>
-                <div class="s-sub">Switch to dark theme</div>
               </div>
               <label class="toggle">
                 <input type="checkbox" id="set-dark"/>
@@ -3109,7 +3176,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="setting-row">
               <div>
                 <div class="s-lbl">Font size</div>
-                <div class="s-sub">Adjust text size throughout</div>
               </div>
               <div class="fs-btns">
                 <button class="fs-btn" data-fs="fs-sm">S</button>
@@ -3126,14 +3192,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="setting-row">
               <div>
                 <div class="s-lbl">Currency symbol</div>
-                <div class="s-sub">Shown before amounts</div>
               </div>
               <input type="text" id="set-currency" class="cur-input" maxlength="6" placeholder="RM"/>
             </div>
             <div class="setting-row">
               <div>
                 <div class="s-lbl">Drag handles</div>
-                <div class="s-sub">Reorder transactions by dragging</div>
               </div>
               <label class="toggle">
                 <input type="checkbox" id="set-drag" checked/>
@@ -3144,7 +3208,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="setting-row">
               <div>
                 <div class="s-lbl">Compact view</div>
-                <div class="s-sub">Smaller row spacing in lists</div>
               </div>
               <label class="toggle">
                 <input type="checkbox" id="set-compact"/>
@@ -3159,10 +3222,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
             <div class="panel-bd">
-              <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:var(--s4);line-height:1.6">
-                Export all your data as a JSON file. Store it safely — import it back anytime to restore.
-                On import you can <strong>merge</strong> (entries with the same date and amount are overwritten) or <strong>replace</strong> everything.
-              </p>
               <div style="display:flex;gap:var(--s3);flex-wrap:wrap">
                 <button class="btn-ghost" id="export-btn">⬇ Export backup</button>
                 <button class="btn-ghost green" id="import-btn">⬆ Import backup</button>
@@ -3182,9 +3241,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </span>
             </div>
             <div class="panel-bd">
-              <div style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.65">
-                Keeps a private copy in <strong>your</strong> Google Sheet. After you paste the web app URL, use <strong>Test connection</strong>, then edits auto-save to the cloud.
-              </div>
 
               <div style="margin-bottom:12px">
                 <label class="lbl">Apps Script URL</label>
@@ -3222,12 +3278,16 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
-              <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v42 · 2026-05-14</span><br/>
-                Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
-                Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
-                Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
+              <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v44 · 2026-05-14</span>
               </div>
+              <details class="sync-help-details" style="margin-top:12px">
+                <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
+                <div class="about-card" style="font-size:var(--f-xs);line-height:1.75">
+                  Data stays on this device unless you turn on Google Sheets sync (your own Drive). No accounts or tracking in the app itself.<br/><br/>
+                  If the screen stays blank after an update, open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once to clear the offline shell, then return here.
+                </div>
+              </details>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
                 <button class="btn-ghost" id="ft-force-refresh-btn" title="Unregister the service worker, clear the cache, and reload. Useful if the app looks stuck on an old build.">🔄 Force refresh app</button>
                 <button class="btn-ghost" id="ft-reset-pin-btn" title="End this unlocked session; you will need to enter the PIN again after reload.">🔑 Lock again</button>
@@ -3246,7 +3306,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-petrol">
     <div class="page-header">
       <h2>Petrol Log</h2>
-      <div class="sub">Track fuel fills, litres, cost per km and efficiency</div>
     </div>
     <div class="page-body">
       <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
@@ -3301,12 +3360,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-report">
     <div class="page-header">
       <h2>Monthly Report</h2>
-      <div class="sub">Summary of your finances for the selected month</div>
     </div>
     <div class="page-body">
       <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="print-report-btn">🖨 Print / Save PDF</button>
-        <span style="font-size:var(--f-sm);color:var(--ink3)">Use your browser's print dialog — choose "Save as PDF"</span>
       </div>
       <div id="report-content"></div>
     </div>
@@ -3422,12 +3479,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v42 · 2026-05-14</div>
-<script src="app.js?v=42"></script>
-<script src="sync.js?v=42"></script>
-<script src="features.js?v=42"></script>
-<script src="extras.js?v=42"></script>
-<script src="import-inline.js?v=42"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v44 · 2026-05-14</div>
+<script src="app.js?v=44"></script>
+<script src="sync.js?v=44"></script>
+<script src="features.js?v=44"></script>
+<script src="extras.js?v=44"></script>
+<script src="import-inline.js?v=44"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
