@@ -11,10 +11,10 @@ PURPOSE
 STACK
 -----
 - `index.html` — structure, most CSS, inline boot/lock handling, `BUILD_VERSION`, script tags with `?v=`.
-- `app.js` — data model, persistence hooks, `fmt`, charts, `renderTxList`, `activateNavTab`, `EXP_CAT_GROUPS` (expense category groups for picker UI).
-- `features.js` — global search (`#search-input`, top sheet from 🔍 on Expenses, `renderSearch`), optional auto-backup UI + daily trigger, dedupe for import, Ctrl+F → open search on Expenses.
+- `app.js` — data model, persistence hooks, `fmt`, bar charts, `renderTxList`, `activateNavTab`, `EXP_CAT_GROUPS`; **unit trust** (`utSanitizeHoldings`, `utCostBasis`, `utBuildPortfolioSeries`, `utCarryForwardNavSnapshotForToday`, `renderUtChart`); **month daily line charts** (`buildMonthDateKeys`, `buildMonthDailyTotals`, `renderMonthDailyLineChart`).
+- `features.js` — global search (`#search-input`, top sheet from 🔍 on Expenses, `renderSearch`, `setExpSearchOpen` / `openExpSearch` / `closeExpSearch`), optional auto-backup UI + daily trigger, dedupe for import, Ctrl+F → open search on Expenses.
 - `extras.js` — supplementary behaviours (keep in parity when touching related flows).
-- `sync.js` — Sheet pull/push (`buildPayload`), chunked save; includes **unit trust** holdings + NAV when the deployed `google-apps-script.js` exposes `UTHoldings` / `UTNav` tabs.
+- `sync.js` — Sheet pull/push (`buildPayload`), chunked save; includes **unit trust** holdings + NAV when the deployed `google-apps-script.js` exposes `UTHoldings` / `UTNav` tabs. **Ping** returns `apiVersion`: status hints if <3 (UT tabs) or <4 (**UTHoldings.totalCost** — full RM paid incl. fees); save path may toast to redeploy for `totalCost`.
 - `import-inline.js` — TNG/UOB-style wizard; precached by SW.
 - `service-worker.js` — `CACHE` name + `SHELL` list (must match files you ship offline).
 - Recovery: `nosw.html` (clear SW/cache), `lock.html` (legacy redirect recovery; primary UX uses `#ft-boot` overlay in index).
@@ -25,7 +25,7 @@ NAVIGATION
 - Desktop: left sidebar `.sb` / `.sb-nav` shows all primary nav buttons.
 - Mobile: `.sb` is a fixed bottom bar. Items with `data-mobile-overflow="1"` are hidden on small viewports; **More** (`#nav-more-open`) opens `#mobile-nav-more-sheet` for Recurring, Trends, Petrol, Report.
 - **Import** (statement wizard + JSON backup) lives under **Settings**, not a top-level nav page.
-- **Search**: 🔍 on **Expenses** opens a top sheet (`#exp-search-pop`) with `#search-input` / `#search-results`; Ctrl+F same. No separate Search page.
+- **Search**: 🔍 on **Expenses** opens a top sheet (`#exp-search-pop`) with `#search-input` / `#search-results`; Ctrl+F same. No separate Search page. On close, focus leaves the sheet **before** `aria-hidden` is set (`setExpSearchOpen`); on open, `#search-input` is focused inside a short `setTimeout` and only if the sheet stayed open (`openExpSearch` guard; Ctrl+F uses a slightly longer delay).
 - Bottom nav uses `flex` / `space-between` for visible primary tabs (not scroll-snap in current CSS).
 
 RECENT PRODUCT (verified in repo; omit rumours)
@@ -36,10 +36,12 @@ RECENT PRODUCT (verified in repo; omit rumours)
 - Income list prefixes amounts with `+ `; **expense** list uses `fmt(amount)` only — **no leading minus** on list rows (pending if product wants “−RM …”).
 - **Auto-backup** toggle + daily-on-open logic still present in `features.js` / Settings UI — **not removed**.
 - PWA Sheets: large saves use chunked GET reassembly (see `sync.js` + deployed script); small payloads may use single GET save; redeploy Apps Script after backend changes.
+- **Unit trust (Assets):** Holdings use **`totalCost`** = lump sum paid **incl. fees** (UI: “Total paid”). Older data / sheets without `totalCost`: **`utSanitizeHoldings`** and **`utCostBasis`** fall back to legacy **avgCost×units**. P&L vs cost uses **`utCostBasis`**. **Portfolio growth** line: **`utBuildPortfolioSeries`** (only dates where **at least one** holding has NAV via **`utNavAsOf`** — avoids counting funds with no NAV that day) + **`renderUtChart`** (`#ut-chart` slot). **`utCarryForwardNavSnapshotForToday`**: once per **calendar** day, append **today**’s NAV row per fund from each fund’s latest NAV (skip if today exists), dedupe, persist — builds day-by-day history for the chart.
+- **Expenses / Income:** **By day this month** SVG line charts: element ids **`exp-daily-chart`** / **`inc-daily-chart`**, fed by **`buildMonthDailyTotals`** on the current month’s rows and **`buildMonthDateKeys`**; drawn by **`renderMonthDailyLineChart`** (`app.js` / chrome mirror).
 
 IMPORTANT IDS / HOOKS
 ---------------------
-- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Assets** includes unit trusts panel (`#ut-root`, `#ut-summary-mv`); storage keys `unit_trust_holdings_v1`, `unit_trust_nav_v1`.
+- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Assets** includes unit trusts panel (`#ut-root`, `#ut-summary-mv`, growth chart `#ut-chart`); storage keys `unit_trust_holdings_v1`, `unit_trust_nav_v1`. **Expenses / Income** pages: month **daily** line chart mount points **`#exp-daily-chart`**, **`#inc-daily-chart`** (see `app.js` render).
 - Boot / readiness: `#ft-boot`, `#ft-boot-msg`, `ft-app-ready` (dispatched when app finished init).
 - Tab switch: `activateNavTab('expenses'|...)` in `app.js` (toggles `.active` on `#page-<tab>` and nav buttons).
 - Categories: `EXP_CAT_GROUPS` + `renderExpCatGrid` (and related) in `app.js`.
