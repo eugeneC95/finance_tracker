@@ -1,0 +1,17 @@
+---
+description: After code fixes, commit and push to GitHub unless the user opts out.
+alwaysApply: true
+---
+
+# Git: commit and push after fixes
+
+When you finish a **fix** or **task that changes the repo** (not exploratory-only work):
+
+1. **`git status`** — confirm what changed.
+2. **`git add`** only the files that belong to the fix (no unrelated files).
+3. **`git commit -m "..."`** — one clear, conventional subject line; add a short body if needed.
+4. **`git push`** to the current branch’s upstream (usually `origin/main`).
+
+**Skip push** only if the user explicitly says not to, or push fails (auth/network) — then say what failed and leave the commit local.
+
+Do not leave fixes uncommitted at the end of the session unless blocked.
