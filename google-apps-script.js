@@ -10,7 +10,7 @@
 //     - Type: Web app
 //     - Execute as: Me
 //     - Who has access: Anyone
-//  6. Click Deploy → copy the Web App URL
+//  6. Click Deploy → copy the Web App URL (ends with /exec only — no ?query after it)
 //  7. In the extension: Settings → Google Sheets Sync → paste URL → Test connection
 //
 //  NOTE: Every time you change this script, you must
@@ -33,6 +33,21 @@ function getOrCreateSheet(tabName) {
   var sheet = ss.getSheetByName(tabName);
   if (!sheet) sheet = ss.insertSheet(tabName);
   return sheet;
+}
+
+// Web app URL must not include ?query — clients may append &action=… twice otherwise.
+// e.parameters.action can be an array; e.parameter.action may still not === 'save_chunk'.
+function normalizeAction_(e) {
+  var a = 'ping';
+  if (e && e.parameters && e.parameters.action && e.parameters.action.length) {
+    a = e.parameters.action[e.parameters.action.length - 1];
+  } else if (e && e.parameter && e.parameter.action) {
+    a = e.parameter.action;
+  }
+  if (a && typeof a !== 'string' && a.length !== undefined) {
+    try { a = a[a.length - 1]; } catch (x) {}
+  }
+  return String(a || 'ping').trim().toLowerCase();
 }
 
 // ── Request entry points ───────────────────────────────────
@@ -100,12 +115,16 @@ function handleSaveChunk_(e) {
 }
 
 function doGet(e) {
-  var action = (e.parameter && e.parameter.action) ? e.parameter.action : 'ping';
+  var action = normalizeAction_(e);
   var result;
 
   try {
     if (action === 'ping') {
-      result = { ok: true, message: 'Finance Tracker connected successfully' };
+      result = {
+        ok: true,
+        message: 'Finance Tracker connected successfully',
+        apiVersion: 2,
+      };
 
     } else if (action === 'save') {
       var raw = (e.parameter && e.parameter.data) ? e.parameter.data : '';
@@ -142,7 +161,7 @@ function doGet(e) {
 // drops POST bodies when following Apps Script's 302.
 function doPost(e) {
   try {
-    var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
+    var action = normalizeAction_(e);
     if (action === 'save' && e.postData && e.postData.contents) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);

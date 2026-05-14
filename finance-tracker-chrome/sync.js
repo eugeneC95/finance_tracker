@@ -15,14 +15,29 @@ var DEFAULT_SYNC_URL =
 var syncUrl   = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
 
+// Same as ../sync.js — …/exec only, no ?query (duplicate ?action= breaks Apps Script).
+function canonicalSyncExecUrl(url) {
+  var u = String(url || '').trim();
+  if (!u) return u;
+  var q = u.indexOf('?');
+  var h = u.indexOf('#');
+  var cut = u.length;
+  if (q >= 0) cut = Math.min(cut, q);
+  if (h >= 0) cut = Math.min(cut, h);
+  return u.slice(0, cut);
+}
+
 // ── Load settings from chrome.storage ─────────────────────
 function loadSyncSettings(cb) {
   chrome.storage.local.get([KEY_SYNC_URL, KEY_SYNC_STATE], function(r) {
     var stored = r[KEY_SYNC_URL];
     var hasStored = typeof stored === 'string' && stored.trim().length > 0;
-    syncUrl = hasStored ? stored.trim() : DEFAULT_SYNC_URL;
+    var raw = hasStored ? stored.trim() : DEFAULT_SYNC_URL;
+    syncUrl = canonicalSyncExecUrl(raw);
     if (!hasStored && DEFAULT_SYNC_URL) {
       persistSyncUrl(syncUrl);
+    } else if (hasStored && syncUrl !== stored.trim()) {
+      chrome.storage.local.set({ [KEY_SYNC_URL]: syncUrl });
     }
     syncState = r[KEY_SYNC_STATE] || syncState;
     updateSyncUI();
@@ -31,8 +46,8 @@ function loadSyncSettings(cb) {
 }
 
 function persistSyncUrl(url) {
-  syncUrl = url;
-  chrome.storage.local.set({ [KEY_SYNC_URL]: url });
+  syncUrl = canonicalSyncExecUrl(url);
+  chrome.storage.local.set({ [KEY_SYNC_URL]: syncUrl });
 }
 
 function persistSyncState() {
@@ -57,6 +72,7 @@ function buildPayload() {
 // through background.js (SYNC_FETCH) to dodge Apps Script CORS; POST is still
 // supported there for other callers, but syncSave uses GET + chunking like the PWA.
 function scriptFetch(url, params, body) {
+  url = canonicalSyncExecUrl(url);
   var qs = Object.keys(params)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
     .join('&');
@@ -114,9 +130,9 @@ function humanizeSaveApiError(raw) {
   }
   if (/unknown action:\s*save_chunk/i.test(raw)) {
     return (
-      'Your Apps Script web app is an old version — it does not support chunked saves. ' +
-      'In Google Apps Script: Deploy → Manage deployments → Edit → New version (paste code from repo google-apps-script.js). ' +
-      'Large datasets need save_chunk; until then only very small saves work.'
+      'Your web app URL may include extra ?query after /exec, which duplicates ?action= and breaks saves. ' +
+      'In Settings, paste only the URL up to /exec (no ?…), tap Test connection, then try Save again. ' +
+      'If it still fails, Deploy → Manage deployments → New version with this repo’s google-apps-script.js.'
     );
   }
   return raw;
@@ -125,7 +141,7 @@ function humanizeSaveApiError(raw) {
 // ── Ping ───────────────────────────────────────────────────
 function syncPing() {
   var urlEl = document.getElementById('sync-url-input');
-  var url   = urlEl ? urlEl.value.trim() : syncUrl;
+  var url   = urlEl ? canonicalSyncExecUrl(urlEl.value.trim()) : syncUrl;
   if (!url) { showToast('Paste your Apps Script URL first'); return; }
 
   setSyncStatus('loading', 'Testing connection…');
@@ -134,7 +150,9 @@ function syncPing() {
     .then(function(data) {
       if (data.ok) {
         persistSyncUrl(url);
-        setSyncStatus('ok', data.message || 'Connected');
+        if (urlEl) urlEl.value = syncUrl;
+        var hint = Number(data.apiVersion) >= 2 ? '' : ' — redeploy script (ping missing apiVersion)';
+        setSyncStatus('ok', (data.message || 'Connected') + hint);
         showToast('Connected to Google Sheets');
       } else {
         setSyncStatus('error', 'Failed: ' + (data.error || 'unknown'));
