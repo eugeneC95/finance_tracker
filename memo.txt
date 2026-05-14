@@ -1,11 +1,16 @@
 Finance Tracker — living handoff (read/save to resume work)
 ===========================================================
-Last updated: 2026-05-14
+Last updated: 2026-05-15
 
 <<<MEMO_AUTO_SUMMARY>>>
-Generated: 2026-05-14T15:54:15.455Z
+Generated: 2026-05-14T16:32:54.765Z
 
 Recent commits (newest first):
+  - 912bdc3 (2026-05-15) feat(charts): daily NAV carry-forward + portfolio line by day; expense daily spend line
+  - 087aa9e (2026-05-15) feat(sync): hard-coded Apps Script URL; read-only display on Settings; drop stored URL override
+  - 377b02b (2026-05-14) chore(sync): new default Apps Script web app URL; bump v62 / sync v61 / ft-v62
+  - d7ea386 (2026-05-14) chore(ui): BUILD_VERSION shows date + 24h time; bump v61 / ft-v61
+  - a20a563 (2026-05-14) docs(memo): refresh auto git summary
   - c37ffa2 (2026-05-14) chore(memo): auto git log block + update script and optional post-commit hook
   - e6c677c (2026-05-14) Sync: auto-pull on focus, Sheet-overwrite UT, in-flight guard; shorter save error copy; v60 cache bump
   - 2879723 (2026-05-14) Speed up Sheet sync: parallel save_chunk batches, larger chunks, faster auto-load/debounce; extension POST for large saves
@@ -19,11 +24,6 @@ Recent commits (newest first):
   - 01c5b29 (2026-05-14) feat(unit-trust): total paid RM (totalCost) instead of avg per unit
   - 3d692a0 (2026-05-14) fix(sync): surface api v3 and UT sheet tab guidance
   - 2663590 (2026-05-14) fix(settings): full-width backup/sync rows and stacked actions
-  - b19d1a0 (2026-05-14) feat(sync): push unit trust holdings and NAV to Google Sheets
-  - 8a01f38 (2026-05-14) feat(petrol): default RM/L 1.99 and document efficiency math
-  - d9208e3 (2026-05-14) feat(assets): unit trust holdings with manual NAV and CSV import
-  - b14b419 (2026-05-14) fix(search): coerce name/cat to string before toLowerCase
-  - b4cecf0 (2026-05-14) fix(ui): remake Petrol log layout for mobile and desktop
 <<<END_MEMO_AUTO_SUMMARY>>>
 
 PURPOSE
@@ -38,7 +38,7 @@ STACK
 - `app.js` — data model, persistence hooks, `fmt`, bar charts, `renderTxList`, `activateNavTab`, `EXP_CAT_GROUPS`; **unit trust** (`utSanitizeHoldings`, `utCostBasis`, `utBuildPortfolioSeries`, `utCarryForwardNavSnapshotForToday`, `renderUtChart`); **month daily line charts** (`buildMonthDateKeys`, `buildMonthDailyTotals`, `renderMonthDailyLineChart`).
 - `features.js` — global search (`#search-input`, top sheet from 🔍 on Expenses, `renderSearch`, `setExpSearchOpen` / `openExpSearch` / `closeExpSearch`), optional auto-backup UI + daily trigger, dedupe for import, Ctrl+F → open search on Expenses.
 - `extras.js` — supplementary behaviours (keep in parity when touching related flows).
-- `sync.js` — Sheet pull/push (`buildPayload`), chunked save; includes **unit trust** holdings + NAV when the deployed `google-apps-script.js` exposes `UTHoldings` / `UTNav` tabs. **Ping** returns `apiVersion`: status hints if <3 (UT tabs) or <4 (**UTHoldings.totalCost** — full RM paid incl. fees); save path may toast to redeploy for `totalCost`.
+- `sync.js` / `finance-tracker-chrome/sync.js` — Sheet pull/push (`buildPayload`), chunked save; **Apps Script web app URL is hard-coded** (`APPS_SCRIPT_WEB_APP_URL`); Settings shows read-only `#sync-url-display` (no user URL field). Clears legacy `sync_url_v1` on load. **Ping** returns `apiVersion`: hints if <3 (UT tabs) or <4 (**UTHoldings.totalCost**). Auto-load on `ft-app-ready`, **visibilitychange** / **pageshow** (bfcache) debounced pull; **`syncLoadInFlight`** avoids overlapping loads. **Unit trust** in payload: `UTHoldings` / `UTNav`.
 - `import-inline.js` — TNG/UOB-style wizard; precached by SW.
 - `service-worker.js` — `CACHE` name + `SHELL` list (must match files you ship offline).
 - Recovery: `nosw.html` (clear SW/cache), `lock.html` (legacy redirect recovery; primary UX uses `#ft-boot` overlay in index).
@@ -60,12 +60,12 @@ RECENT PRODUCT (verified in repo; omit rumours)
 - Income list prefixes amounts with `+ `; **expense** list uses `fmt(amount)` only — **no leading minus** on list rows (pending if product wants “−RM …”).
 - **Auto-backup** toggle + daily-on-open logic still present in `features.js` / Settings UI — **not removed**.
 - PWA Sheets: large saves use chunked GET reassembly (see `sync.js` + deployed script); small payloads may use single GET save; redeploy Apps Script after backend changes.
-- **Unit trust (Assets):** Holdings use **`totalCost`** = lump sum paid **incl. fees** (UI: “Total paid”). Older data / sheets without `totalCost`: **`utSanitizeHoldings`** and **`utCostBasis`** fall back to legacy **avgCost×units**. P&L vs cost uses **`utCostBasis`**. **Portfolio growth** line: **`utBuildPortfolioSeries`** (only dates where **at least one** holding has NAV via **`utNavAsOf`** — avoids counting funds with no NAV that day) + **`renderUtChart`** (`#ut-chart` slot). **`utCarryForwardNavSnapshotForToday`**: once per **calendar** day, append **today**’s NAV row per fund from each fund’s latest NAV (skip if today exists), dedupe, persist — builds day-by-day history for the chart.
-- **Expenses / Income:** **By day this month** SVG line charts: element ids **`exp-daily-chart`** / **`inc-daily-chart`**, fed by **`buildMonthDailyTotals`** on the current month’s rows and **`buildMonthDateKeys`**; drawn by **`renderMonthDailyLineChart`** (`app.js` / chrome mirror).
+- **Unit trust (Assets):** Holdings **`totalCost`** = lump sum paid **incl. fees**. **`utCarryForwardNavSnapshotForToday`** (after load + each `render`): once per calendar day (`localStorage` **`ft_ut_nav_snap_ymd`**), adds **today** NAV rows per fund from latest NAV so history grows daily; **`saveUtNav`** triggers debounced Sheet save. **`utBuildPortfolioSeries`**: calendar walk from earliest NAV/purchase date through **today**, sum **units × `utNavAsOf`** per day (skips funds with no NAV that day). **`renderUtChart`** on `#ut-chart` (built in `renderUnitTrustPanel`). Heading explains carry-forward.
+- **Expenses:** **“Spending by day this month”** card with **`#exp-daily-chart`** — SVG line via **`buildMonthDateKeys`**, **`buildMonthDailyTotals`**, **`renderMonthDailyLineChart`** (current month only). Income page has **no** daily line chart yet (only bar chart).
 
 IMPORTANT IDS / HOOKS
 ---------------------
-- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Assets** includes unit trusts panel (`#ut-root`, `#ut-summary-mv`, growth chart `#ut-chart`); storage keys `unit_trust_holdings_v1`, `unit_trust_nav_v1`. **Expenses / Income** pages: month **daily** line chart mount points **`#exp-daily-chart`**, **`#inc-daily-chart`** (see `app.js` render).
+- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Expenses** includes **`#exp-daily-chart`** (daily spend line for visible month). **Assets** unit trusts: `#ut-root`, `#ut-summary-mv`, `#ut-chart`; storage `unit_trust_holdings_v1`, `unit_trust_nav_v1`. **Settings** Google sync: read-only **`#sync-url-display`**, `#sync-ping-btn`, `#sync-save-btn`, `#sync-load-btn`.
 - Boot / readiness: `#ft-boot`, `#ft-boot-msg`, `ft-app-ready` (dispatched when app finished init).
 - Tab switch: `activateNavTab('expenses'|...)` in `app.js` (toggles `.active` on `#page-<tab>` and nav buttons).
 - Categories: `EXP_CAT_GROUPS` + `renderExpCatGrid` (and related) in `app.js`.
@@ -74,7 +74,7 @@ IMPORTANT IDS / HOOKS
 HOW TO CONTINUE
 ---------------
 0. **Auto git summary in this file** — Between `<<<MEMO_AUTO_SUMMARY>>>` and `<<<END_MEMO_AUTO_SUMMARY>>>` is regenerated from `git log` by `node scripts/update-memo-summary.mjs`. To refresh after every local commit, run once: `git config core.hooksPath hooks` (repo `hooks/` folder). The `post-commit` hook runs that script and, if `memo.txt` changed, creates a follow-up commit `docs(memo): refresh auto git summary`. To skip hook: `SKIP_MEMO_HOOK=1 git commit …`. To refresh memo only without the extra commit: `MEMO_HOOK_NO_AUTOCOMMIT=1 git commit …` or run the node script manually.
-1. After changing any precached asset (`app.js`, `features.js`, `extras.js`, `sync.js`, `import-inline.js`, or shell HTML): bump **`BUILD_VERSION`** in `index.html`, bump **`const CACHE`** in `service-worker.js` (new string, e.g. `ft-v43`), and bump every local script query **`?v=`** in `index.html` to match.
+1. After changing any precached asset (`app.js`, `features.js`, `extras.js`, `sync.js`, `import-inline.js`, or shell HTML): bump **`BUILD_VERSION`** in `index.html`, bump **`const CACHE`** in `service-worker.js` (new string), bump every local script **`?v=`** in **`index.html`** and mirror the same **`?v=`** tags in **`finance-tracker-chrome/app.html`** when you ship the extension build.
 2. If `google-apps-script.js` changes: user must create a new Apps Script deployment version.
 3. Repo rule (`.cursor/rules`): when finishing a fix, `git add` relevant files, **commit**, **push** `origin/main` unless user says stop or push fails.
 
@@ -87,4 +87,4 @@ HISTORY / GOTCHAS (short)
 Open
 ----
 - After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck).
-- If save still fails on the website: check `localStorage` key `ft.lastSyncError`; paste Apps Script URL only up to `/exec` (no `?…`); redeploy `google-apps-script.js` so `save_chunk` is live.
+- If save still fails on the website: check `localStorage` key `ft.lastSyncError`; redeploy `google-apps-script.js` so `save_chunk` is live. **Sync URL** is no longer user-editable — change **`APPS_SCRIPT_WEB_APP_URL`** in both `sync.js` files and ship a new build.
