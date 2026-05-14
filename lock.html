@@ -45,7 +45,7 @@
   <div class="logo">💰</div>
   <h1>Finance Tracker</h1>
   <p>Loading…</p>
-  <div class="ver">v24 · 2026-05-14</div>
+  <div class="ver">v55 · 2026-05-14</div>
 </div>
 
 <div class="wrap" id="recovery">
@@ -65,7 +65,7 @@
     then in Settings → Safari → Advanced → Website Data, delete the
     <code>github.io</code> entry, then re-open the URL in Safari.
   </p>
-  <div class="ver">v24 · 2026-05-14</div>
+  <div class="ver">v55 · 2026-05-14</div>
 </div>
 
 <script>
@@ -124,6 +124,7 @@
     await clearEverything();
     var u = new URL('./index.html', window.location.href);
     u.searchParams.set('_', String(Date.now()));
+    u.searchParams.set('sw_reload', '0');
     window.location.replace(u.toString());
   });
 
@@ -133,6 +134,7 @@
     var u = new URL('./index.html', window.location.href);
     u.searchParams.set('_', String(Date.now()));
     u.searchParams.set('debug', '1');
+    u.searchParams.set('sw_reload', '0');
     window.location.replace(u.toString());
   });
 
@@ -174,7 +176,7 @@
   try {
     var search = window.location.search || '';
     var hash   = window.location.hash   || '';
-    var bust   = (search ? search + '&' : '?') + '_=' + Date.now();
+    var bust   = (search ? search + '&' : '?') + '_=' + Date.now() + '&sw_reload=0';
     var target = './index.html' + bust + hash;
     window.location.replace(target);
   } catch (e) {

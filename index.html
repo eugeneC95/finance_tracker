@@ -2699,7 +2699,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v54 · 2026-05-14';
+  var BUILD_VERSION    = 'v55 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3493,7 +3493,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v54 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v55 · 2026-05-14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3697,12 +3697,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v54 · 2026-05-14</div>
-<script src="app.js?v=54"></script>
-<script src="sync.js?v=54"></script>
-<script src="features.js?v=54"></script>
-<script src="extras.js?v=54"></script>
-<script src="import-inline.js?v=54"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v55 · 2026-05-14</div>
+<script src="app.js?v=55"></script>
+<script src="sync.js?v=55"></script>
+<script src="features.js?v=55"></script>
+<script src="extras.js?v=55"></script>
+<script src="import-inline.js?v=55"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -3719,6 +3719,24 @@ if ('serviceWorker' in navigator) {
           });
         });
         navigator.serviceWorker.addEventListener('controllerchange', function() {
+          try {
+            // After nosw.html / Force refresh: first activation must not reload or
+            // some browsers loop (controllerchange → reload → new SW → controllerchange…).
+            var qs = new URLSearchParams(window.location.search);
+            if (qs.get('sw_reload') === '0') {
+              qs.delete('sw_reload');
+              var tail = qs.toString();
+              var path = window.location.pathname + (tail ? '?' + tail : '') + (window.location.hash || '');
+              history.replaceState(null, '', path);
+              return;
+            }
+            // Debounce: duplicate controllerchange bursts within a few seconds.
+            var now = Date.now();
+            var prev = parseInt(sessionStorage.getItem('ft_sw_ctrlchg_ts') || '0', 10);
+            if (prev && now - prev < 4000) return;
+            sessionStorage.setItem('ft_sw_ctrlchg_ts', String(now));
+          } catch (e) {}
+          if (!navigator.serviceWorker.controller) return;
           window.location.reload();
         });
       } catch (e) {}
@@ -3777,6 +3795,7 @@ if (nMM) nMM.addEventListener('click', function() { document.getElementById('nex
       // Cache-bust the URL so the reload bypasses any leftover HTTP cache.
       var u = new URL(window.location.href);
       u.searchParams.set('_', String(Date.now()));
+      u.searchParams.set('sw_reload', '0');
       window.location.replace(u.toString());
     }, 400);
   });

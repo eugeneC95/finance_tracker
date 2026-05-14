@@ -18,6 +18,9 @@
   function go() {
     var u = new URL('./index.html', window.location.href);
     u.searchParams.set('_', String(Date.now()));
+    // Tell index.html to skip the one-shot controllerchange→reload (otherwise
+    // unregister + immediate re-register can loop: activate → reload → activate…).
+    u.searchParams.set('sw_reload', '0');
     window.location.replace(u.toString());
   }
   function fail(e) {
