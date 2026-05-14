@@ -485,6 +485,124 @@ body.dark .cat-btn.active { color: #000; }
   align-items: end;
 }
 
+/* Add expense — primary form */
+.exp-add-form {
+  direction: ltr;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  margin-top: 2px;
+}
+.exp-add-mid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(168px, 220px);
+  gap: var(--s4);
+  align-items: end;
+}
+.exp-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.exp-add-field .lbl { margin-bottom: 0; }
+.exp-add-form input[type="text"],
+.exp-add-form input[type="number"],
+.exp-add-form input[type="date"] { text-align: start; }
+.exp-input--amount {
+  font-size: var(--f-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.exp-quick-amt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.exp-quick-amt .exp-quick-btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: var(--f-xs);
+  font-weight: 600;
+  border-radius: 999px;
+}
+.exp-add-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.exp-add-actions .btn {
+  width: 100%;
+  min-height: 44px;
+}
+.ft-check-label.exp-add-recurring {
+  margin-top: var(--s3);
+  padding: 12px 14px;
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  align-items: center;
+}
+.ft-check-label.exp-add-recurring .ft-check-input { margin-top: 0; }
+
+.modal.modal--edit { max-width: 420px; }
+.edit-modal-bd .lbl { margin-bottom: 0; }
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.edit-field input,
+.edit-field select {
+  text-align: start;
+  direction: ltr;
+}
+.edit-field--amount input {
+  font-size: var(--f-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.edit-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
+  align-items: end;
+}
+.edit-optional { font-weight: 400; color: var(--ink3); }
+.modal-ft--edit .btn-primary { min-width: 132px; }
+
+@media (max-width: 720px) {
+  .exp-add-mid { grid-template-columns: 1fr; }
+  .exp-add-side {
+    display: grid;
+    grid-template-columns: 1fr minmax(108px, 130px);
+    gap: 10px;
+    align-items: end;
+  }
+}
+@media (max-width: 400px) {
+  .exp-add-side { grid-template-columns: 1fr; }
+}
+@media (max-width: 680px) {
+  .edit-grid-2 { grid-template-columns: 1fr; }
+  .modal-ft--edit {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: var(--s4) var(--s5);
+  }
+  .modal-ft--edit .btn,
+  .modal-ft--edit .btn-ghost {
+    width: 100%;
+    justify-content: center;
+    height: 48px;
+  }
+}
+
 /* ============================================================
    TWO COLUMN LAYOUT
    ============================================================ */
@@ -1234,28 +1352,33 @@ body.dark .fs-btn.active { color: #000; }
         </div>
         <div class="panel-bd">
           <div class="cat-groups" id="cat-btns"></div>
-          <div class="add-row">
-            <div>
-              <label class="lbl">Description</label>
-              <input type="text" id="exp-name" placeholder="What did you spend on?" maxlength="80"/>
+          <div class="exp-add-form">
+            <div class="exp-add-field exp-add-field--desc">
+              <label class="lbl" for="exp-name">Description</label>
+              <input type="text" id="exp-name" class="exp-input" placeholder="What did you spend on?" maxlength="80" autocomplete="off"/>
             </div>
-            <div>
-              <label class="lbl">Amount (RM)</label>
-              <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01"/>
-            </div>
-            <div>
-              <label class="lbl">Date</label>
-              <input type="date" id="exp-date"/>
-            </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary" id="add-exp-btn" style="width:100%">Add</button>
+            <div class="exp-add-mid">
+              <div class="exp-add-field exp-add-field--amount">
+                <label class="lbl" for="exp-amount">Amount (RM)</label>
+                <input type="number" id="exp-amount" class="exp-input exp-input--amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+                <div id="exp-quick-amt" class="exp-quick-amt" aria-label="Add to amount"></div>
+              </div>
+              <div class="exp-add-side">
+                <div class="exp-add-field exp-add-field--date">
+                  <label class="lbl" for="exp-date">Date</label>
+                  <input type="date" id="exp-date" class="exp-input"/>
+                </div>
+                <div class="exp-add-actions">
+                  <button type="button" class="btn btn-primary" id="add-exp-btn">Add expense</button>
+                </div>
+              </div>
             </div>
           </div>
+          <label class="ft-check-label exp-add-recurring">
+            <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
+            <span>Also save as a recurring entry (auto-adds every month)</span>
+          </label>
         </div>
-        <label class="ft-check-label">
-          <input type="checkbox" id="exp-recurring" class="ft-check-input"/>
-          <span>Also save as a recurring entry (auto-adds every month)</span>
-        </label>
       </div>
 
       <div class="cols-2">
@@ -1934,38 +2057,38 @@ body.dark .fs-btn.active { color: #000; }
      EDIT MODAL
 ══════════════════════════════════════════ -->
 <div class="overlay" id="edit-overlay">
-  <div class="modal">
+  <div class="modal modal--edit" role="dialog" aria-modal="true" aria-labelledby="edit-title">
     <div class="modal-hd">
       <div class="modal-title" id="edit-title">Edit entry</div>
-      <button class="modal-close" id="edit-close">✕</button>
+      <button type="button" class="modal-close" id="edit-close" aria-label="Close">✕</button>
     </div>
-    <div class="modal-bd">
-      <div>
-        <label class="lbl">Description</label>
-        <input type="text" id="edit-name" maxlength="80"/>
+    <div class="modal-bd edit-modal-bd">
+      <div class="edit-field">
+        <label class="lbl" for="edit-name">Description</label>
+        <input type="text" id="edit-name" maxlength="80" autocomplete="off"/>
       </div>
-      <div class="modal-row two">
-        <div>
-          <label class="lbl">Amount</label>
-          <input type="number" id="edit-amount" min="0" step="0.01"/>
+      <div class="edit-grid-2">
+        <div class="edit-field edit-field--amount">
+          <label class="lbl" for="edit-amount">Amount (RM)</label>
+          <input type="number" id="edit-amount" min="0" step="0.01" inputmode="decimal"/>
         </div>
-        <div>
-          <label class="lbl">Date</label>
+        <div class="edit-field">
+          <label class="lbl" for="edit-date">Date</label>
           <input type="date" id="edit-date"/>
         </div>
       </div>
-      <div>
-        <label class="lbl">Category</label>
+      <div class="edit-field">
+        <label class="lbl" for="edit-cat">Category</label>
         <select id="edit-cat"></select>
       </div>
-      <div>
-        <label class="lbl">Note <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
-        <input type="text" id="edit-note" placeholder="e.g. Receipt #123, Petronas Rawang" maxlength="120"/>
+      <div class="edit-field">
+        <label class="lbl" for="edit-note">Note <span class="edit-optional">(optional)</span></label>
+        <input type="text" id="edit-note" placeholder="Receipt #, location…" maxlength="120"/>
       </div>
     </div>
-    <div class="modal-ft">
-      <button class="btn-ghost" id="edit-cancel">Cancel</button>
-      <button class="btn btn-primary" id="edit-save">Save changes</button>
+    <div class="modal-ft modal-ft--edit">
+      <button type="button" class="btn-ghost" id="edit-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="edit-save">Save changes</button>
     </div>
   </div>
 </div>

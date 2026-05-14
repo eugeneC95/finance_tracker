@@ -64,22 +64,21 @@ document.getElementById('cat-btns').addEventListener('click', function(e) {
 (function buildQuickAmounts() {
   var amtInput = document.getElementById('exp-amount');
   if (!amtInput) return;
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;gap:6px;margin-top:6px;flex-wrap:wrap';
+  var mount = document.getElementById('exp-quick-amt');
+  if (!mount) return;
+  mount.innerHTML = '';
   [10, 20, 50, 100, 200].forEach(function(val) {
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn-ghost';
-    btn.style.cssText = 'height:28px;padding:0 10px;font-size:var(--f-xs);font-weight:600';
+    btn.className = 'btn-ghost exp-quick-btn';
     btn.textContent = '+' + val;
     btn.addEventListener('click', function() {
       var cur = parseFloat(amtInput.value) || 0;
       amtInput.value = (cur + val).toFixed(2);
       amtInput.focus();
     });
-    wrap.appendChild(btn);
+    mount.appendChild(btn);
   });
-  amtInput.closest('div').appendChild(wrap);
 })();
 
 // ╔══════════════════════════════════════════════════════════╗
