@@ -12,6 +12,8 @@
 *.webmanifest text eol=lf
 *.md       text eol=lf
 *.txt      text eol=lf
+hooks/post-commit text eol=lf
+scripts/*.mjs text eol=lf
 
 # Binaries — never normalize
 *.png  binary

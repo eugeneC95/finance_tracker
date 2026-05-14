@@ -1,0 +1,28 @@
+#!/bin/sh
+# Optional: git config core.hooksPath hooks
+# Skip: SKIP_MEMO_HOOK=1 git commit …
+# Skip auto second commit: only refresh memo.txt (leave unstaged): MEMO_HOOK_NO_AUTOCOMMIT=1
+
+[ -n "$SKIP_MEMO_HOOK" ] && exit 0
+
+repo_root=$(git rev-parse --show-toplevel) || exit 0
+cd "$repo_root" || exit 0
+
+last=$(git log -1 --format=%s 2>/dev/null) || exit 0
+case "$last" in
+  docs\(memo\):*) exit 0 ;;
+esac
+
+command -v node >/dev/null 2>&1 || exit 0
+node "$repo_root/scripts/update-memo-summary.mjs" || exit 0
+
+if ! git diff --name-only memo.txt | grep -q .; then
+  exit 0
+fi
+
+if [ -n "$MEMO_HOOK_NO_AUTOCOMMIT" ]; then
+  exit 0
+fi
+
+git add memo.txt
+git commit --no-verify -m "docs(memo): refresh auto git summary"

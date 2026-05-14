@@ -2,6 +2,30 @@ Finance Tracker — living handoff (read/save to resume work)
 ===========================================================
 Last updated: 2026-05-14
 
+<<<MEMO_AUTO_SUMMARY>>>
+Generated: 2026-05-14T15:53:53.420Z
+
+Recent commits (newest first):
+  - e6c677c (2026-05-14) Sync: auto-pull on focus, Sheet-overwrite UT, in-flight guard; shorter save error copy; v60 cache bump
+  - 2879723 (2026-05-14) Speed up Sheet sync: parallel save_chunk batches, larger chunks, faster auto-load/debounce; extension POST for large saves
+  - 2e78628 (2026-05-14) Auto-load Sheet on open (autoStart bypasses empty-cloud skips); silent pull; pull after URL change; bump v56
+  - 30ed7ef (2026-05-14) Stop SW controllerchange reload loop after nosw / cache clear (sw_reload=0 + debounce)
+  - 5ec5189 (2026-05-14) Fix Apps Script normalizeAction when e.parameters.action is a string (save_chunk); apiVersion 5
+  - e453644 (2026-05-14) Fix auto-load race so Sheet data and UT holdings sync on PWA; clarify save_chunk errors; strip /exec URL on save/load
+  - 51008ad (2026-05-14) Merge post-pull stash: sync diagnostics, flush bottom nav, memo notes
+  - 9918c18 (2026-05-14) docs(memo): document UT charts, daily line charts, search focus
+  - 3e353c8 (2026-05-14) fix(a11y): move focus before aria-hidden on expense search popover
+  - 01c5b29 (2026-05-14) feat(unit-trust): total paid RM (totalCost) instead of avg per unit
+  - 3d692a0 (2026-05-14) fix(sync): surface api v3 and UT sheet tab guidance
+  - 2663590 (2026-05-14) fix(settings): full-width backup/sync rows and stacked actions
+  - b19d1a0 (2026-05-14) feat(sync): push unit trust holdings and NAV to Google Sheets
+  - 8a01f38 (2026-05-14) feat(petrol): default RM/L 1.99 and document efficiency math
+  - d9208e3 (2026-05-14) feat(assets): unit trust holdings with manual NAV and CSV import
+  - b14b419 (2026-05-14) fix(search): coerce name/cat to string before toLowerCase
+  - b4cecf0 (2026-05-14) fix(ui): remake Petrol log layout for mobile and desktop
+  - f4fd633 (2026-05-14) fix(search): close sheet on tab change; wire chrome nav
+<<<END_MEMO_AUTO_SUMMARY>>>
+
 PURPOSE
 -------
 - Offline-first PWA: static HTML/CSS/JS, installable; PWA persists via `localStorage` (see `chromeStorage` adapter at top of `app.js`). Extension uses `chrome.storage.local`.
@@ -49,6 +73,7 @@ IMPORTANT IDS / HOOKS
 
 HOW TO CONTINUE
 ---------------
+0. **Auto git summary in this file** — Between `<<<MEMO_AUTO_SUMMARY>>>` and `<<<END_MEMO_AUTO_SUMMARY>>>` is regenerated from `git log` by `node scripts/update-memo-summary.mjs`. To refresh after every local commit, run once: `git config core.hooksPath hooks` (repo `hooks/` folder). The `post-commit` hook runs that script and, if `memo.txt` changed, creates a follow-up commit `docs(memo): refresh auto git summary`. To skip hook: `SKIP_MEMO_HOOK=1 git commit …`. To refresh memo only without the extra commit: `MEMO_HOOK_NO_AUTOCOMMIT=1 git commit …` or run the node script manually.
 1. After changing any precached asset (`app.js`, `features.js`, `extras.js`, `sync.js`, `import-inline.js`, or shell HTML): bump **`BUILD_VERSION`** in `index.html`, bump **`const CACHE`** in `service-worker.js` (new string, e.g. `ft-v43`), and bump every local script query **`?v=`** in `index.html` to match.
 2. If `google-apps-script.js` changes: user must create a new Apps Script deployment version.
 3. Repo rule (`.cursor/rules`): when finishing a fix, `git add` relevant files, **commit**, **push** `origin/main` unless user says stop or push fails.
