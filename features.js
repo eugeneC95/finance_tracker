@@ -622,12 +622,60 @@ if (addRecBtn) addRecBtn.addEventListener('click', addRecurring);
   if (el) el.addEventListener('keydown', function(e){ if(e.key==='Enter') addRecurring(); });
 });
 
-// Search
+// Search (icon + top sheet on Expenses; same #search-input / #search-results)
+function expSearchPop() { return document.getElementById('exp-search-pop'); }
+function expSearchToggle() { return document.getElementById('exp-search-toggle'); }
+
+function setExpSearchOpen(open) {
+  var pop = expSearchPop();
+  var tgl = expSearchToggle();
+  if (!pop) return;
+  pop.classList.toggle('open', !!open);
+  pop.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (tgl) tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function closeExpSearch() {
+  setExpSearchOpen(false);
+}
+
+function openExpSearch(opts) {
+  opts = opts || {};
+  setExpSearchOpen(true);
+  var si = document.getElementById('search-input');
+  if (!si) {
+    if (typeof renderSearch === 'function') renderSearch();
+    return;
+  }
+  setTimeout(function() {
+    try {
+      si.focus();
+      if (opts.selectAll) si.select();
+    } catch (err) {
+      try { si.focus(); } catch (e2) {}
+    }
+    if (typeof renderSearch === 'function') renderSearch();
+  }, opts.delay != null ? opts.delay : 50);
+}
+
 var searchInput = document.getElementById('search-input');
 if (searchInput) searchInput.addEventListener('input', function(e) {
   searchQuery = e.target.value;
   renderSearch();
 });
+
+var expSearchTgl = document.getElementById('exp-search-toggle');
+if (expSearchTgl) {
+  expSearchTgl.addEventListener('click', function() {
+    var pop = expSearchPop();
+    if (pop && pop.classList.contains('open')) closeExpSearch();
+    else openExpSearch();
+  });
+}
+var expSearchBd = document.getElementById('exp-search-backdrop');
+if (expSearchBd) expSearchBd.addEventListener('click', closeExpSearch);
+var expSearchCls = document.getElementById('exp-search-close');
+if (expSearchCls) expSearchCls.addEventListener('click', closeExpSearch);
 
 // Nav tab triggers (trends needs a chart pass when opened)
 document.querySelectorAll('.nav-item').forEach(function(btn) {
@@ -637,7 +685,7 @@ document.querySelectorAll('.nav-item').forEach(function(btn) {
   });
 });
 
-// Keyboard shortcut: Ctrl+F focuses global search on Expenses
+// Keyboard shortcut: Ctrl+F opens global search on Expenses
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     var si = document.getElementById('search-input');
@@ -652,18 +700,16 @@ document.addEventListener('keydown', function(e) {
         if (expTab) expTab.classList.add('active');
         if (expPage) expPage.classList.add('active');
       }
-      setTimeout(function() {
-        try {
-          si.focus();
-          si.select();
-        } catch (err) {
-          si.focus();
-        }
-        if (typeof renderSearch === 'function') renderSearch();
-      }, 60);
+      openExpSearch({ selectAll: true, delay: 60 });
     }
   }
   if (e.key === 'Escape') {
+    var esp = expSearchPop();
+    if (esp && esp.classList.contains('open')) {
+      e.preventDefault();
+      closeExpSearch();
+      return;
+    }
     var eo = document.getElementById('edit-overlay');
     if (eo) eo.classList.remove('open');
     var co = document.getElementById('cat-detail-overlay');

@@ -984,6 +984,7 @@ function activateNavTab(tab) {
   if (!tab) return;
   const page = document.getElementById('page-' + tab);
   if (!page) return;
+  if (tab !== 'expenses' && typeof closeExpSearch === 'function') closeExpSearch();
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   page.classList.add('active');

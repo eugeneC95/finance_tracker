@@ -933,6 +933,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    if (btn.dataset.tab !== 'expenses' && typeof closeExpSearch === 'function') closeExpSearch();
     btn.classList.add('active');
     document.getElementById('page-' + btn.dataset.tab).classList.add('active');
     scrollNavItemIntoView(btn);
