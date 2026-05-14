@@ -1,82 +1,62 @@
-Finance Tracker — project memo (summary)
-========================================
+Finance Tracker — living handoff (read/save to resume work)
+===========================================================
 Last updated: 2026-05-14
 
-What this repo is
-------------------
-- PWA: static site (index.html + JS/CSS), GitHub Pages at eugenec95.github.io/finance_tracker/
-- Chrome extension: finance-tracker-chrome/ — same logic, chrome.storage + background.js for Apps Script fetch
+PURPOSE
+-------
+- Offline-first PWA: static HTML/CSS/JS, installable, local data in IndexedDB (via idb/chromium patterns in app).
+- Optional cloud: Google Apps Script backend; user deploys `google-apps-script.js` from repo root (keep in sync with `sync.js`).
+- Mirror: `finance-tracker-chrome/` — same UI logic; `chrome.storage` + extension background for Sheets fetch (host_permissions avoid PWA POST/redirect body loss).
 
-Major fixes shipped (timeline)
-------------------------------
-1) White screen (Chrome + iPhone + Incognito)
-   Root cause: index.html had <style> opened but no </style> before </head>. The HTML parser treated the entire rest of the file (including <body> and all <script src>) as CSS text, so DOM was <body></body> and no JS ran.
-   Fix: added missing </style>; bumped cache/SW versions.
+STACK
+-----
+- `index.html` — structure, most CSS, inline boot/lock handling, `BUILD_VERSION`, script tags with `?v=`.
+- `app.js` — data model, persistence hooks, `fmt`, charts, `renderTxList`, `activateNavTab`, `EXP_CAT_GROUPS` (expense category groups for picker UI).
+- `features.js` — global search (`#search-input`, `renderSearch`), optional auto-backup UI + daily trigger, dedupe for import, Ctrl+F → search on Expenses.
+- `extras.js` — supplementary behaviours (keep in parity when touching related flows).
+- `sync.js` — Sheet pull/push, chunked save path for large payloads on PWA.
+- `import-inline.js` — TNG/UOB-style wizard; precached by SW.
+- `service-worker.js` — `CACHE` name + `SHELL` list (must match files you ship offline).
+- Recovery: `nosw.html` (clear SW/cache), `lock.html` (legacy redirect recovery; primary UX uses `#ft-boot` overlay in index).
 
-2) iPhone layout broken (nav at top, no scroll, content missing)
-   Root cause: mobile CSS used body { position:fixed; overflow:hidden } + .main { overflow-y:auto }, which WebKit mishandles; nested fixed .sb did not pin to bottom.
-   Fix: normal document flow on mobile, body padding-bottom for bottom nav, .sb position fixed bottom.
+NAVIGATION
+----------
+- SPA: one `index.html`; sections are `.page` blocks with ids `page-*` (only one has `.active`).
+- Desktop: left sidebar `.sb` / `.sb-nav` shows all primary nav buttons.
+- Mobile: `.sb` is a fixed bottom bar. Items with `data-mobile-overflow="1"` are hidden on small viewports; **More** (`#nav-more-open`) opens `#mobile-nav-more-sheet` for Recurring, Trends, Petrol, Report.
+- **Import** (statement wizard + JSON backup) lives under **Settings**, not a top-level nav page.
+- **Search**: “Search all months” card on **Expenses** only (`exp-global-search-card`); no separate Search page.
+- Bottom nav uses `flex` / `space-between` for visible primary tabs (not scroll-snap in current CSS).
 
-3) Google Sheets save on PWA vs extension
-   Extension works because manifest host_permissions lets background fetch follow Apps Script redirects with POST body intact.
-   PWA: POST to script.google.com → 302 → fetch may drop body on follow → "No data received" / misleading redeploy message.
-   Mitigation (v14): small saves as GET ?action=save&data=<json> (threshold ~6500 URL-encoded chars).
-   Fix (v17): realistic datasets (~37+ expense rows) exceed that threshold and still POST-failed; PWA now sends sequential GET ?action=save_chunk&id=&seq=&total=&data=... (Apps Script reassembles via CacheService). Backend also uses JSON.parse(raw) only on doGet save — decodeURIComponent was unsafe for notes containing "%".
+RECENT PRODUCT (verified in repo; omit rumours)
+-----------------------------------------------
+- Mobile-only “app shell” styling: elevated cards, pill controls, floating bottom nav capsule, dark “spent this month” hero — see `@media` blocks and comments around v16/v22 in `index.html`.
+- Expenses (mobile): card order via flex `order` (add form first, stats, list, budget, chart); FAB scrolls to amount field; compact stat row.
+- Expense category grid density adjusted (mobile CSS; comments reference column counts).
+- Income list prefixes amounts with `+ `; **expense** list uses `fmt(amount)` only — **no leading minus** on list rows (pending if product wants “−RM …”).
+- **Auto-backup** toggle + daily-on-open logic still present in `features.js` / Settings UI — **not removed**.
+- PWA Sheets: large saves use chunked GET reassembly (see `sync.js` + deployed script); small payloads may use single GET save; redeploy Apps Script after backend changes.
 
-4) Auto-load from Sheet on app open
-   After local load/render, ft-app-ready fires; sync.js pulls cloud once per session (skip confirm), toast with row count.
+IMPORTANT IDS / HOOKS
+---------------------
+- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`.
+- Boot / readiness: `#ft-boot`, `#ft-boot-msg`, `ft-app-ready` (dispatched when app finished init).
+- Tab switch: `activateNavTab('expenses'|...)` in `app.js` (toggles `.active` on `#page-<tab>` and nav buttons).
+- Categories: `EXP_CAT_GROUPS` + `renderExpCatGrid` (and related) in `app.js`.
+- Cache bust display: `BUILD_VERSION` in `index.html`; footer `#lk-ver` text set from it.
 
-5) Mobile panel headers looked cramped
-   v15: stack .panel-hd (title above subtitle) in @media (max-width:680px).
-
-6) User asked for broader mobile-first redesign
-   Delegated to background work (v16+); coordinate with any parallel sync/save fixes.
-
-Operational notes
------------------
-- Apps Script: repo file google-apps-script.js — user must Deploy → Manage deployments → Edit → New version after backend changes.
-- Cache issues: nosw.html clears SW + caches; Settings has force refresh; lock.html has recovery for redirect loops.
-- Parity: keep PWA sync.js and extension sync.js / google-apps-script.js aligned where intentional differences are documented in README.
-
-v18 (2026-05-14)
+HOW TO CONTINUE
 ---------------
-- iPhone/PWA: viewport `maximum-scale=1,user-scalable=no` + `touch-action:manipulation` to reduce double-tap zoom.
+1. After changing any precached asset (`app.js`, `features.js`, `extras.js`, `sync.js`, `import-inline.js`, or shell HTML): bump **`BUILD_VERSION`** in `index.html`, bump **`const CACHE`** in `service-worker.js` (new string, e.g. `ft-v43`), and bump every local script query **`?v=`** in `index.html` to match.
+2. If `google-apps-script.js` changes: user must create a new Apps Script deployment version.
+3. Repo rule (`.cursor/rules`): when finishing a fix, `git add` relevant files, **commit**, **push** `origin/main` unless user says stop or push fails.
 
-v19 (2026-05-14)
----------------
-- Reverted the expense-category swipe pager (was misinterpreted user intent).
-- Bottom navigation on mobile now shows exactly 4 tabs at a time with `scroll-snap`; swipe horizontally to reveal the rest. Right-edge fade hints there is more. Active tab auto-scrolls into view on click.
+HISTORY / GOTCHAS (short)
+-------------------------
+- Past white-screen: unclosed `<style>` in head — entire body treated as CSS; always validate HTML structure after edits.
+- iOS: avoid `body { position:fixed }` + nested scroll traps; prefer normal document scroll + bottom padding for nav.
+- PWA POST to `script.google.com` can lose body on redirect; extension avoids this; PWA uses GET/chunk strategy.
 
-v20 (2026-05-14)
----------------
-- Mobile expense category grid: 4 columns (was 3, SE was 2).
-
-v22 (2026-05-14)
----------------
-Modern app-like visual style (mobile only, pure CSS overlay):
-- Cards: 20px radius, no border, soft elevation shadow.
-- "Spent this month" hero card painted dark with white type.
-- Buttons: pill (border-radius 999px), heavier weight.
-- Inputs: rounded, no harsh border, soft fill.
-- Filter pills: pill all the way.
-- Transactions: 40px circular tinted icons, 800-weight amounts.
-- Month controls: pill arrows.
-- Bottom nav: floating capsule (lifted 8px from screen edges, rounded 22px,
-  blurred translucent background). Body padding-bottom + FAB + version stamp
-  adjusted to clear the new lifted nav.
-- Page header: 800-weight, tight letter spacing.
-
-v21 (2026-05-14)
----------------
-UX redesign of the Expenses page (mobile only):
-- Reorder via flex+order: Add Expense card now first, then compact stat strip, then transactions list, then budget panel, then by-category chart. `.cols-2 { display: contents }` flattens the desktop two-column wrapper so transactions and chart can be independently ordered.
-- Amount input is the hero: 56px tall, 24px bold, centered.
-- Stat cards shrunk to a 2-column compact row (count card spans full width below). No more hero gradient.
-- Floating "+" FAB above the bottom nav scrolls to and focuses the amount input. One tap to add from anywhere.
-- Filter pills wrap with smaller padding.
-
-Open / verify
--------------
-- After pulling v17, redeploy google-apps-script.js (chunked save + parse fix) or cloud save will fail with unknown action / old behavior.
-- Confirm GitHub Pages shows latest build stamp (v22+ after merges).
-- iPhone: pull-to-refresh or nosw.html after deploys to avoid stale SW.
+Open
+----
+- After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck).
