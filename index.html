@@ -201,6 +201,70 @@ body {
   line-height: 1.5;
   transition: background .2s, color .2s;
   touch-action: manipulation;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ── Large screens: visible “redesign” layer (v22 only touched ≤680px) ── */
+@media (min-width: 681px) {
+  body {
+    background:
+      radial-gradient(1100px 700px at 6% -12%, rgba(15, 118, 110, 0.14), transparent 55%),
+      radial-gradient(760px 520px at 96% 4%, rgba(37, 99, 235, 0.09), transparent 52%),
+      var(--page-bg);
+  }
+  body.dark {
+    background:
+      radial-gradient(900px 620px at 10% -8%, rgba(45, 212, 191, 0.1), transparent 58%),
+      radial-gradient(640px 480px at 92% 6%, rgba(96, 165, 250, 0.07), transparent 50%),
+      var(--page-bg);
+  }
+  .sb {
+    border-right: 1px solid rgba(12, 20, 16, 0.18);
+    background: linear-gradient(185deg, #14332a 0%, #0c1814 48%, #080f0d 100%);
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.1);
+  }
+  body.dark .sb {
+    border-right-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(185deg, #0f1a16 0%, #050807 100%);
+    box-shadow: 6px 0 36px rgba(0, 0, 0, 0.45);
+  }
+  .card,
+  .stat-card {
+    border: 1px solid transparent;
+    box-shadow:
+      0 2px 6px rgba(15, 22, 18, 0.06),
+      0 14px 44px rgba(15, 22, 18, 0.09);
+    border-radius: 16px;
+  }
+  body.dark .card,
+  body.dark .stat-card {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.35),
+      0 18px 56px rgba(0, 0, 0, 0.42);
+  }
+  #page-expenses .stat-row .stat-card:first-child {
+    border: none !important;
+    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 42%, #115e59 100%) !important;
+    color: #fff;
+    box-shadow: 0 18px 48px rgba(15, 118, 110, 0.32);
+    transform: translateY(-2px);
+  }
+  #page-expenses .stat-row .stat-card:first-child .s-label {
+    color: rgba(255, 255, 255, 0.65) !important;
+  }
+  #page-expenses .stat-row .stat-card:first-child .s-value,
+  #page-expenses .stat-row .stat-card:first-child .s-value.red {
+    color: #fff !important;
+    font-size: 28px !important;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  #page-expenses .stat-row .stat-card:first-child #mom-exp {
+    color: rgba(255, 255, 255, 0.78) !important;
+  }
+  body.dark #page-expenses .stat-row .stat-card:first-child {
+    background: linear-gradient(135deg, #2dd4bf 0%, #0f766e 45%, #134e4a 100%) !important;
+  }
 }
 
 /* ============================================================
@@ -1661,12 +1725,21 @@ body.dark .ft-fab { background: #fff; color: #000; }
    - Subtle warm background
 
    Pure CSS, layered AFTER the structural mobile rules so it wins specificity
-   without changing any HTML or JS. Desktop (>680px) is untouched.
+   without changing any HTML or JS. Desktop (≥681px) uses a separate block above.
    ════════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 680px) {
 
-  body { background: #F4F4F1; }
-  body.dark { background: #0B0B0D; }
+  body {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    background:
+      radial-gradient(100% 400px at 50% -8%, rgba(15, 118, 110, 0.14), transparent 60%),
+      #e2e7e3 !important;
+  }
+  body.dark {
+    background:
+      radial-gradient(100% 380px at 50% -10%, rgba(45, 212, 191, 0.16), transparent 55%),
+      #080a09 !important;
+  }
 
   /* --- Page header: weightier title, tighter letter spacing --- */
   .page-header h2 {
@@ -1693,26 +1766,26 @@ body.dark .ft-fab { background: #fff; color: #000; }
       0 8px 24px rgba(0, 0, 0, 0.5) !important;
   }
 
-  /* --- Hero stat card: dark gradient + white text --- */
+  /* --- Hero stat card: teal gradient + white text --- */
   #page-expenses .stat-row .stat-card:first-child {
-    background: linear-gradient(155deg, #111 0%, #2A2A2A 100%) !important;
+    background: linear-gradient(145deg, #0f766e 0%, #0a5c52 55%, #064e3b 100%) !important;
     color: #fff;
   }
   #page-expenses .stat-row .stat-card:first-child .s-label {
-    color: rgba(255, 255, 255, .55) !important;
+    color: rgba(255, 255, 255, .6) !important;
   }
   #page-expenses .stat-row .stat-card:first-child .s-value,
   #page-expenses .stat-row .stat-card:first-child .s-value.red {
     color: #fff !important;
-    font-size: 24px !important;
+    font-size: 26px !important;
     font-weight: 800;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
   #page-expenses .stat-row .stat-card:first-child #mom-exp {
-    color: rgba(255, 255, 255, .7) !important;
+    color: rgba(255, 255, 255, .75) !important;
   }
   body.dark #page-expenses .stat-row .stat-card:first-child {
-    background: linear-gradient(155deg, #1f1f23 0%, #353539 100%) !important;
+    background: linear-gradient(145deg, #2dd4bf 0%, #0f766e 50%, #134e4a 100%) !important;
   }
 
   /* --- Panel headers: tighter and quieter --- */
@@ -1772,9 +1845,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
     font-size: 11px;
   }
   .pill.active {
-    background: var(--ink) !important;
-    color: var(--card-bg) !important;
-    border-color: var(--ink) !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary-dk) !important;
+  }
+  body.dark .pill.active {
+    color: #041312 !important;
   }
 
   /* --- Transactions: circular tinted icon --- */
@@ -1804,9 +1880,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   }
 
   /* --- Bottom nav: floating capsule, lifted off screen edges --- */
-  body {
-    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
-  }
   .sb {
     bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     left: 8px !important;
@@ -1952,7 +2025,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v28 · 2026-05-14';
+  var BUILD_VERSION    = 'v29 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2833,7 +2906,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v28 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v29 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3069,12 +3142,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v28 · 2026-05-14</div>
-<script src="app.js?v=28"></script>
-<script src="sync.js?v=28"></script>
-<script src="features.js?v=28"></script>
-<script src="extras.js?v=28"></script>
-<script src="import-inline.js?v=28"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v29 · 2026-05-14</div>
+<script src="app.js?v=29"></script>
+<script src="sync.js?v=29"></script>
+<script src="features.js?v=29"></script>
+<script src="extras.js?v=29"></script>
+<script src="import-inline.js?v=29"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
