@@ -244,6 +244,7 @@ function syncSave(silent) {
 // opts.silent       — suppress toasts for the success case
 function syncLoad(opts) {
   opts = opts || {};
+  var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
   if (!syncUrl) {
     if (!opts.silent) showToast('No sync URL — add it in Settings');
     return;
@@ -271,14 +272,19 @@ function syncLoad(opts) {
 
       var p = data.payload || {};
 
-      function todayStrLocal() {
-        if (typeof todayStr === 'function') return todayStr();
-        var d = new Date();
-        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      // Never default missing/unparseable sheet dates to "today" — that silently moves every
+      // affected row into the current month (e.g. April looks empty, May doubles).
+      var BAD_SHEET_DATE = '1900-01-02';
+
+      function sheetDateField_(o) {
+        var v = o.date;
+        if (v === undefined || v === null || v === '') v = o.Date;
+        if (v === undefined || v === null || v === '') v = o.DATE;
+        return v;
       }
 
       function dateToYMD(val) {
-        if (val === undefined || val === null || val === '') return todayStrLocal();
+        if (val === undefined || val === null || val === '') return BAD_SHEET_DATE;
         if (typeof val === 'number' && !isNaN(val)) {
           var dn = new Date(val);
           if (!isNaN(dn.getTime())) {
@@ -291,7 +297,21 @@ function syncLoad(opts) {
         if (!isNaN(dp.getTime())) {
           return dp.getFullYear() + '-' + String(dp.getMonth() + 1).padStart(2, '0') + '-' + String(dp.getDate()).padStart(2, '0');
         }
-        return todayStrLocal();
+        return BAD_SHEET_DATE;
+      }
+
+      if (opts.skipConfirm) {
+        var ce = (p.expenses || []).length;
+        if (prevExpCount > 0 && ce === 0) {
+          setSyncStatus('error', 'Auto-sync skipped — cloud had no expenses');
+          showToast('Sheet returned 0 expenses; kept your local data.');
+          return;
+        }
+        if (prevExpCount >= 5 && ce > 0 && ce < Math.floor(prevExpCount * 0.35)) {
+          setSyncStatus('error', 'Auto-sync skipped — cloud much smaller than device');
+          showToast('Sheet has far fewer expenses than this device — kept local data. Use Sheet version history if rows are missing.');
+          return;
+        }
       }
 
       // Same rules as finance-tracker-chrome/sync.js (Sheet headers may use id / ID / Id).
@@ -306,7 +326,7 @@ function syncLoad(opts) {
           if (rawId === undefined || rawId === null || rawId === '') rawId = o.Id;
           o.id = Number(rawId);
           if (!o.id || isNaN(o.id)) o.id = Date.now() + idx;
-          o.date = dateToYMD(o.date);
+          o.date = dateToYMD(sheetDateField_(o));
           if (o.amount !== undefined) o.amount = parseFloat(o.amount) || 0;
           if (o.balance !== undefined) o.balance = parseFloat(o.balance) || 0;
           return o;
@@ -323,7 +343,7 @@ function syncLoad(opts) {
       if (typeof networthHist !== 'undefined') {
         networthHist = (p.networthHist || []).filter(function(e) { return e && e.date; }).map(function(e) {
           var o = Object.assign({}, e);
-          o.date = dateToYMD(o.date);
+          o.date = dateToYMD(sheetDateField_(o));
           if (o.total !== undefined) o.total = parseFloat(o.total) || 0;
           return o;
         });
@@ -334,6 +354,7 @@ function syncLoad(opts) {
           var best = null;
           function consider(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return;
+            if (dateStr.indexOf('1900-01-') === 0) return;
             var t = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())
               ? new Date(dateStr.trim() + 'T12:00:00')
               : new Date(dateStr);
