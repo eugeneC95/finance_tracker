@@ -5,15 +5,17 @@
 //   Same Sheet contract as ../sync.js (PWA); fetch via background SYNC_FETCH
 // ╚══════════════════════════════════════════════════════════╝
 
-var KEY_SYNC_URL   = 'sync_url_v1';
 var KEY_SYNC_STATE = 'sync_state_v1';
-
-// Baked-in default (override anytime in Settings; empty stored value uses this again)
-var DEFAULT_SYNC_URL =
+// Hard-coded Google Apps Script web app (…/exec only). Shown read-only on Settings; not user-editable.
+var APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec';
 
 var syncUrl   = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
+
+function applyHardcodedSyncUrl_() {
+  syncUrl = canonicalSyncExecUrl(APPS_SCRIPT_WEB_APP_URL);
+}
 
 // Same as ../sync.js — …/exec only, no ?query (duplicate ?action= breaks Apps Script).
 function canonicalSyncExecUrl(url) {
@@ -29,25 +31,14 @@ function canonicalSyncExecUrl(url) {
 
 // ── Load settings from chrome.storage ─────────────────────
 function loadSyncSettings(cb) {
-  chrome.storage.local.get([KEY_SYNC_URL, KEY_SYNC_STATE], function(r) {
-    var stored = r[KEY_SYNC_URL];
-    var hasStored = typeof stored === 'string' && stored.trim().length > 0;
-    var raw = hasStored ? stored.trim() : DEFAULT_SYNC_URL;
-    syncUrl = canonicalSyncExecUrl(raw);
-    if (!hasStored && DEFAULT_SYNC_URL) {
-      persistSyncUrl(syncUrl);
-    } else if (hasStored && syncUrl !== stored.trim()) {
-      chrome.storage.local.set({ [KEY_SYNC_URL]: syncUrl });
-    }
-    syncState = r[KEY_SYNC_STATE] || syncState;
-    updateSyncUI();
-    if (cb) cb();
+  chrome.storage.local.remove(['sync_url_v1'], function() {
+    chrome.storage.local.get([KEY_SYNC_STATE], function(r) {
+      applyHardcodedSyncUrl_();
+      syncState = r[KEY_SYNC_STATE] || syncState;
+      updateSyncUI();
+      if (cb) cb();
+    });
   });
-}
-
-function persistSyncUrl(url) {
-  syncUrl = canonicalSyncExecUrl(url);
-  chrome.storage.local.set({ [KEY_SYNC_URL]: syncUrl });
 }
 
 function persistSyncState() {
@@ -134,7 +125,7 @@ function humanizeSaveApiError(raw) {
   if (/^unknown action:/i.test(raw.trim())) {
     return (
       raw.trim() +
-      ' — redeploy this repo’s google-apps-script.js (Deploy → New version) and use a sync URL that ends at …/exec (no ? or # after it). ' +
+      ' — redeploy this repo’s google-apps-script.js (Deploy → New version). The web app must respond at …/exec (no ? or # after it). ' +
       'Ping should show apiVersion 5+.'
     );
   }
@@ -143,17 +134,18 @@ function humanizeSaveApiError(raw) {
 
 // ── Ping ───────────────────────────────────────────────────
 function syncPing() {
-  var urlEl = document.getElementById('sync-url-input');
-  var url   = urlEl ? canonicalSyncExecUrl(urlEl.value.trim()) : syncUrl;
-  if (!url) { showToast('Paste your Apps Script URL first'); return; }
+  applyHardcodedSyncUrl_();
+  if (!syncUrl) {
+    showToast('Built-in sync URL missing — rebuild the app');
+    return;
+  }
 
   setSyncStatus('loading', 'Testing connection…');
 
-  scriptFetch(url, { action: 'ping' })
+  scriptFetch(syncUrl, { action: 'ping' })
     .then(function(data) {
       if (data.ok) {
-        persistSyncUrl(url);
-        if (urlEl) urlEl.value = syncUrl;
+        updateSyncUI();
         var av = Number(data.apiVersion);
         var hint = '';
         if (isNaN(av) || av < 2) hint = ' — redeploy script (ping missing apiVersion)';
@@ -164,12 +156,12 @@ function syncPing() {
         showToast('Connected to Google Sheets');
       } else {
         setSyncStatus('error', 'Failed: ' + (data.error || 'unknown'));
-        showToast('Connection failed — check the URL');
+        showToast('Connection failed — check Apps Script deployment');
       }
     })
     .catch(function(err) {
-      setSyncStatus('error', 'Cannot reach URL');
-      showToast('Cannot reach URL — see troubleshooting below');
+      setSyncStatus('error', 'Cannot reach server');
+      showToast('Cannot reach server — see troubleshooting below');
       console.error('Sync ping error:', err);
     });
 }
@@ -243,16 +235,10 @@ function syncSaveChunked(fullJson) {
 }
 
 function syncSave(silent) {
+  applyHardcodedSyncUrl_();
   if (!syncUrl) {
-    if (!silent) showToast('No sync URL — add it in Settings');
+    if (!silent) showToast('Built-in sync URL missing — rebuild the app');
     return;
-  }
-
-  var canon = canonicalSyncExecUrl(syncUrl);
-  if (canon !== syncUrl) {
-    persistSyncUrl(canon);
-    var urlEl = document.getElementById('sync-url-input');
-    if (urlEl) urlEl.value = syncUrl;
   }
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
@@ -319,16 +305,10 @@ function syncLoad(opts) {
   opts = opts || {};
   if (syncLoadInFlight) return;
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
+  applyHardcodedSyncUrl_();
   if (!syncUrl) {
-    if (!opts.silent) showToast('No sync URL — add it in Settings');
+    if (!opts.silent) showToast('Built-in sync URL missing — rebuild the app');
     return;
-  }
-
-  var canonL = canonicalSyncExecUrl(syncUrl);
-  if (canonL !== syncUrl) {
-    persistSyncUrl(canonL);
-    var urlElL = document.getElementById('sync-url-input');
-    if (urlElL) urlElL.value = syncUrl;
   }
 
   if (!opts.skipConfirm) {
@@ -573,9 +553,9 @@ function setSyncStatus(status, message) {
 function updateSyncUI() {
   var dot = document.getElementById('sync-dot');
   var msg = document.getElementById('sync-msg');
-  var inp = document.getElementById('sync-url-input');
+  var disp = document.getElementById('sync-url-display');
 
-  if (inp && syncUrl && !inp.value) inp.value = syncUrl;
+  if (disp) disp.textContent = syncUrl || '';
 
   if (!dot || !msg) return;
 
@@ -594,7 +574,7 @@ function updateSyncUI() {
   if (syncState.message) {
     msg.textContent = syncState.message;
   } else {
-    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open or return to the app; auto-saves 4 s after changes' : 'Not configured';
+    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open or return to the app; auto-saves 4 s after changes' : 'Sync URL not set in app build';
   }
   msg.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
 }
@@ -611,20 +591,10 @@ function wireSyncUI() {
   var pingBtn = document.getElementById('sync-ping-btn');
   var saveBtn = document.getElementById('sync-save-btn');
   var loadBtn = document.getElementById('sync-load-btn');
-  var urlInp  = document.getElementById('sync-url-input');
 
   if (pingBtn) pingBtn.addEventListener('click', syncPing);
   if (saveBtn) saveBtn.addEventListener('click', function() { syncSave(false); });
   if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
-  if (urlInp)  urlInp.addEventListener('change', function() {
-    persistSyncUrl(urlInp.value.trim());
-    updateSyncUI();
-    clearTimeout(wireSyncUI._urlPullTimer);
-    if (!syncUrl) return;
-    wireSyncUI._urlPullTimer = setTimeout(function() {
-      syncLoad({ skipConfirm: true, silent: true, autoStart: true });
-    }, 1200);
-  });
 }
 
 // ── Init ───────────────────────────────────────────────────

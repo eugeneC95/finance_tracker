@@ -11,7 +11,7 @@
 //     - Execute as: Me
 //     - Who has access: Anyone
 //  6. Click Deploy → copy the Web App URL (ends with /exec only — no ?query after it)
-//  7. In the extension: Settings → Google Sheets Sync → paste URL → Test connection
+//  7. In the extension / PWA: Settings → Google Sheets Sync → Test connection (web app URL is built into the client)
 //
 //  NOTE: Every time you change this script, you must
 //  Deploy → Manage deployments → Edit → select the active deployment →
