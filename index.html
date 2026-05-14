@@ -255,8 +255,8 @@ body {
   #page-expenses .stat-row .stat-card:first-child .s-value,
   #page-expenses .stat-row .stat-card:first-child .s-value.red {
     color: #fff !important;
-    font-size: 28px !important;
-    font-weight: 800;
+    font-size: 24px !important;
+    font-weight: 700;
     letter-spacing: -0.02em;
   }
   #page-expenses .stat-row .stat-card:first-child #mom-exp {
@@ -1472,7 +1472,7 @@ body.dark .fs-btn.active { color: #041312; }
   }
   .stat-card .s-label { font-size: 10px; margin-bottom: 4px; letter-spacing: .04em; }
   .stat-card .s-value {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1.15;
   }
@@ -1485,8 +1485,8 @@ body.dark .fs-btn.active { color: #041312; }
   /* Add Expense form: amount becomes the hero input (fewer taps to commit).
      Keep description / date small. The category grid stays 4-col. */
   #page-expenses #exp-amount {
-    height: 56px !important;
-    font-size: 24px !important;
+    height: 48px !important;
+    font-size: 20px !important;
     font-weight: 700;
     text-align: center;
     letter-spacing: -0.01em;
@@ -1510,7 +1510,7 @@ body.dark .fs-btn.active { color: #041312; }
 
   /* Filter pills row inside transactions: keep it compact and wrap. */
   #filter-bar { flex-wrap: wrap; gap: 6px; }
-  #filter-bar .pill { padding: 4px 10px; font-size: 11px; }
+  #filter-bar .pill { padding: 3px 9px; font-size: 10px; }
 
   /* Net summary grid: 2 cols */
   .net-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1564,7 +1564,7 @@ body.dark .fs-btn.active { color: #041312; }
   .tx-item    { padding: 10px 0; }
   .tx-icon    { width: 38px; height: 38px; font-size: 17px; }
   .tx-actions { opacity: 1 !important; }
-  .tx-action-btn { width: 38px; height: 38px; font-size: 15px; }
+  .tx-action-btn { width: 32px; height: 32px; font-size: 13px; }
 
   /* Modals: sheet from bottom */
   .overlay  { padding: 0; align-items: flex-end; }
@@ -1777,8 +1777,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
   #page-expenses .stat-row .stat-card:first-child .s-value,
   #page-expenses .stat-row .stat-card:first-child .s-value.red {
     color: #fff !important;
-    font-size: 26px !important;
-    font-weight: 800;
+    font-size: 21px !important;
+    font-weight: 700;
     letter-spacing: -0.02em;
   }
   #page-expenses .stat-row .stat-card:first-child #mom-exp {
@@ -1853,15 +1853,46 @@ body.dark .ft-fab { background: #fff; color: #000; }
     color: #041312 !important;
   }
 
-  /* --- Transactions: circular tinted icon --- */
+  /* --- Transactions: calmer row rhythm (icon + text + amount + small actions) --- */
+  .tx-item {
+    align-items: flex-start;
+    padding: 12px 0 !important;
+    gap: 10px !important;
+  }
   .tx-icon {
     border-radius: 50% !important;
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 18px !important;
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 16px !important;
+    margin-top: 2px;
   }
-  .tx-name { font-weight: 600; }
-  .tx-amount { font-weight: 800 !important; }
+  .tx-info { padding-top: 2px; }
+  .tx-name { font-size: 14px !important; font-weight: 600; }
+  .tx-meta { font-size: 11px !important; margin-top: 3px !important; line-height: 1.35; }
+  .tx-amount {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin-top: 2px;
+    text-align: right;
+    min-width: 4.5rem;
+  }
+  .tx-actions {
+    gap: 5px !important;
+    align-self: flex-start;
+    margin-top: 1px;
+  }
+  .tx-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+  .drag-handle {
+    font-size: 11px !important;
+    opacity: 0.55;
+    padding-top: 10px;
+    flex-shrink: 0;
+  }
 
   /* --- Month controls: pill arrows --- */
   .month-controls {
@@ -2025,7 +2056,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var STORAGE_HASH_KEY = 'ft_lock_pw_hash_v1';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v29 · 2026-05-14';
+  var BUILD_VERSION    = 'v30 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2906,7 +2937,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.7">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v29 · 2026-05-14</span><br/>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v30 · 2026-05-14</span><br/>
                 Stuck on a white screen after updating? Open <a href="./nosw.html" style="color:var(--blue)">nosw.html</a> once (clears the offline copy), then reopen the app.<br/><br/>
                 Your data is stored locally on this device. Optional Google Sheets sync keeps a copy in your own Google Drive.<br/><br/>
                 Built with plain HTML, CSS &amp; JavaScript. No tracking. No accounts. Works offline.
@@ -3142,12 +3173,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </script>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v29 · 2026-05-14</div>
-<script src="app.js?v=29"></script>
-<script src="sync.js?v=29"></script>
-<script src="features.js?v=29"></script>
-<script src="extras.js?v=29"></script>
-<script src="import-inline.js?v=29"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v30 · 2026-05-14</div>
+<script src="app.js?v=30"></script>
+<script src="sync.js?v=30"></script>
+<script src="features.js?v=30"></script>
+<script src="extras.js?v=30"></script>
+<script src="import-inline.js?v=30"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
