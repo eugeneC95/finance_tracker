@@ -105,6 +105,8 @@ const KEY_EXP   = 'expenses_v2';
 const KEY_INC   = 'incomes_v1';
 const KEY_BANKS = 'banks_v1';
 const KEY_SETS  = 'settings_v1';
+const KEY_UT_HOLD = 'unit_trust_holdings_v1';
+const KEY_UT_NAV  = 'unit_trust_nav_v1';
 
 // ── Storage read generation (avoid stale load() overwriting a fresh Sheet load)
 let _storageReadGen = 0;
@@ -112,6 +114,8 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 
 // ── State ──────────────────────────────────────────────────
 let expenses = [], incomes = [], banks = [];
+let utHoldings = [];
+let utNavPoints = [];
 let settings = { dark:false, fontSize:'fs-md', currency:'RM', showDrag:true, compact:false };
 let viewMonth = new Date(); viewMonth.setDate(1);
 let activeFilter = 'All';
@@ -155,12 +159,14 @@ function viewYM() {
 // ── Storage ────────────────────────────────────────────────
 function load() {
   const gen = _storageReadGen;
-  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS], r => {
+  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV], r => {
     if (gen !== _storageReadGen) return;
     try {
       expenses = r[KEY_EXP]   || [];
       incomes  = r[KEY_INC]   || [];
       banks    = r[KEY_BANKS] || [];
+      utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
+      utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
       if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
       applySettings();
       render();
@@ -176,6 +182,482 @@ function saveExp()   { chromeStorage.local.set({[KEY_EXP]:   expenses}); }
 function saveInc()   { chromeStorage.local.set({[KEY_INC]:   incomes}); }
 function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
 function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
+function saveUtHoldings() { chromeStorage.local.set({ [KEY_UT_HOLD]: utHoldings }); }
+function saveUtNav()      { chromeStorage.local.set({ [KEY_UT_NAV]:  utNavPoints }); }
+
+function utDedupeNavPoints() {
+  const map = new Map();
+  utNavPoints.forEach(p => { map.set(p.fundId + '|' + p.date, p); });
+  utNavPoints = Array.from(map.values());
+}
+
+function utSanitizeHoldings(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(h => h && typeof h === 'object').map((h, idx) => {
+    const id = Number(h.id);
+    return {
+      id: !isNaN(id) && id > 0 ? id : Date.now() + idx,
+      name: String(h.name || 'Fund').trim() || 'Fund',
+      fundCode: h.fundCode != null ? String(h.fundCode).trim() : '',
+      units: Math.max(0, parseFloat(h.units) || 0),
+      avgCost: h.avgCost != null && h.avgCost !== '' && !isNaN(parseFloat(h.avgCost))
+        ? Math.max(0, parseFloat(h.avgCost)) : null,
+      purchaseDate: h.purchaseDate != null ? String(h.purchaseDate).trim().slice(0, 10) : '',
+      notes: h.notes != null ? String(h.notes).trim() : '',
+    };
+  });
+}
+
+function utSanitizeNav(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = arr.filter(p => p && typeof p === 'object').map(p => ({
+    fundId: Number(p.fundId),
+    date: String(p.date || '').trim().slice(0, 10),
+    nav: parseFloat(p.nav),
+  })).filter(p => !isNaN(p.fundId) && p.fundId > 0 && /^\d{4}-\d{2}-\d{2}$/.test(p.date) && !isNaN(p.nav) && p.nav > 0);
+  const map = new Map();
+  out.forEach(p => { map.set(p.fundId + '|' + p.date, p); });
+  return Array.from(map.values());
+}
+
+function mergeUtNavPoints(existing, incoming) {
+  const map = new Map();
+  (Array.isArray(existing) ? existing : []).forEach(p => {
+    if (p && p.fundId && p.date) map.set(p.fundId + '|' + p.date, p);
+  });
+  utSanitizeNav(incoming).forEach(p => { map.set(p.fundId + '|' + p.date, p); });
+  return Array.from(map.values());
+}
+
+function utNavSortedForFund(fundId) {
+  return utNavPoints
+    .filter(p => p.fundId === fundId && /^\d{4}-\d{2}-\d{2}$/.test(p.date) && !isNaN(p.nav) && p.nav > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function utLatestNavEntry(fundId) {
+  const s = utNavSortedForFund(fundId);
+  return s.length ? s[s.length - 1] : null;
+}
+
+function utPrevNavEntry(fundId) {
+  const s = utNavSortedForFund(fundId);
+  return s.length >= 2 ? s[s.length - 2] : null;
+}
+
+function utNavAsOf(fundId, dateStr) {
+  const s = utNavSortedForFund(fundId).filter(p => p.date <= dateStr);
+  return s.length ? s[s.length - 1].nav : null;
+}
+
+function computeUtTotalMarketValue() {
+  return utHoldings.reduce((sum, h) => {
+    const last = utLatestNavEntry(h.id);
+    if (!last) return sum;
+    return sum + h.units * last.nav;
+  }, 0);
+}
+
+function utBuildPortfolioSeries() {
+  if (!utHoldings.length) return [];
+  const dates = [...new Set(utNavPoints.map(p => p.date))]
+    .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+  const series = [];
+  dates.forEach(d => {
+    let total = 0;
+    for (let i = 0; i < utHoldings.length; i++) {
+      const h = utHoldings[i];
+      const nav = utNavAsOf(h.id, d);
+      if (nav == null) return;
+      total += h.units * nav;
+    }
+    series.push({ date: d, total });
+  });
+  return series;
+}
+
+function upsertUtNav(fundId, dateStr, navVal) {
+  const nav = parseFloat(navVal);
+  if (!fundId || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || isNaN(nav) || nav <= 0) return false;
+  const i = utNavPoints.findIndex(p => p.fundId === fundId && p.date === dateStr);
+  if (i >= 0) utNavPoints[i].nav = nav;
+  else utNavPoints.push({ fundId, date: dateStr, nav });
+  utDedupeNavPoints();
+  saveUtNav();
+  return true;
+}
+
+function deleteUtHolding(id) {
+  utHoldings = utHoldings.filter(h => h.id !== id);
+  utNavPoints = utNavPoints.filter(p => p.fundId !== id);
+  saveUtHoldings();
+  saveUtNav();
+  render();
+  showToast('Fund removed');
+}
+
+function renderUtChart(el) {
+  if (!el) return;
+  const series = utBuildPortfolioSeries();
+  if (series.length < 2) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:var(--f-sm)">Chart appears when every holding has at least two NAV dates with full coverage.</div>';
+    return;
+  }
+  const W = el.clientWidth || 600;
+  const H = 160;
+  const PAD = { t: 10, r: 16, b: 28, l: 64 };
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b;
+  const vals = series.map(s => s.total);
+  const minV = Math.min.apply(null, vals);
+  const maxV = Math.max.apply(null, vals);
+  const rng = maxV - minV || 1;
+  const n = series.length;
+  const xOf = i => PAD.l + (n === 1 ? cW / 2 : (i / (n - 1)) * cW);
+  const yOf = v => PAD.t + cH - ((v - minV) / rng) * cH;
+  const pts = series.map((s, i) => xOf(i) + ',' + yOf(s.total));
+  const path = 'M ' + pts.join(' L ');
+  const area = 'M ' + xOf(0) + ',' + (PAD.t + cH) + ' L ' + pts.join(' L ') + ' L ' + xOf(n - 1) + ',' + (PAD.t + cH) + ' Z';
+  const lc = vals[vals.length - 1] >= vals[0] ? '#1A9E6E' : '#E24B4A';
+  const yLbls = [
+    { v: maxV, y: yOf(maxV) },
+    { v: (minV + maxV) / 2, y: yOf((minV + maxV) / 2) },
+    { v: minV, y: yOf(minV) },
+  ];
+  const xIdxs = [0, Math.floor((n - 1) / 2), n - 1].filter((v, i, a) => a.indexOf(v) === i);
+  const xLbls = xIdxs.map(i => ({ lbl: series[i].date.slice(5), x: xOf(i) }));
+  const circles = series.map((s, i) =>
+    '<circle cx="' + xOf(i) + '" cy="' + yOf(s.total) + '" r="3.5" fill="' + lc + '" stroke="white" stroke-width="1.5"><title>' +
+    esc(s.date) + ': ' + fmt(s.total) + '</title></circle>'
+  ).join('');
+  el.innerHTML =
+    '<div class="nw-chart-wrap"><svg class="nw-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+    '<defs><linearGradient id="ut-grad" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="' + lc + '" stop-opacity="0.15"/>' +
+    '<stop offset="100%" stop-color="' + lc + '" stop-opacity="0"/></linearGradient></defs>' +
+    '<path d="' + area + '" fill="url(#ut-grad)"/>' +
+    '<path d="' + path + '" fill="none" stroke="' + lc + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    yLbls.map(l => '<text class="nw-axis-lbl" x="' + (PAD.l - 6) + '" y="' + (l.y + 3) + '" text-anchor="end">' + fmt(l.v) + '</text>').join('') +
+    xLbls.map(l => '<text class="nw-axis-lbl" x="' + l.x + '" y="' + (H - 4) + '" text-anchor="middle">' + esc(l.lbl) + '</text>').join('') +
+    circles + '</svg></div>';
+}
+
+function importUtNavCsv(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = String((e.target && e.target.result) || '');
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      let start = 0;
+      if (lines.length && /fundid|fund_id|date|nav/i.test(lines[0])) start = 1;
+      let n = 0;
+      for (let i = start; i < lines.length; i++) {
+        const parts = lines[i].split(',').map(s => s.trim());
+        if (parts.length < 3) continue;
+        const d = parts[1];
+        const nav = parseFloat(parts[2]);
+        let fundId = parseInt(parts[0], 10);
+        if (isNaN(fundId) || fundId <= 0) {
+          const code = parts[0];
+          const h = utHoldings.find(x => (x.fundCode || '').toLowerCase() === String(code).toLowerCase());
+          if (!h) continue;
+          fundId = h.id;
+        }
+        if (!utHoldings.some(h => h.id === fundId)) continue;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(nav) || nav <= 0) continue;
+        upsertUtNav(fundId, d, nav);
+        n++;
+      }
+      utNavPoints = utSanitizeNav(utNavPoints);
+      saveUtNav();
+      showToast(n ? 'Imported ' + n + ' NAV row(s)' : 'No CSV rows applied');
+      render();
+    } catch (err) {
+      showToast('CSV import failed');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function addUtHolding() {
+  const nameEl = document.getElementById('ut-name');
+  const codeEl = document.getElementById('ut-code');
+  const unitsEl = document.getElementById('ut-units');
+  const avgEl = document.getElementById('ut-avg');
+  const dateEl = document.getElementById('ut-pdate');
+  const notesEl = document.getElementById('ut-notes');
+  if (!nameEl || !unitsEl) return;
+  const name = nameEl.value.trim();
+  const units = parseFloat(unitsEl.value);
+  let ok = true;
+  if (!name) { shake(nameEl); ok = false; }
+  if (isNaN(units) || units <= 0) { shake(unitsEl); ok = false; }
+  if (!ok) return;
+  const avgRaw = avgEl && avgEl.value.trim();
+  let avgCost = null;
+  if (avgRaw !== '') {
+    const a = parseFloat(avgRaw);
+    if (isNaN(a) || a < 0) { shake(avgEl); return; }
+    avgCost = a;
+  }
+  utHoldings.push({
+    id: Date.now(),
+    name,
+    fundCode: codeEl ? codeEl.value.trim() : '',
+    units,
+    avgCost,
+    purchaseDate: dateEl && dateEl.value ? dateEl.value : '',
+    notes: notesEl ? notesEl.value.trim() : '',
+  });
+  saveUtHoldings();
+  nameEl.value = '';
+  if (codeEl) codeEl.value = '';
+  unitsEl.value = '';
+  if (avgEl) avgEl.value = '';
+  if (dateEl) dateEl.value = '';
+  if (notesEl) notesEl.value = '';
+  render();
+  showToast('Fund added');
+}
+
+function renderUnitTrustPanel() {
+  const root = document.getElementById('ut-root');
+  if (!root) return;
+
+  const totalMv = computeUtTotalMarketValue();
+  const sumEl = document.getElementById('ut-summary-mv');
+  if (sumEl) sumEl.textContent = fmt(totalMv);
+
+  root.innerHTML = '';
+
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px';
+  const refBtn = document.createElement('button');
+  refBtn.type = 'button';
+  refBtn.className = 'btn-ghost';
+  refBtn.style.height = '38px';
+  refBtn.textContent = 'Refresh values';
+  refBtn.title = 'Recompute from latest NAV (offline; open app to update)';
+  refBtn.addEventListener('click', () => render());
+  const csvBtn = document.createElement('button');
+  csvBtn.type = 'button';
+  csvBtn.className = 'btn-ghost';
+  csvBtn.style.height = '38px';
+  csvBtn.textContent = 'Import NAV CSV';
+  const csvInput = document.createElement('input');
+  csvInput.type = 'file';
+  csvInput.accept = '.csv,text/csv,text/plain';
+  csvInput.style.display = 'none';
+  csvInput.addEventListener('change', () => {
+    const f = csvInput.files && csvInput.files[0];
+    csvInput.value = '';
+    if (f) importUtNavCsv(f);
+  });
+  csvBtn.addEventListener('click', () => csvInput.click());
+  toolbar.appendChild(refBtn);
+  toolbar.appendChild(csvBtn);
+  toolbar.appendChild(csvInput);
+  root.appendChild(toolbar);
+
+  utHoldings.forEach(h => {
+    const last = utLatestNavEntry(h.id);
+    const prev = utPrevNavEntry(h.id);
+    const mv = last ? h.units * last.nav : null;
+    let pnlStr = '';
+    if (last && h.avgCost != null && !isNaN(h.avgCost)) {
+      const cost = h.units * h.avgCost;
+      const pnl = mv - cost;
+      pnlStr = ' · P&amp;L ' + (pnl >= 0 ? '+' : '') + fmt(pnl);
+    }
+    let dNavStr = '';
+    if (last && prev) {
+      const dNav = last.nav - prev.nav;
+      const dRm = h.units * dNav;
+      dNavStr =
+        ' · vs prior NAV: ' +
+        (dRm >= 0 ? '+' : '') +
+        fmt(dRm) +
+        ' (' +
+        (prev.nav ? ((dNav / prev.nav) * 100).toFixed(2) : '0') +
+        '%)';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'bank-card';
+    card.style.marginBottom = '10px';
+
+    const head = document.createElement('div');
+    head.className = 'bank-main';
+    head.innerHTML =
+      '<div class="bank-ico">📊</div>' +
+      '<div class="bank-info">' +
+        '<div class="bank-name">' +
+        esc(h.name) +
+        '</div>' +
+        '<div class="bank-type">ID ' +
+        h.id +
+        (h.fundCode ? ' · Code ' + esc(h.fundCode) : '') +
+        (h.notes ? ' · ' + esc(h.notes) : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="bank-bal">' +
+      (mv != null ? fmt(mv) : '—') +
+      '</div>';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'bank-card-btn del';
+    delBtn.title = 'Remove fund';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', () => {
+      if (confirm('Remove this fund and its NAV history?')) deleteUtHolding(h.id);
+    });
+    head.appendChild(delBtn);
+
+    const meta = document.createElement('div');
+    meta.style.cssText =
+      'font-size:var(--f-sm);color:var(--ink2);padding:0 12px 10px 48px;line-height:1.45';
+    meta.innerHTML =
+      'Units <strong>' +
+      h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }) +
+      '</strong>' +
+      (last
+        ? ' · Latest NAV <strong>' +
+          last.nav.toFixed(4) +
+          '</strong> <span style="color:var(--ink3)">(' +
+          esc(last.date) +
+          ')</span>'
+        : ' · <span style="color:var(--ink3)">No NAV yet — add below</span>') +
+      pnlStr +
+      dNavStr;
+
+    const navForm = document.createElement('div');
+    navForm.style.cssText =
+      'display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:end;padding:0 12px 12px 48px;border-top:1px solid var(--line)';
+
+    const dateCol = document.createElement('div');
+    const dl = document.createElement('label');
+    dl.className = 'lbl';
+    dl.style.fontSize = 'var(--f-xs)';
+    dl.textContent = 'NAV date';
+    const dateInp = document.createElement('input');
+    dateInp.type = 'date';
+    dateInp.className = 'ut-nav-date';
+    dateInp.dataset.fund = String(h.id);
+    dateInp.value = last ? last.date : todayStr();
+    dateCol.appendChild(dl);
+    dateCol.appendChild(dateInp);
+
+    const navCol = document.createElement('div');
+    const nl = document.createElement('label');
+    nl.className = 'lbl';
+    nl.style.fontSize = 'var(--f-xs)';
+    nl.textContent = 'NAV (per unit)';
+    const navInp = document.createElement('input');
+    navInp.type = 'number';
+    navInp.className = 'ut-nav-val';
+    navInp.dataset.fund = String(h.id);
+    navInp.placeholder = '0.0000';
+    navInp.min = '0';
+    navInp.step = '0.0001';
+    navCol.appendChild(nl);
+    navCol.appendChild(navInp);
+
+    const saveNav = document.createElement('button');
+    saveNav.type = 'button';
+    saveNav.className = 'btn btn-primary';
+    saveNav.style.height = '38px';
+    saveNav.textContent = 'Save NAV';
+    saveNav.addEventListener('click', () => {
+      const ds = dateInp.value;
+      const nv = navInp.value;
+      if (!upsertUtNav(h.id, ds, nv)) {
+        shake(navInp);
+        return;
+      }
+      navInp.value = '';
+      showToast('NAV saved');
+      render();
+    });
+
+    navForm.appendChild(dateCol);
+    navForm.appendChild(navCol);
+    navForm.appendChild(saveNav);
+
+    const editRow = document.createElement('div');
+    editRow.style.cssText =
+      'display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:0 12px 12px 48px;border-top:1px solid var(--line)';
+    const unitsCol = document.createElement('div');
+    unitsCol.style.flex = '1';
+    unitsCol.style.minWidth = '120px';
+    const unitsLab = document.createElement('label');
+    unitsLab.className = 'lbl';
+    unitsLab.style.fontSize = 'var(--f-xs)';
+    unitsLab.textContent = 'Units (edit)';
+    const unitsInp = document.createElement('input');
+    unitsInp.type = 'number';
+    unitsInp.style.width = '100%';
+    unitsInp.min = '0';
+    unitsInp.step = '0.000001';
+    unitsInp.value = String(h.units);
+    const saveUnits = document.createElement('button');
+    saveUnits.type = 'button';
+    saveUnits.className = 'btn-ghost';
+    saveUnits.style.height = '38px';
+    saveUnits.textContent = 'Save units';
+    saveUnits.addEventListener('click', () => {
+      const u = parseFloat(unitsInp.value);
+      if (isNaN(u) || u <= 0) {
+        shake(unitsInp);
+        return;
+      }
+      h.units = u;
+      saveUtHoldings();
+      showToast('Units updated');
+      render();
+    });
+    unitsCol.appendChild(unitsLab);
+    unitsCol.appendChild(unitsInp);
+    editRow.appendChild(unitsCol);
+    editRow.appendChild(saveUnits);
+
+    card.appendChild(head);
+    card.appendChild(meta);
+    card.appendChild(navForm);
+    card.appendChild(editRow);
+    root.appendChild(card);
+  });
+
+  const addCard = document.createElement('div');
+  addCard.className = 'card';
+  addCard.style.cssText = 'margin-top:14px;padding:14px;background:var(--card-bg2);border:1px solid var(--line);border-radius:var(--radius-sm)';
+  addCard.innerHTML =
+    '<div class="lbl" style="margin-bottom:10px;font-weight:600">Add holding</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:10px;align-items:end">' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Fund name</label><input type="text" id="ut-name" maxlength="80" placeholder="e.g. ABC Growth"/></div>' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Fund code (optional)</label><input type="text" id="ut-code" maxlength="32" placeholder="for CSV match"/></div>' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Units</label><input type="number" id="ut-units" min="0" step="0.000001" placeholder="0"/></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:10px">' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Avg cost / unit (optional)</label><input type="number" id="ut-avg" min="0" step="0.0001" placeholder="for P&amp;L"/></div>' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Purchase date</label><input type="date" id="ut-pdate"/></div>' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Notes</label><input type="text" id="ut-notes" maxlength="120"/></div>' +
+    '<div style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="ut-add-btn" style="height:38px">+ Add fund</button></div>' +
+    '</div>';
+  root.appendChild(addCard);
+  const addBtn = document.getElementById('ut-add-btn');
+  if (addBtn) addBtn.addEventListener('click', addUtHolding);
+  ['ut-name', 'ut-units'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addUtHolding(); });
+  });
+
+  const chartSlot = document.createElement('div');
+  chartSlot.id = 'ut-chart';
+  chartSlot.style.marginTop = '16px';
+  root.appendChild(chartSlot);
+  renderUtChart(chartSlot);
+}
 
 // ── Category buttons ───────────────────────────────────────
 function buildCatButtons() {
@@ -558,6 +1040,7 @@ function render() {
   nnet.className   = 'n-val ' + (na>=0 ? 'green' : 'red');
 
   renderBankList();
+  renderUnitTrustPanel();
 
   // Feature hooks (defined in other files)
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
@@ -814,9 +1297,11 @@ function showToast(msg) {
 // ── Export / Import backup ─────────────────────────────────
 function exportData() {
   const payload = {
-    version: 4,
+    version: 5,
     exported: new Date().toISOString(),
     expenses, incomes, banks,
+    unitTrustHoldings: utHoldings,
+    unitTrustNav: utNavPoints,
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
@@ -882,6 +1367,10 @@ function importBackup(file) {
 
       if (ans === 'replace') {
         expenses = d.expenses; incomes = d.incomes; banks = d.banks;
+        if (Array.isArray(d.unitTrustHoldings)) utHoldings = utSanitizeHoldings(d.unitTrustHoldings);
+        else utHoldings = [];
+        if (Array.isArray(d.unitTrustNav)) utNavPoints = utSanitizeNav(d.unitTrustNav);
+        else utNavPoints = [];
         if (d.recurring    && typeof recurring    !== 'undefined') recurring    = d.recurring;
         if (d.networthHist && typeof networthHist !== 'undefined') networthHist = d.networthHist;
         if (d.budgets      && typeof budgets      !== 'undefined') budgets      = d.budgets;
@@ -899,9 +1388,17 @@ function importBackup(file) {
         if (d.budgets && typeof budgets !== 'undefined') {
           budgets = Object.assign({}, budgets, d.budgets);
         }
+        if (Array.isArray(d.unitTrustHoldings) && d.unitTrustHoldings.length) {
+          utHoldings = mergeById(utHoldings, utSanitizeHoldings(d.unitTrustHoldings));
+        }
+        if (Array.isArray(d.unitTrustNav) && d.unitTrustNav.length) {
+          utNavPoints = mergeUtNavPoints(utNavPoints, d.unitTrustNav);
+        }
       }
 
       saveExp(); saveInc(); saveBanks();
+      saveUtHoldings();
+      saveUtNav();
       if (typeof saveRec    === 'function') saveRec();
       if (typeof saveNWH    === 'function') saveNWH();
       if (typeof saveBud    === 'function') saveBud();

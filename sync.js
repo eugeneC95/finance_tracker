@@ -440,6 +440,8 @@ function scheduleAutoSync() {
   wrapSave('saveExp');
   wrapSave('saveInc');
   wrapSave('saveBanks');
+  wrapSave('saveUtHoldings');
+  wrapSave('saveUtNav');
 
   function hookDeferredSaves() {
     wrapSave('saveRec');

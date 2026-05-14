@@ -39,7 +39,7 @@ RECENT PRODUCT (verified in repo; omit rumours)
 
 IMPORTANT IDS / HOOKS
 ---------------------
-- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`.
+- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Assets** includes unit trusts panel (`#ut-root`, `#ut-summary-mv`); storage keys `unit_trust_holdings_v1`, `unit_trust_nav_v1`.
 - Boot / readiness: `#ft-boot`, `#ft-boot-msg`, `ft-app-ready` (dispatched when app finished init).
 - Tab switch: `activateNavTab('expenses'|...)` in `app.js` (toggles `.active` on `#page-<tab>` and nav buttons).
 - Categories: `EXP_CAT_GROUPS` + `renderExpCatGrid` (and related) in `app.js`.

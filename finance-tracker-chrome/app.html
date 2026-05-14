@@ -1840,6 +1840,17 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
+      <div class="card mb-5">
+        <div class="panel-hd" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="panel-title">Unit trusts / mutual funds</span>
+          <span id="ut-summary-mv" style="font-size:var(--f-lg);font-weight:700">RM 0.00</span>
+        </div>
+        <div class="panel-bd">
+          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. Backup version 5 includes holdings and NAV history. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
+          <div id="ut-root"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
