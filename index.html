@@ -709,6 +709,10 @@ textarea {
 body.dark .btn-primary { color: #041312; }
 .btn-green   { background: var(--green); color: #fff; }
 .btn-ghost   {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   background: none;
   border: 1px solid var(--line);
   color: var(--ink2);
@@ -1366,6 +1370,21 @@ body.dark .fs-btn.active { color: #041312; }
 .sync-help-details .about-card {
   margin: 0 12px 12px;
   border-radius: var(--radius-sm);
+}
+
+/* Settings — backup / Sheets: full-width actions (avoid half-grid overlap) */
+.settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.settings-actions > .btn,
+.settings-actions > .btn-ghost {
+  width: 100%;
+  flex: 0 0 auto;
+  min-height: 42px;
 }
 
 /* ============================================================
@@ -2390,8 +2409,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
     border-radius: 999px !important;
     border-width: 1px;
   }
-
-  /* --- Inputs: rounded, soft fill, no border --- */
+  #page-settings .settings-actions > .btn-ghost {
+    min-height: 50px;
+    height: auto;
+  }
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
@@ -2674,7 +2695,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
-  var BUILD_VERSION    = 'v48 · 2026-05-14';
+  var BUILD_VERSION    = 'v49 · 2026-05-14';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3405,26 +3426,26 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
         </div>
 
-        <div>
+        <div class="settings-span-2">
           <div class="card">
             <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
             <div class="panel-bd">
-              <div style="display:flex;gap:var(--s3);flex-wrap:wrap">
-                <button class="btn-ghost" id="export-btn">⬇ Export backup</button>
-                <button class="btn-ghost green" id="import-btn">⬆ Import backup</button>
+              <div class="settings-actions">
+                <button class="btn-ghost" type="button" id="export-btn">⬇ Export backup</button>
+                <button class="btn-ghost green" type="button" id="import-btn">⬆ Import backup</button>
                 <input type="file" id="import-file" accept=".json" style="display:none"/>
               </div>
             </div>
           </div>
         </div>
 
-        <div>
+        <div class="settings-span-2">
           <div class="card mb-5">
             <div class="panel-hd">
               <span class="panel-title">Google Sheets sync</span>
-              <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs)">
-                <span id="sync-dot" style="font-size:16px;font-weight:700">○</span>
-                <span id="sync-msg" style="color:var(--ink3)">Not configured</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs);min-width:0;flex-shrink:1">
+                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">○</span>
+                <span id="sync-msg" style="color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not configured</span>
               </span>
             </div>
             <div class="panel-bd">
@@ -3435,10 +3456,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   style="font-size:var(--f-sm);font-family:monospace"/>
               </div>
 
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-                <button class="btn-ghost" id="sync-ping-btn">🔌 Test connection</button>
-                <button class="btn btn-primary" id="sync-save-btn" style="height:36px;font-size:var(--f-sm)">⬆ Save to Sheet now</button>
-                <button class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
+              <div class="settings-actions" style="margin-bottom:14px">
+                <button type="button" class="btn btn-primary" id="sync-save-btn">⬆ Save to Sheet now</button>
+                <button type="button" class="btn-ghost" id="sync-ping-btn">🔌 Test connection</button>
+                <button type="button" class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
               </div>
 
               <details class="sync-help-details">
@@ -3467,7 +3488,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v48 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v49 · 2026-05-14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3671,12 +3692,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v48 · 2026-05-14</div>
-<script src="app.js?v=48"></script>
-<script src="sync.js?v=48"></script>
-<script src="features.js?v=48"></script>
-<script src="extras.js?v=48"></script>
-<script src="import-inline.js?v=48"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v49 · 2026-05-14</div>
+<script src="app.js?v=49"></script>
+<script src="sync.js?v=49"></script>
+<script src="features.js?v=49"></script>
+<script src="extras.js?v=49"></script>
+<script src="import-inline.js?v=49"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
