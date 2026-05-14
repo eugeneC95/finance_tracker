@@ -71,8 +71,32 @@ function scriptFetch(url, params, body) {
 
   return fetch(fullUrl, opts).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.json();
+    return r.text().then(function(text) {
+      var t = (text || '').trim();
+      if (!t) throw new Error('Empty response from server');
+      try {
+        return JSON.parse(t);
+      } catch (parseErr) {
+        throw new Error('Server did not return JSON. First part: ' + t.slice(0, 160));
+      }
+    });
   });
+}
+
+// Map Apps Script error strings to actionable copy (also used after thrown fetch/parse errors).
+function humanizeSaveApiError(raw) {
+  if (!raw || typeof raw !== 'string') return 'unknown';
+  if (/no data received/i.test(raw)) {
+    return 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
+  }
+  if (/unknown action:\s*save_chunk/i.test(raw)) {
+    return (
+      'Your Apps Script web app is an old version — it does not support chunked saves. ' +
+      'In Google Apps Script: Deploy → Manage deployments → Edit → New version (paste code from repo google-apps-script.js). ' +
+      'Large datasets need save_chunk; until then only very small saves work.'
+    );
+  }
+  return raw;
 }
 
 // ── Ping ───────────────────────────────────────────────────
@@ -126,23 +150,28 @@ function syncSaveChunked(fullJson) {
   for (i = 0; i < fullJson.length; i += CHUNK_PAYLOAD_CHARS) {
     chunks.push(fullJson.slice(i, i + CHUNK_PAYLOAD_CHARS));
   }
-  var total = chunks.length;
-  var chain = Promise.resolve();
-  chunks.forEach(function(chunk, idx) {
-    chain = chain.then(function() {
+  if (chunks.length === 0) {
+    return Promise.resolve({ ok: false, error: 'Nothing to save' });
+  }
+  // Return { ok:false } on API failure instead of throwing — otherwise syncSave's
+  // .catch() mislabels Apps Script errors as "Network error — working offline".
+  return chunks.reduce(function(chain, chunk, idx) {
+    return chain.then(function(prev) {
+      if (prev && prev.ok === false) return prev;
       return scriptFetch(syncUrl, {
         action: 'save_chunk',
         id: sessionId,
         seq: String(idx),
-        total: String(total),
+        total: String(chunks.length),
         data: chunk
+      }).then(function(data) {
+        if (!data || !data.ok) {
+          return { ok: false, error: (data && data.error) || 'Chunk save failed' };
+        }
+        return data;
       });
-    }).then(function(data) {
-      if (!data || !data.ok) throw new Error((data && data.error) || 'Chunk save failed');
-      return data;
     });
-  });
-  return chain;
+  }, Promise.resolve());
 }
 
 function syncSave(silent) {
@@ -171,23 +200,23 @@ function syncSave(silent) {
         persistSyncState();
         if (!silent) showToast('Saved to Google Sheets');
       } else {
-        var msg = (data && data.error) || 'unknown';
-        if (/no data received/i.test(msg)) {
-          msg = 'Apps Script needs re-deploy (open google-apps-script.js, Deploy → Manage deployments → Edit → New version)';
-        } else if (/unknown action:\s*save_chunk/i.test(msg)) {
-          msg =
-            'Your Apps Script web app is an old version — it does not support chunked saves. ' +
-            'In Google Apps Script: Deploy → Manage deployments → Edit → New version (paste code from repo google-apps-script.js). ' +
-            'Large datasets need save_chunk; until then only very small saves work.';
-        }
+        var msg = humanizeSaveApiError((data && data.error) || 'unknown');
         setSyncStatus('error', 'Save failed: ' + msg);
         if (!silent) showToast('Save failed — ' + msg);
       }
     })
     .catch(function(err) {
-      setSyncStatus('error', 'Network error — working offline');
-      if (!silent) showToast('Offline — data saved locally');
       console.error('Sync save error:', err);
+      var raw = (err && err.message) ? String(err.message) : '';
+      var low = raw.toLowerCase();
+      var looksOffline =
+        !raw ||
+        /failed to fetch|networkerror|network request failed|load failed|aborted|timed out|err_internet_disconnected/.test(low);
+      var msg = looksOffline ? 'Network error — working offline' : ('Save failed: ' + humanizeSaveApiError(raw));
+      setSyncStatus('error', msg);
+      if (!silent) {
+        showToast(looksOffline ? 'Offline — data saved locally' : msg);
+      }
     });
 }
 
