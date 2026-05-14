@@ -131,7 +131,7 @@ function iwBuildTable() {
     tr.innerHTML=`
       <td style="white-space:nowrap">${row.date}</td>
       <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${row.desc}">${row.desc}</td>
-      <td style="text-align:right;font-weight:700;color:${row.type==='exp'?'var(--red)':'var(--green)'};white-space:nowrap">${row.type==='exp'?'−':'+'}${row.amount.toFixed(2)}</td>
+      <td style="text-align:right;font-weight:700;color:${row.type==='exp'?'var(--red)':'var(--green)'};white-space:nowrap">${row.type==='exp'?'':'+'}${row.amount.toFixed(2)}</td>
       <td><div class="type-btns">
         <button class="type-btn exp${row.type==='exp'&&!row.skip?' on':''}" data-idx="${idx}" data-type="exp">Exp</button>
         <button class="type-btn inc${row.type==='inc'&&!row.skip?' on':''}" data-idx="${idx}" data-type="inc">Inc</button>

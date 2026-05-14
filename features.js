@@ -269,7 +269,7 @@ function renderSearch() {
 
     var amt = document.createElement('div');
     amt.className = 'tx-amount ' + (entry._type==='inc' ? 'green' : 'red');
-    amt.textContent = (entry._type==='inc'?'+':'−') + ' ' + fmt(entry.amount);
+    amt.textContent = (entry._type === 'inc' ? '+ ' : '') + fmt(entry.amount);
     row.appendChild(amt);
 
     row.addEventListener('click', function() {
@@ -385,7 +385,7 @@ function renderRecurring() {
 
     var amt = document.createElement('div');
     amt.className = 'rec-amount ' + (isInc?'green':'red');
-    amt.textContent = (isInc?'+':'−') + ' ' + fmt(r.amount);
+    amt.textContent = (isInc ? '+ ' : '') + fmt(r.amount);
 
     var badge = document.createElement('span');
     badge.className = 'rec-badge ' + (r.active?'active':'paused');

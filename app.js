@@ -451,7 +451,7 @@ function openCatDetail(cat, isIncome) {
 
     const amt  = document.createElement('div');
     amt.className = 'ce-amt ' + (isIncome ? 'green' : 'red');
-    amt.textContent = (isIncome ? '+' : '−') + ' ' + fmt(entry.amount);
+    amt.textContent = isIncome ? '+ ' + fmt(entry.amount) : fmt(entry.amount);
 
     row.appendChild(ico);
     row.appendChild(inf);
@@ -629,7 +629,7 @@ function renderTxList(id, items, catMap, isIncome) {
 
     const amt = document.createElement('div');
     amt.className = 'tx-amount' + (isIncome ? ' green' : '');
-    amt.textContent = (isIncome ? '+' : '−') + ' ' + fmt(entry.amount);
+    amt.textContent = isIncome ? '+ ' + fmt(entry.amount) : fmt(entry.amount);
     item.appendChild(amt);
 
     const actions = document.createElement('div');
