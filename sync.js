@@ -135,6 +135,7 @@ function syncPing() {
         var hint = '';
         if (isNaN(av) || av < 2) hint = ' — redeploy script (ping missing apiVersion)';
         else if (av < 3) hint = ' — redeploy script for unit trust on Sheets (UTHoldings / UTNav)';
+        else if (av < 4) hint = ' — redeploy script so UTHoldings uses total paid RM (totalCost incl. fees)';
         setSyncStatus('ok', (data.message || 'Connected') + hint);
         showToast('Connected to Google Sheets');
       } else {
@@ -226,6 +227,8 @@ function syncSave(silent) {
           var av = Number(data.apiVersion);
           if (isNaN(av) || av < 3) {
             showToast('Saved — redeploy Apps Script (google-apps-script.js v3) for unit trust tabs UTHoldings & UTNav.');
+          } else if (av < 4) {
+            showToast('Saved — redeploy Apps Script for UTHoldings totalCost (full amount paid incl. fees).');
           } else {
             showToast('Saved to Google Sheets');
           }

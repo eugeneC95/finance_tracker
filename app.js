@@ -195,17 +195,35 @@ function utSanitizeHoldings(arr) {
   if (!Array.isArray(arr)) return [];
   return arr.filter(h => h && typeof h === 'object').map((h, idx) => {
     const id = Number(h.id);
+    const units = Math.max(0, parseFloat(h.units) || 0);
+    const tcIn = parseFloat(h.totalCost);
+    let totalCost = null;
+    if (!isNaN(tcIn) && tcIn > 0) totalCost = tcIn;
+    else {
+      const ac = parseFloat(h.avgCost);
+      if (!isNaN(ac) && ac > 0 && units > 0) totalCost = ac * units;
+    }
     return {
       id: !isNaN(id) && id > 0 ? id : Date.now() + idx,
       name: String(h.name || 'Fund').trim() || 'Fund',
       fundCode: h.fundCode != null ? String(h.fundCode).trim() : '',
-      units: Math.max(0, parseFloat(h.units) || 0),
-      avgCost: h.avgCost != null && h.avgCost !== '' && !isNaN(parseFloat(h.avgCost))
-        ? Math.max(0, parseFloat(h.avgCost)) : null,
+      units,
+      totalCost,
       purchaseDate: h.purchaseDate != null ? String(h.purchaseDate).trim().slice(0, 10) : '',
       notes: h.notes != null ? String(h.notes).trim() : '',
     };
   });
+}
+
+/** RM paid for the lot (incl. fees): totalCost, or legacy units×avgCost from older backups/sheets. */
+function utCostBasis(h) {
+  if (!h || typeof h !== 'object') return null;
+  const tc = parseFloat(h.totalCost);
+  if (!isNaN(tc) && tc > 0) return tc;
+  const units = parseFloat(h.units) || 0;
+  const ac = parseFloat(h.avgCost);
+  if (!isNaN(ac) && ac > 0 && units > 0) return ac * units;
+  return null;
 }
 
 function utSanitizeNav(arr) {
@@ -384,7 +402,7 @@ function addUtHolding() {
   const nameEl = document.getElementById('ut-name');
   const codeEl = document.getElementById('ut-code');
   const unitsEl = document.getElementById('ut-units');
-  const avgEl = document.getElementById('ut-avg');
+  const costEl = document.getElementById('ut-total-cost');
   const dateEl = document.getElementById('ut-pdate');
   const notesEl = document.getElementById('ut-notes');
   if (!nameEl || !unitsEl) return;
@@ -394,19 +412,19 @@ function addUtHolding() {
   if (!name) { shake(nameEl); ok = false; }
   if (isNaN(units) || units <= 0) { shake(unitsEl); ok = false; }
   if (!ok) return;
-  const avgRaw = avgEl && avgEl.value.trim();
-  let avgCost = null;
-  if (avgRaw !== '') {
-    const a = parseFloat(avgRaw);
-    if (isNaN(a) || a < 0) { shake(avgEl); return; }
-    avgCost = a;
+  const costRaw = costEl && costEl.value.trim();
+  let totalCost = null;
+  if (costRaw !== '') {
+    const t = parseFloat(costRaw);
+    if (isNaN(t) || t <= 0) { shake(costEl); return; }
+    totalCost = t;
   }
   utHoldings.push({
     id: Date.now(),
     name,
     fundCode: codeEl ? codeEl.value.trim() : '',
     units,
-    avgCost,
+    totalCost,
     purchaseDate: dateEl && dateEl.value ? dateEl.value : '',
     notes: notesEl ? notesEl.value.trim() : '',
   });
@@ -414,7 +432,7 @@ function addUtHolding() {
   nameEl.value = '';
   if (codeEl) codeEl.value = '';
   unitsEl.value = '';
-  if (avgEl) avgEl.value = '';
+  if (costEl) costEl.value = '';
   if (dateEl) dateEl.value = '';
   if (notesEl) notesEl.value = '';
   render();
@@ -465,9 +483,9 @@ function renderUnitTrustPanel() {
     const prev = utPrevNavEntry(h.id);
     const mv = last ? h.units * last.nav : null;
     let pnlStr = '';
-    if (last && h.avgCost != null && !isNaN(h.avgCost)) {
-      const cost = h.units * h.avgCost;
-      const pnl = mv - cost;
+    const costBasis = utCostBasis(h);
+    if (last && costBasis != null) {
+      const pnl = mv - costBasis;
       pnlStr = ' · P&amp;L ' + (pnl >= 0 ? '+' : '') + fmt(pnl);
     }
     let dNavStr = '';
@@ -621,6 +639,51 @@ function renderUnitTrustPanel() {
     editRow.appendChild(unitsCol);
     editRow.appendChild(saveUnits);
 
+    const costCol = document.createElement('div');
+    costCol.style.flex = '1';
+    costCol.style.minWidth = '120px';
+    const costLab = document.createElement('label');
+    costLab.className = 'lbl';
+    costLab.style.fontSize = 'var(--f-xs)';
+    costLab.textContent = 'Total paid (RM, edit)';
+    const costInp = document.createElement('input');
+    costInp.type = 'number';
+    costInp.style.width = '100%';
+    costInp.min = '0';
+    costInp.step = '0.01';
+    const cb0 = utCostBasis(h);
+    costInp.value = cb0 != null ? String(cb0) : '';
+    const saveCost = document.createElement('button');
+    saveCost.type = 'button';
+    saveCost.className = 'btn-ghost';
+    saveCost.style.height = '38px';
+    saveCost.textContent = 'Save cost';
+    saveCost.addEventListener('click', () => {
+      const raw = costInp.value.trim();
+      if (raw === '') {
+        h.totalCost = null;
+        delete h.avgCost;
+        saveUtHoldings();
+        showToast('Cost cleared');
+        render();
+        return;
+      }
+      const t = parseFloat(raw);
+      if (isNaN(t) || t <= 0) {
+        shake(costInp);
+        return;
+      }
+      h.totalCost = t;
+      delete h.avgCost;
+      saveUtHoldings();
+      showToast('Total cost updated');
+      render();
+    });
+    costCol.appendChild(costLab);
+    costCol.appendChild(costInp);
+    editRow.appendChild(costCol);
+    editRow.appendChild(saveCost);
+
     card.appendChild(head);
     card.appendChild(meta);
     card.appendChild(navForm);
@@ -639,7 +702,7 @@ function renderUnitTrustPanel() {
     '<div><label class="lbl" style="font-size:var(--f-xs)">Units</label><input type="number" id="ut-units" min="0" step="0.000001" placeholder="0"/></div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:10px">' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Avg cost / unit (optional)</label><input type="number" id="ut-avg" min="0" step="0.0001" placeholder="for P&amp;L"/></div>' +
+    '<div><label class="lbl" style="font-size:var(--f-xs)">Total paid (RM, optional)</label><input type="number" id="ut-total-cost" min="0" step="0.01" placeholder="What you paid incl. fees"/></div>' +
     '<div><label class="lbl" style="font-size:var(--f-xs)">Purchase date</label><input type="date" id="ut-pdate"/></div>' +
     '<div><label class="lbl" style="font-size:var(--f-xs)">Notes</label><input type="text" id="ut-notes" maxlength="120"/></div>' +
     '<div style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="ut-add-btn" style="height:38px">+ Add fund</button></div>' +

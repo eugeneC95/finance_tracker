@@ -1871,7 +1871,7 @@ body.dark .fs-btn.active { color: #000; }
           <span id="ut-summary-mv" style="font-size:var(--f-lg);font-weight:700">RM 0.00</span>
         </div>
         <div class="panel-bd">
-          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. <strong>Google Sheets sync</strong> (after you redeploy <code style="font-size:11px">google-apps-script.js</code>) writes tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>. Backup version 5 includes holdings and NAV. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
+          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). For each holding, enter the <strong>total amount you paid in RM</strong> (one lump sum, including bank margin and fees) if you want P&amp;L; you do not need to work out a per-unit average. Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. <strong>Google Sheets sync</strong> (after you redeploy <code style="font-size:11px">google-apps-script.js</code>) writes tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>. Backup version 5 includes holdings and NAV. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
           <div id="ut-root"></div>
         </div>
       </div>
@@ -2374,10 +2374,10 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=50"></script>
-<script src="sync.js?v=50"></script>
-<script src="features.js?v=50"></script>
-<script src="extras.js?v=50"></script>
-<script src="import-inline.js?v=50"></script>
+<script src="app.js?v=51"></script>
+<script src="sync.js?v=51"></script>
+<script src="features.js?v=51"></script>
+<script src="extras.js?v=51"></script>
+<script src="import-inline.js?v=51"></script>
 </body>
 </html>
