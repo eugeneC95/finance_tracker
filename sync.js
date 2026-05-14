@@ -270,7 +270,8 @@ function syncSave(silent) {
 
 // ── Load ───────────────────────────────────────────────────
 // opts.skipConfirm — used by auto-load on startup (no "REPLACE all data?" prompt)
-// opts.silent       — suppress toasts for the success case
+// opts.silent       — suppress success toasts (errors still show unless silent)
+// opts.autoStart    — from syncAutoLoad: always apply Sheet (skip "empty cloud" safety skips)
 function syncLoad(opts) {
   opts = opts || {};
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
@@ -302,7 +303,7 @@ function syncLoad(opts) {
     .then(function(data) {
       if (!data.ok) {
         setSyncStatus('error', 'Load failed: ' + (data.error || 'unknown'));
-        showToast('Load failed');
+        if (!opts.silent) showToast('Load failed');
         return;
       }
 
@@ -336,7 +337,7 @@ function syncLoad(opts) {
         return BAD_SHEET_DATE;
       }
 
-      if (opts.skipConfirm) {
+      if (opts.skipConfirm && !opts.autoStart) {
         var ce = (p.expenses || []).length;
         if (prevExpCount > 0 && ce === 0) {
           setSyncStatus('error', 'Auto-sync skipped — cloud had no expenses');
@@ -467,7 +468,7 @@ function syncAutoLoad() {
   _autoLoadFired = true;
   // Tiny delay so the first paint isn't blocked by the network round-trip.
   setTimeout(function() {
-    syncLoad({ skipConfirm: true, silent: false });
+    syncLoad({ skipConfirm: true, silent: true, autoStart: true });
   }, 400);
 }
 
@@ -544,7 +545,7 @@ function updateSyncUI() {
   if (syncState.message) {
     msg.textContent = syncState.message;
   } else {
-    msg.textContent = syncUrl ? 'Auto-saves 4 s after every change' : 'Not configured';
+    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open the app; auto-saves 4 s after changes' : 'Not configured';
   }
   msg.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
 }
@@ -569,6 +570,11 @@ function wireSyncUI() {
   if (urlInp)  urlInp.addEventListener('change', function() {
     persistSyncUrl(urlInp.value.trim());
     updateSyncUI();
+    clearTimeout(wireSyncUI._urlPullTimer);
+    if (!syncUrl) return;
+    wireSyncUI._urlPullTimer = setTimeout(function() {
+      syncLoad({ skipConfirm: true, silent: true, autoStart: true });
+    }, 1200);
   });
 }
 
