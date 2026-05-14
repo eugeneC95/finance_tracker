@@ -12,10 +12,11 @@ const IW_CAT_RULES = [
   { cat:'Petrol',        keys:['shell','petron','petronas','caltex','bhp','petrol','fuel','diesel'] },
   { cat:'Car Service',   keys:['servis','workshop','autoserv','mechanic','spare part','tyre','tayar','brake','myeg'] },
   { cat:'Car Insurance', keys:['car insurance','motor insurance','takaful motor'] },
-  { cat:'Toll',          keys:['plus highway','toll','lebuhraya','parkir','parking','car park'] },
+  { cat:'Toll',          keys:['plus highway','toll','lebuhraya'] },
+  { cat:'Parking',       keys:['parkir','parking','car park','parking fee','bayaran parkir','jom parking','flexi parking'] },
   { cat:'Groceries',     keys:['jaya grocer','lotus','tesco','giant','aeon','99 speedmart','mydin','econsave','cold storage','village grocer'] },
-  { cat:'Eating out',    keys:['mamak','kopitiam','food court','kfc','mcdonalds','mcd','burger king','pizza','nasi lemak','dim sum','sushi'] },
-  { cat:'Grab',          keys:['grab food','grabfood','foodpanda','shopeefood','grab ride','grabcar'] },
+  { cat:'Eating out',    keys:['mamak','kopitiam','food court','kfc','mcdonalds','mcd','burger king','pizza','nasi lemak','dim sum','sushi','grab food','grabfood','foodpanda','shopeefood'] },
+  { cat:'Transport',     keys:['grab ride','grabcar','grab car','ez cab','myteksi','in driver','airasia ride','myrapid','rapidkl','lrt','mrt','ktm','komuter','bus','teksi','taxi','uber','rapid'] },
   { cat:'Coffee',        keys:['starbucks','coffee bean','zus coffee','gong cha','teh tarik','oldtown'] },
   { cat:'Subscription',  keys:['netflix','spotify','apple','google play','youtube','disney','hbo','iflix','astro'] },
   { cat:'Food',          keys:['food','restaurant','cafe','makan','bakery','kitchen','bistro'] },
@@ -25,16 +26,14 @@ const IW_CAT_RULES = [
   { cat:'Insurance',     keys:['insurance','takaful','aia','great eastern','prudential','allianz','zurich','etiqa'] },
   { cat:'Loan payment',  keys:['loan','pinjaman','hire purchase','ptptn'] },
   { cat:'Health',        keys:['klinik','clinic','hospital','pharmacy','farmasi','dentist','doctor','medical'] },
-  { cat:'Transport',     keys:['myrapid','rapidkl','lrt','mrt','ktm','komuter','bus','teksi','taxi','uber','rapid'] },
   { cat:'Salary',        keys:['salary','gaji','payroll','wages'] },
   { cat:'Bonus',         keys:['bonus','incentive','allowance','elaun'] },
   { cat:'Unit Trust',    keys:['unit trust','public mutual','amanah saham','asm','asb','pnb','manulife','principal'] },
   { cat:'Dividend',      keys:['dividend','dividen'] },
   { cat:'Investment',    keys:['kwsp','epf','bursa','stock','share'] },
   { cat:'Cashback',      keys:['cashback','rebate','refund','cash reward'] },
-  { cat:'Zakat',         keys:['zakat','fitrah','sedekah','derma','wakaf'] },
 ];
-const EXP_LIST=Object.keys(typeof EXP_CATS!=='undefined'?EXP_CATS:{'Food':1,'Groceries':1,'Eating out':1,'Coffee':1,'Shopping':1,'Clothing':1,'Electronics':1,'Rent':1,'Utilities':1,'Internet':1,'Renovation':1,'Health':1,'Fitness':1,'Grooming':1,'Bills':1,'Insurance':1,'Loan payment':1,'Tax':1,'Petrol':1,'Car Service':1,'Toll':1,'Car Expenses':1,'Car Insurance':1,'Transport':1,'Grab':1,'Flight':1,'Entertainment':1,'Subscription':1,'Travel':1,'Hobbies':1,'Education':1,'Childcare':1,'Pet care':1,'Donation':1,'Zakat':1,'Other':1});
+const EXP_LIST=Object.keys(typeof EXP_CATS!=='undefined'?EXP_CATS:{'Food':1,'Groceries':1,'Eating out':1,'Coffee':1,'Shopping':1,'Clothing':1,'Electronics':1,'Rent':1,'Utilities':1,'Internet':1,'Renovation':1,'Health':1,'Fitness':1,'Grooming':1,'Bills':1,'Insurance':1,'Loan payment':1,'Tax':1,'Petrol':1,'Car Service':1,'Toll':1,'Parking':1,'Car Expenses':1,'Car Insurance':1,'Transport':1,'Flight':1,'Entertainment':1,'Subscription':1,'Travel':1,'Hobbies':1,'Education':1,'Pet care':1,'Other':1});
 const INC_LIST=Object.keys(typeof INC_CATS!=='undefined'?INC_CATS:{'Salary':1,'Bonus':1,'Freelance':1,'Business':1,'Unit Trust':1,'Dividend':1,'Investment':1,'Rental':1,'Side income':1,'Cashback':1,'Gift':1,'Refund':1,'Other':1});
 const INC_SET=new Set(['Salary','Bonus','Freelance','Business','Unit Trust','Dividend','Investment','Rental','Side income','Cashback','Gift','Refund']);
 

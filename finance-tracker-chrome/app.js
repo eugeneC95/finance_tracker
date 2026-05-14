@@ -29,11 +29,11 @@ const EXP_CATS = {
   'Petrol':        { icon:'⛽', color:'#E24B4A' },
   'Car Service':   { icon:'🔧', color:'#378ADD' },
   'Toll':          { icon:'🛣', color:'#888780' },
+  'Parking':       { icon:'🅿️', color:'#78909C' },
   'Car Expenses':  { icon:'🚗', color:'#5F5E5A' },
   'Car Insurance': { icon:'🚘', color:'#4472CA' },
   // Transport
   'Transport':     { icon:'🚌', color:'#63A0C8' },
-  'Grab':          { icon:'🟢', color:'#00B14F' },
   'Flight':        { icon:'✈', color:'#1A73E8' },
   // Entertainment
   'Entertainment': { icon:'🎬', color:'#7F77DD' },
@@ -42,11 +42,7 @@ const EXP_CATS = {
   'Hobbies':       { icon:'🎮', color:'#E91E63' },
   // Family
   'Education':     { icon:'📚', color:'#2196F3' },
-  'Childcare':     { icon:'👶', color:'#FF9800' },
   'Pet care':      { icon:'🐾', color:'#795548' },
-  // Giving
-  'Donation':      { icon:'🤲', color:'#4CAF50' },
-  'Zakat':         { icon:'☽', color:'#009688' },
   // Other
   'Other':         { icon:'📦', color:'#B4B2A9' },
 };
@@ -58,9 +54,9 @@ const EXP_CAT_GROUPS = [
   { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Renovation'] },
   { title: 'Health & self-care', cats: ['Health', 'Fitness', 'Grooming'] },
   { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax'] },
-  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Toll', 'Car Expenses', 'Car Insurance', 'Transport', 'Grab', 'Flight'] },
+  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Flight'] },
   { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
-  { title: 'Family & giving', cats: ['Education', 'Childcare', 'Pet care', 'Donation', 'Zakat'] },
+  { title: 'Education & family', cats: ['Education', 'Pet care'] },
   { title: 'Other', cats: ['Other'] },
 ];
 

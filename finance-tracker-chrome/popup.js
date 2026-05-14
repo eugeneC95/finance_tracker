@@ -10,6 +10,7 @@ const EXP_CATS = {
   Petrol:         { icon: '⛽', color: '#E24B4A' },
   'Car Service':  { icon: '🔧', color: '#378ADD' },
   Toll:           { icon: '🛣', color: '#888780' },
+  Parking:        { icon: '🅿️', color: '#78909C' },
   'Car Expenses': { icon: '🚗', color: '#5F5E5A' },
   Transport:      { icon: '🚌', color: '#63A0C8' },
   Other:          { icon: '📦', color: '#B4B2A9' },
