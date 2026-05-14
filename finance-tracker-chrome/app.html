@@ -1636,6 +1636,14 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
+        <div class="panel-bd">
+          <p style="font-size:var(--f-xs);color:var(--ink3);margin:0 0 10px;line-height:1.45">Sum of expenses recorded for each calendar day in the month shown above (switch month with the arrows).</p>
+          <div id="exp-daily-chart" style="min-height:150px"></div>
+        </div>
+      </div>
+
       <!-- Budget overview -->
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
@@ -2373,7 +2381,7 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=57"></script>
+<script src="app.js?v=64"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>

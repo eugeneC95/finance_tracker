@@ -167,6 +167,7 @@ function load() {
       banks    = r[KEY_BANKS] || [];
       utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
       utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
+      utCarryForwardNavSnapshotForToday();
       if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
       applySettings();
       render();
@@ -268,6 +269,70 @@ function utNavAsOf(fundId, dateStr) {
   return s.length ? s[s.length - 1].nav : null;
 }
 
+/** Next calendar day YYYY-MM-DD (local). */
+function utYmdPlusOne(ymd) {
+  const d = new Date(ymd + 'T12:00:00');
+  if (isNaN(d.getTime())) return ymd;
+  d.setDate(d.getDate() + 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/**
+ * Once per calendar day: for each holding with a latest NAV, ensure a row exists for **today**
+ * with that NAV (carry-forward). Persists so Sheet sync and charts get a daily timeline.
+ */
+function utCarryForwardNavSnapshotForToday() {
+  const td = todayStr();
+  let lastSnap = '';
+  try {
+    lastSnap = localStorage.getItem('ft_ut_nav_snap_ymd') || '';
+  } catch (e) {}
+  if (lastSnap === td) return;
+
+  let changed = false;
+  utHoldings.forEach(h => {
+    const lastE = utLatestNavEntry(h.id);
+    if (!lastE) return;
+    const hasToday = utNavPoints.some(p => p.fundId === h.id && p.date === td);
+    if (hasToday) return;
+    utNavPoints.push({ fundId: h.id, date: td, nav: lastE.nav });
+    changed = true;
+  });
+
+  if (changed) {
+    utDedupeNavPoints();
+    utNavPoints = utSanitizeNav(utNavPoints);
+    saveUtNav();
+  }
+  try {
+    localStorage.setItem('ft_ut_nav_snap_ymd', td);
+  } catch (e) {}
+}
+
+/** Every calendar day in the visible month (YYYY-MM-DD). */
+function buildMonthDateKeys() {
+  const y = viewMonth.getFullYear();
+  const m = viewMonth.getMonth();
+  const last = new Date(y, m + 1, 0).getDate();
+  const keys = [];
+  for (let d = 1; d <= last; d++) {
+    keys.push(y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'));
+  }
+  return keys;
+}
+
+/** Sum amounts per day for the given transactions (dates must match keys). */
+function buildMonthDailyTotals(keys, items) {
+  const map = {};
+  keys.forEach(k => {
+    map[k] = 0;
+  });
+  items.forEach(e => {
+    if (e && e.date && map[e.date] !== undefined) map[e.date] += Number(e.amount) || 0;
+  });
+  return keys.map(k => map[k]);
+}
+
 function computeUtTotalMarketValue() {
   return utHoldings.reduce((sum, h) => {
     const last = utLatestNavEntry(h.id);
@@ -278,20 +343,34 @@ function computeUtTotalMarketValue() {
 
 function utBuildPortfolioSeries() {
   if (!utHoldings.length) return [];
-  const dates = [...new Set(utNavPoints.map(p => p.date))]
-    .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
-    .sort();
+  let start = null;
+  utNavPoints.forEach(p => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date)) return;
+    if (!start || p.date < start) start = p.date;
+  });
+  utHoldings.forEach(h => {
+    const pd = h.purchaseDate && String(h.purchaseDate).trim().slice(0, 10);
+    if (pd && /^\d{4}-\d{2}-\d{2}$/.test(pd)) {
+      if (!start || pd < start) start = pd;
+    }
+  });
+  if (!start) return [];
+  const end = todayStr();
+  if (start > end) return [];
   const series = [];
-  dates.forEach(d => {
+  for (let d = start; d <= end; d = utYmdPlusOne(d)) {
     let total = 0;
+    let any = false;
     for (let i = 0; i < utHoldings.length; i++) {
       const h = utHoldings[i];
       const nav = utNavAsOf(h.id, d);
-      if (nav == null) return;
+      if (nav == null) continue;
       total += h.units * nav;
+      any = true;
     }
-    series.push({ date: d, total });
-  });
+    if (any) series.push({ date: d, total });
+    if (d === end) break;
+  }
   return series;
 }
 
@@ -319,7 +398,8 @@ function renderUtChart(el) {
   if (!el) return;
   const series = utBuildPortfolioSeries();
   if (series.length < 2) {
-    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:var(--f-sm)">Chart appears when every holding has at least two NAV dates with full coverage.</div>';
+    el.innerHTML =
+      '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:var(--f-sm)">Portfolio line needs NAV on at least two calendar days (open the app daily to carry forward NAV, or import CSV).</div>';
     return;
   }
   const W = el.clientWidth || 600;
@@ -715,6 +795,18 @@ function renderUnitTrustPanel() {
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addUtHolding(); });
   });
 
+  const chartHdr = document.createElement('div');
+  chartHdr.className = 'lbl';
+  chartHdr.style.cssText = 'margin-top:8px;font-weight:600';
+  chartHdr.textContent = 'Portfolio value by calendar day';
+  const chartSub = document.createElement('p');
+  chartSub.style.cssText =
+    'font-size:var(--f-xs);color:var(--ink3);margin:4px 0 8px;line-height:1.45';
+  chartSub.textContent =
+    'Uses latest NAV per fund each day (opening the app once per day carries NAV forward so the timeline grows).';
+  root.appendChild(chartHdr);
+  root.appendChild(chartSub);
+
   const chartSlot = document.createElement('div');
   chartSlot.id = 'ut-chart';
   chartSlot.style.marginTop = '16px';
@@ -1053,6 +1145,7 @@ function makeDraggable(el, list, arr, save) {
 
 // ── Render ─────────────────────────────────────────────────
 function render() {
+  utCarryForwardNavSnapshotForToday();
   const me       = mExp(), mi = mInc(), today = todayStr();
   const totalExp = me.reduce((a,e)=>a+e.amount, 0);
   const todayExp = expenses.filter(e=>e.date===today).reduce((a,e)=>a+e.amount, 0);
@@ -1083,6 +1176,12 @@ function render() {
   const filtered = activeFilter==='All' ? me : me.filter(e=>e.cat===activeFilter);
   renderTxList('expense-list', [...filtered].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id), EXP_CATS, false);
   renderBarChart('bar-chart', me, EXP_CATS, false);
+  const expDailyEl = document.getElementById('exp-daily-chart');
+  if (expDailyEl) {
+    const dayKeys = buildMonthDateKeys();
+    const dayTotals = buildMonthDailyTotals(dayKeys, me);
+    renderMonthDailyLineChart(expDailyEl, dayKeys, dayTotals, { stroke: '#E24B4A', label: 'Spent' });
+  }
 
   // Income stats
   document.getElementById('ic-total').textContent = fmt(totalInc);
@@ -1254,6 +1353,121 @@ function renderBarChart(id, items, catMap, isIncome) {
 
     el.appendChild(row);
   });
+}
+
+/** Line chart for one month: dates (YYYY-MM-DD) vs numeric values (e.g. daily spend). */
+function renderMonthDailyLineChart(el, dateKeys, values, opts) {
+  if (!el) return;
+  opts = opts || {};
+  const stroke = opts.stroke || '#378ADD';
+  const label = opts.label || '';
+  const n = dateKeys.length;
+  if (!n) {
+    el.innerHTML = '';
+    return;
+  }
+  const maxV = Math.max.apply(null, values.concat([0]));
+  if (maxV <= 0) {
+    el.innerHTML =
+      '<div style="text-align:center;padding:14px;color:var(--ink3);font-size:var(--f-sm)">No ' +
+      esc(label || 'amounts') +
+      ' on any day this month yet.</div>';
+    return;
+  }
+  const W = el.clientWidth || 360;
+  const H = 150;
+  const PAD = { t: 12, r: 12, b: 30, l: 52 };
+  const cW = W - PAD.l - PAD.r;
+  const cH = H - PAD.t - PAD.b;
+  const minV = 0;
+  const rng = maxV - minV || 1;
+  const xOf = i => (n === 1 ? PAD.l + cW / 2 : PAD.l + (i / (n - 1)) * cW);
+  const yOf = v => PAD.t + cH - ((v - minV) / rng) * cH;
+  const pts = values.map((v, i) => xOf(i) + ',' + yOf(v));
+  const path = 'M ' + pts.join(' L ');
+  const area =
+    'M ' +
+    xOf(0) +
+    ',' +
+    (PAD.t + cH) +
+    ' L ' +
+    pts.join(' L ') +
+    ' L ' +
+    xOf(n - 1) +
+    ',' +
+    (PAD.t + cH) +
+    ' Z';
+  const yLbls = [
+    { v: maxV, y: yOf(maxV) },
+    { v: maxV / 2, y: yOf(maxV / 2) },
+    { v: 0, y: yOf(0) },
+  ];
+  const xPick = [0, Math.floor((n - 1) / 2), n - 1].filter((v, i, a) => a.indexOf(v) === i);
+  const xLbls = xPick.map(i => ({ lbl: dateKeys[i].slice(5), x: xOf(i), full: dateKeys[i] }));
+  const circles = values
+    .map((v, i) =>
+      v > 0
+        ? '<circle cx="' +
+          xOf(i) +
+          '" cy="' +
+          yOf(v) +
+          '" r="3" fill="' +
+          stroke +
+          '" stroke="white" stroke-width="1.2"><title>' +
+          esc(dateKeys[i]) +
+          ': ' +
+          fmt(v) +
+          '</title></circle>'
+        : ''
+    )
+    .join('');
+  el.innerHTML =
+    '<div class="nw-chart-wrap"><svg class="nw-svg" viewBox="0 0 ' +
+    W +
+    ' ' +
+    H +
+    '" preserveAspectRatio="none">' +
+    '<defs><linearGradient id="exp-daily-grad" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="' +
+    stroke +
+    '" stop-opacity="0.12"/>' +
+    '<stop offset="100%" stop-color="' +
+    stroke +
+    '" stop-opacity="0"/></linearGradient></defs>' +
+    '<path d="' +
+    area +
+    '" fill="url(#exp-daily-grad)"/>' +
+    '<path d="' +
+    path +
+    '" fill="none" stroke="' +
+    stroke +
+    '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    yLbls
+      .map(
+        l =>
+          '<text class="nw-axis-lbl" x="' +
+          (PAD.l - 6) +
+          '" y="' +
+          (l.y + 3) +
+          '" text-anchor="end">' +
+          fmt(l.v) +
+          '</text>'
+      )
+      .join('') +
+    xLbls
+      .map(
+        l =>
+          '<text class="nw-axis-lbl" x="' +
+          l.x +
+          '" y="' +
+          (H - 6) +
+          '" text-anchor="middle">' +
+          esc(l.lbl) +
+          '</text>'
+      )
+      .join('') +
+    circles +
+    '</svg></div>';
 }
 
 // ── Bank list ──────────────────────────────────────────────

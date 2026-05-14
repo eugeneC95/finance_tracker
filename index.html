@@ -2700,7 +2700,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v63 · 2026-05-15 00:04';
+  var BUILD_VERSION    = 'v64 · 2026-05-15 00:26';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -2906,6 +2906,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <div class="stat-card">
           <div class="s-label">Transactions</div>
           <div class="s-value" id="c-count">0</div>
+        </div>
+      </div>
+
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
+        <div class="panel-bd">
+          <p style="font-size:var(--f-xs);color:var(--ink3);margin:0 0 10px;line-height:1.45">Sum of expenses recorded for each calendar day in the month shown above (switch month with the arrows).</p>
+          <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
       </div>
 
@@ -3493,7 +3501,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v63 · 2026-05-15 00:04</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v64 · 2026-05-15 00:26</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3698,7 +3706,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
 <div class="toast" id="toast"></div>
 <div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v57 · 2026-05-14</div>
-<script src="app.js?v=57"></script>
+<script src="app.js?v=64"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>
