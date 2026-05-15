@@ -88,6 +88,8 @@ input, select, textarea { font-family: inherit; }
   --radius-sm: 7px;
   --shadow  : 0 1px 3px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
   --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
 /* ── Dark theme ── */
@@ -122,6 +124,26 @@ body {
   line-height: 1.5;
   transition: background .2s, color .2s;
   touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .stat-card,
+  .net-card,
+  .bank-card,
+  .pill,
+  .btn,
+  .btn-primary,
+  .btn-ghost,
+  .nav-item,
+  .tx-item,
+  .month-arrow {
+    transition: none !important;
+  }
+  .stat-card:hover,
+  .bank-card:hover {
+    transform: none !important;
+  }
 }
 
 /* ============================================================
@@ -168,7 +190,7 @@ body {
   font-weight: 500;
   width: 100%;
   text-align: left;
-  transition: background .12s, color .12s;
+  transition: background 0.18s var(--ease-out), color 0.18s var(--ease-out);
 }
 .nav-item .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
 .nav-item:hover  { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
@@ -200,8 +222,10 @@ body {
   font-size: 16px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: background 0.18s var(--ease-out), transform 0.12s var(--ease-out);
 }
 .month-arrow:hover { background: rgba(255,255,255,.2); }
+.month-arrow:active { transform: scale(0.94); }
 .month-name {
   flex: 1;
   text-align: center;
@@ -411,7 +435,7 @@ textarea {
   font-size: var(--f-md);
   font-weight: 600;
   white-space: nowrap;
-  transition: opacity .15s, transform .1s;
+  transition: opacity 0.15s var(--ease-out), transform 0.12s var(--ease-out);
 }
 .btn:hover  { opacity: .84; }
 .btn:active { transform: scale(.97); }
@@ -631,7 +655,7 @@ body.dark .cat-btn.active { color: #000; }
   padding: var(--s3) 0;
   border-bottom: 1px solid var(--line);
   user-select: none;
-  transition: background .1s;
+  transition: background 0.15s var(--ease-out);
 }
 .tx-item:last-child { border-bottom: none; }
 .tx-item.dragging  { opacity: .4; }
@@ -691,7 +715,11 @@ body.dark .tx-action-btn.edit:hover { background: #1a2d3d; border-color: #1e3a5f
   padding: 3px 12px;
   font-size: var(--f-xs);
   color: var(--ink2);
-  transition: all .12s;
+  transition:
+    background 0.16s var(--ease-out),
+    color 0.16s var(--ease-out),
+    border-color 0.16s var(--ease-out),
+    transform 0.12s var(--ease-out);
 }
 .pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
 body.dark .pill.active { color: #000; }
@@ -801,6 +829,27 @@ body.dark .bar-track { background: var(--card-bg2); }
 .net-card .n-val { font-size: var(--f-xl); font-weight: 700; }
 .net-card .n-val.green { color: var(--green); }
 .net-card .n-val.red   { color: var(--red); }
+
+.card,
+.stat-card,
+.net-card,
+.bank-card {
+  transition:
+    box-shadow 0.22s var(--ease-out),
+    border-color 0.18s var(--ease-out),
+    transform 0.16s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover,
+  .bank-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 14px rgba(15, 22, 18, 0.1);
+  }
+  body.dark .stat-card:hover,
+  body.dark .bank-card:hover {
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.38);
+  }
+}
 
 /* ============================================================
    IMPORT WIZARD
@@ -2219,7 +2268,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v50 · 2026-05-14</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v65 · 2026-05-14 12:00</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -2381,7 +2430,7 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=64"></script>
+<script src="app.js?v=65"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>

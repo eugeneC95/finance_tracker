@@ -1201,8 +1201,14 @@ function render() {
   nnet.textContent = fmt(na);
   nnet.className   = 'n-val ' + (na>=0 ? 'green' : 'red');
 
-  renderBankList();
-  renderUnitTrustPanel();
+  const utSumEl = document.getElementById('ut-summary-mv');
+  if (utSumEl) utSumEl.textContent = fmt(computeUtTotalMarketValue());
+
+  const pageAssets = document.getElementById('page-assets');
+  if (pageAssets && pageAssets.classList.contains('active')) {
+    renderBankList();
+    renderUnitTrustPanel();
+  }
 
   // Feature hooks (defined in other files)
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
@@ -1773,6 +1779,10 @@ function activateNavTab(tab) {
   closeMobileNavMore();
   if (tab === 'petrol' && typeof renderPetrolLog === 'function') setTimeout(renderPetrolLog, 10);
   if (tab === 'report' && typeof renderReport === 'function') setTimeout(renderReport, 10);
+  if (tab === 'assets') {
+    renderBankList();
+    renderUnitTrustPanel();
+  }
 }
 
 function scrollNavItemIntoView(btn) {

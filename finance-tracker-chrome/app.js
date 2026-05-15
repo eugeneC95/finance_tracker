@@ -1160,8 +1160,14 @@ function render() {
   nnet.textContent = fmt(na);
   nnet.className   = 'n-val ' + (na>=0 ? 'green' : 'red');
 
-  renderBankList();
-  renderUnitTrustPanel();
+  const utSumEl = document.getElementById('ut-summary-mv');
+  if (utSumEl) utSumEl.textContent = fmt(computeUtTotalMarketValue());
+
+  const pageAssets = document.getElementById('page-assets');
+  if (pageAssets && pageAssets.classList.contains('active')) {
+    renderBankList();
+    renderUnitTrustPanel();
+  }
 
   // Feature hooks (defined in other files)
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
@@ -1709,8 +1715,15 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     if (btn.dataset.tab !== 'expenses' && typeof closeExpSearch === 'function') closeExpSearch();
     btn.classList.add('active');
-    document.getElementById('page-' + btn.dataset.tab).classList.add('active');
+    var tab = btn.dataset.tab;
+    document.getElementById('page-' + tab).classList.add('active');
     scrollNavItemIntoView(btn);
+    if (tab === 'petrol' && typeof renderPetrolLog === 'function') setTimeout(renderPetrolLog, 10);
+    if (tab === 'report' && typeof renderReport === 'function') setTimeout(renderReport, 10);
+    if (tab === 'assets') {
+      renderBankList();
+      renderUnitTrustPanel();
+    }
   });
 });
 window.addEventListener('load', function() {
