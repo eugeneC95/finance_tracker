@@ -120,15 +120,35 @@ function iwParseUOB(text) {
   return rows;
 }
 
+function iwAssignRowIds() {
+  iwRows.forEach((row, i) => {
+    row.idx = i;
+    if (row.selected === undefined) row.selected = !row.skip;
+    if (row.skip) row.selected = false;
+  });
+}
+
+function iwSetAllSelected(on) {
+  iwRows.forEach((row) => {
+    if (row.skip) return;
+    row.selected = !!on;
+  });
+  iwBuildTable();
+}
+
 // ── Build review table ─────────────────────────────────────
 function iwBuildTable() {
   const tbody=document.getElementById('iw-tbody'); tbody.innerHTML='';
-  iwRows.forEach((row,idx)=>{
+  iwRows.forEach((row)=>{
+    const idx=row.idx;
     const catList=row.type==='inc'?INC_LIST:EXP_LIST;
     const opts=catList.map(c=>`<option value="${c}"${c===row.cat?' selected':''}>${c}</option>`).join('');
     const tr=document.createElement('tr'); tr.id=`iwr${idx}`;
     if(row.skip) tr.classList.add('skipped');
+    if(!row.selected) tr.classList.add('unselected');
+    const checked=row.selected&&!row.skip;
     tr.innerHTML=`
+      <td><input type="checkbox" class="iw-row-cb" data-idx="${idx}" ${checked?'checked':''} ${row.skip?'disabled':''} aria-label="Import row"></td>
       <td style="white-space:nowrap">${row.date}</td>
       <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${row.desc}">${row.desc}</td>
       <td style="text-align:right;font-weight:700;color:${row.type==='exp'?'var(--red)':'var(--green)'};white-space:nowrap">${row.type==='exp'?'':'+'}${row.amount.toFixed(2)}</td>
@@ -141,24 +161,30 @@ function iwBuildTable() {
     tbody.appendChild(tr);
   });
 
-  // Attach type button listeners (NO inline onclick)
+  document.querySelectorAll('.iw-row-cb').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      const idx=Number(cb.dataset.idx);
+      iwRows[idx].selected=cb.checked;
+      iwBuildTable();
+      iwUpdateSummary();
+    });
+  });
+
   document.querySelectorAll('.type-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const idx=Number(btn.dataset.idx), type=btn.dataset.type;
-      if(type==='skip'){ iwRows[idx].skip=true; }
-      else { iwRows[idx].skip=false; iwRows[idx].type=type; }
-      // update cat dropdown options for new type
+      if(type==='skip'){ iwRows[idx].skip=true; iwRows[idx].selected=false; }
+      else { iwRows[idx].skip=false; iwRows[idx].type=type; iwRows[idx].selected=true; }
       const catList=iwRows[idx].type==='inc'?INC_LIST:EXP_LIST;
       const sel=document.querySelector(`.iw-cat-sel[data-idx="${idx}"]`);
       sel.innerHTML=catList.map(c=>`<option value="${c}">${c}</option>`).join('');
       sel.value=catList.includes(iwRows[idx].cat)?iwRows[idx].cat:catList[0];
       iwRows[idx].cat=sel.value;
-      iwBuildTable(); // re-render to update styles
+      iwBuildTable();
       iwUpdateSummary();
     });
   });
 
-  // Category select listeners
   document.querySelectorAll('.iw-cat-sel').forEach(sel=>{
     sel.addEventListener('change',()=>{ iwRows[Number(sel.dataset.idx)].cat=sel.value; });
   });
@@ -167,7 +193,7 @@ function iwBuildTable() {
 }
 
 function iwUpdateSummary() {
-  const active=iwRows.filter(r=>!r.skip);
+  const active=iwRows.filter(r=>!r.skip&&r.selected);
   const exps=active.filter(r=>r.type==='exp').reduce((a,r)=>a+r.amount,0);
   const incs=active.filter(r=>r.type==='inc').reduce((a,r)=>a+r.amount,0);
   document.getElementById('iw-summary').innerHTML=`
@@ -214,6 +240,10 @@ document.getElementById('iw-next1').addEventListener('click',()=>{ if(iwSource) 
 document.getElementById('iw-back2').addEventListener('click',()=>iwGoStep(1));
 document.getElementById('iw-back3').addEventListener('click',iwReset);
 document.getElementById('iw-again').addEventListener('click',iwReset);
+const iwSelAll=document.getElementById('iw-select-all');
+const iwSelNone=document.getElementById('iw-select-none');
+if(iwSelAll) iwSelAll.addEventListener('click',()=>iwSetAllSelected(true));
+if(iwSelNone) iwSelNone.addEventListener('click',()=>iwSetAllSelected(false));
 
 // ── Parse button ───────────────────────────────────────────
 document.getElementById('iw-parse').addEventListener('click',async()=>{
@@ -239,6 +269,7 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
     const dupes = deduplicateImportRows(iwRows);
     if (dupes > 0) showToast(`⚠️ ${dupes} duplicate${dupes>1?'s':''} detected and pre-skipped`);
   }
+  iwAssignRowIds();
   iwBuildTable();
   iwGoStep(3);
 });
@@ -247,14 +278,14 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
 document.getElementById('iw-import').addEventListener('click',()=>{
   var st = importWalletStorage();
   if (!st) { showToast('Import unavailable — storage not ready'); return; }
-  const toAdd=iwRows.filter(r=>!r.skip);
-  if(!toAdd.length){ alert('Nothing to import — all rows are skipped.'); return; }
+  const toAdd=iwRows.filter(r=>!r.skip&&r.selected);
+  if(!toAdd.length){ alert('Nothing to import — select at least one row.'); return; }
   st.local.get(['expenses_v2','incomes_v1'],result=>{
     const exps=result['expenses_v2']||[], incs=result['incomes_v1']||[];
     let ae=0,ai=0;
     toAdd.forEach(r=>{
       // pick latest cat from select in case user changed it
-      const sel=document.querySelector(`.iw-cat-sel[data-idx="${iwRows.indexOf(r)}"]`);
+      const sel=document.querySelector(`.iw-cat-sel[data-idx="${r.idx}"]`);
       if(sel) r.cat=sel.value;
       const entry={id:Date.now()+Math.random(),name:r.desc,amount:r.amount,cat:r.cat,date:r.date};
       if(r.type==='exp'){exps.push(entry);ae++;}else{incs.push(entry);ai++;}

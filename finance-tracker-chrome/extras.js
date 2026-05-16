@@ -6,16 +6,49 @@
 var KEY_PETROL = 'petrol_v1';
 
 var petrolLog = [];
+var lastPetrolTpl = null;
+const KEY_LAST_PETROL = 'last_petrol_v1';
 
 function loadExtras() {
-  chromeStorage.local.get([KEY_PETROL], function(r) {
+  chromeStorage.local.get([KEY_PETROL, KEY_LAST_PETROL], function(r) {
     petrolLog = r[KEY_PETROL] || [];
+    lastPetrolTpl = r[KEY_LAST_PETROL] || null;
     renderPetrolLog();
     buildCatSelects();
   });
 }
 
-function savePetrol() { chromeStorage.local.set({[KEY_PETROL]: petrolLog}); }
+function savePetrol() {
+  chromeStorage.local.set({ [KEY_PETROL]: petrolLog, [KEY_LAST_PETROL]: lastPetrolTpl });
+}
+
+function repeatLastPetrol() {
+  if (!lastPetrolTpl) {
+    showToast('No recent petrol fill to repeat');
+    return false;
+  }
+  var litres = lastPetrolTpl.litres;
+  var ppl = lastPetrolTpl.ppl || DEFAULT_PETROL_PPL;
+  var station = lastPetrolTpl.station || 'Petrol';
+  var date = todayStr();
+  var total = parseFloat((litres * ppl).toFixed(2));
+  petrolLog.unshift({
+    id: Date.now(),
+    station: station,
+    litres: litres,
+    ppl: ppl,
+    odo: lastPetrolTpl.odo || null,
+    date: date,
+    total: total,
+  });
+  savePetrol();
+  expenses.push({ id: Date.now() + 1, name: station, amount: total, cat: 'Petrol', date: date });
+  saveExp();
+  render();
+  renderPetrolLog();
+  showToast('Repeated petrol: ' + litres.toFixed(1) + ' L');
+  return true;
+}
 
 // ╔══════════════════════════════════════════════════════════╗
 //   CATEGORY SELECT REBUILD
@@ -245,6 +278,7 @@ function addPetrolEntry() {
 
   var total = parseFloat((litres * ppl).toFixed(2));
   petrolLog.unshift({ id: Date.now(), station: station, litres: litres, ppl: ppl, odo: odo, date: date, total: total });
+  lastPetrolTpl = { station: station, litres: litres, ppl: ppl, odo: odo };
   savePetrol();
 
   expenses.push({ id: Date.now() + 1, name: station || 'Petrol', amount: total, cat: 'Petrol', date: date });

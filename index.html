@@ -1866,6 +1866,7 @@ thead th {
 tbody td { padding: 9px var(--s4); border-bottom: 1px solid var(--line); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr.skipped td { opacity: .35; }
+tbody tr.unselected td { opacity: .55; }
 td select { height: 28px; font-size: var(--f-xs); width: 130px; }
 
 .type-group { display: flex; gap: var(--s1); }
@@ -2989,9 +2990,25 @@ body.dark .ft-fab { background: #fff; color: #000; }
 }
 .ft-fab-sheet__btn:disabled { opacity: .45; cursor: not-allowed; }
 .ft-fab-sheet__btn:active:not(:disabled) { transform: scale(.98); }
+.exp-month-summary-wrap,
 .exp-budget-chips-wrap {
   display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s4);
 }
+.ft-chip--summary {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: var(--card-bg2);
+  font-size: var(--f-xs); color: var(--ink2);
+}
+.ft-chip--summary strong { font-size: var(--f-sm); color: var(--ink); font-weight: 700; }
+.ft-chip--summary-ok strong { color: var(--green); }
+.ft-chip--summary-warn strong { color: #BA7517; }
+.ft-chip--summary-over strong { color: var(--red); }
+.iw-toolbar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: var(--s3);
+}
+.iw-toolbar .btn-ghost { font-size: var(--f-sm); padding: 6px 12px; min-height: 36px; }
+.iw-row-cb { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
 .ft-budget-chip {
   font-size: var(--f-xs); font-weight: 600; padding: 8px 12px;
   border-radius: 999px; border: 1px solid var(--line);
@@ -3473,7 +3490,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v78 · 2026-05-16 00:02';
+  var BUILD_VERSION    = 'v79 · 2026-05-16 00:09';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3689,6 +3706,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
       </section>
 
+      <div id="exp-month-summary" class="exp-month-summary-wrap" hidden aria-label="Month summary"></div>
       <div id="exp-budget-chips" class="exp-budget-chips-wrap" hidden aria-label="Budget alerts"></div>
 
       <div class="card mb-5 exp-daily-card">
@@ -4225,10 +4243,15 @@ body.dark .ft-fab { background: #fff; color: #000; }
               <!-- Step 3 -->
               <div id="iw3" style="display:none">
                 <div class="iw-summary" id="iw-summary"></div>
+                <div class="iw-toolbar">
+                  <button type="button" class="btn-ghost" id="iw-select-all">Select all</button>
+                  <button type="button" class="btn-ghost" id="iw-select-none">Select none</button>
+                </div>
                 <div class="iw-table-wrap">
                   <table>
                     <thead>
                       <tr>
+                        <th style="width:36px" title="Import row">✓</th>
                         <th>Date</th>
                         <th>Description</th>
                         <th style="text-align:right">Amount</th>
@@ -4241,7 +4264,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 </div>
                 <div class="btn-row">
                   <button class="btn-ghost" id="iw-back3">← Start over</button>
-                  <button class="btn btn-green" id="iw-import">✁EImport selected</button>
+                  <button class="btn btn-green" id="iw-import">Import selected</button>
                 </div>
               </div>
 
@@ -4606,7 +4629,9 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <button type="button" class="ft-fab-sheet__btn" data-fab="expense">💸 Add expense</button>
     <button type="button" class="ft-fab-sheet__btn" data-fab="income">💵 Add income</button>
     <button type="button" class="ft-fab-sheet__btn" data-fab="petrol">⛽ Petrol fill-up</button>
-    <button type="button" class="ft-fab-sheet__btn" data-fab="repeat" id="fab-repeat">↩ Repeat last expense</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="repeat-exp" id="fab-repeat-exp">Repeat last expense</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="repeat-inc" id="fab-repeat-inc">Repeat last income</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="repeat-petrol" id="fab-repeat-petrol">Repeat last petrol</button>
   </div>
 </div>
 <button id="ft-fab" class="ft-fab" type="button" aria-label="Quick add expense">+</button>
@@ -4623,13 +4648,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v78 · 2026-05-16 00:02</div>
-<script src="build-id.js?v=78"></script>
-<script src="app.js?v=78"></script>
-<script src="sync.js?v=78"></script>
-<script src="features.js?v=78"></script>
-<script src="extras.js?v=78"></script>
-<script src="import-inline.js?v=78"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v79 · 2026-05-16 00:09</div>
+<script src="build-id.js?v=79"></script>
+<script src="app.js?v=79"></script>
+<script src="sync.js?v=79"></script>
+<script src="features.js?v=79"></script>
+<script src="extras.js?v=79"></script>
+<script src="import-inline.js?v=79"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

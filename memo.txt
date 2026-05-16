@@ -1,6 +1,6 @@
 Finance Tracker — living handoff (read/save to resume work)
 ===========================================================
-Last updated: 2026-05-16
+Last updated: 2026-05-16 (v79: repeat income/petrol, month summary, import review)
 
 <<<MEMO_AUTO_SUMMARY>>>
 Generated: 2026-05-14T16:32:54.765Z
@@ -98,6 +98,9 @@ Done (2026-05-16 batch):
   [x] Category rules (learn on add, suggest on type/blur) — `cat_rules_v1`
   [x] Duplicate expense confirm on add
   [x] Budget chip tap filters transaction list
+  [x] Repeat last income + petrol (FAB quick-add)
+  [x] Month summary chips on Expenses (budget headroom + net)
+  [x] Import review: row checkboxes, select all/none, stable row ids
 
 Stability / tooling (todo):
   [ ] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
@@ -105,8 +108,8 @@ Stability / tooling (todo):
   [ ] Scan/fix remaining corrupted UI strings (em dash / closing tags)
 
 Daily logging (todo):
-  [ ] Repeat last for income + petrol
-  [ ] Month summary chip on Expenses hero (“left in budgets” / net)
+  [x] Repeat last for income + petrol (FAB + storage templates)
+  [x] Month summary chip on Expenses hero (“left in budgets” / net)
   [ ] Swipe edit/delete on transaction rows (mobile)
 
 Budgets & trends (todo):
@@ -116,7 +119,7 @@ Budgets & trends (todo):
 
 Imports & Sheets (todo):
   [ ] One more bank CSV (Maybank / CIMB)
-  [ ] Import review screen (tick rows, fix category)
+  [x] Import review screen (checkboxes, select all/none, category fix)
   [ ] Clearer sync conflict copy (device vs cloud counts)
   [ ] Monthly backup export reminder
 

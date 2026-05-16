@@ -108,6 +108,7 @@ const KEY_SETS  = 'settings_v1';
 const KEY_UT_HOLD = 'unit_trust_holdings_v1';
 const KEY_UT_NAV  = 'unit_trust_nav_v1';
 const KEY_LAST_EXP = 'last_expense_v1';
+const KEY_LAST_INC = 'last_income_v1';
 
 // ── Storage read generation (avoid stale load() overwriting a fresh Sheet load)
 let _storageReadGen = 0;
@@ -119,6 +120,7 @@ let utHoldings = [];
 let utNavPoints = [];
 let settings = { dark:false, fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true };
 let lastExpenseTpl = null;
+let lastIncomeTpl = null;
 let viewMonth = new Date(); viewMonth.setDate(1);
 let activeFilter = 'All';
 let selectedCat  = 'Food';
@@ -161,7 +163,7 @@ function viewYM() {
 // ── Storage ────────────────────────────────────────────────
 function load() {
   const gen = _storageReadGen;
-  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP], r => {
+  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP,KEY_LAST_INC], r => {
     if (gen !== _storageReadGen) return;
     try {
       expenses = r[KEY_EXP]   || [];
@@ -172,6 +174,7 @@ function load() {
       utCarryForwardNavSnapshotForToday();
       if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
       lastExpenseTpl = r[KEY_LAST_EXP] || null;
+      lastIncomeTpl = r[KEY_LAST_INC] || null;
       applySettings();
       render();
       window.__ftAppReady = true;
@@ -1020,10 +1023,32 @@ function addIncome() {
   if (isNaN(amount) || amount <= 0) { shake(aEl); ok = false; }
   if (!ok) return;
   incomes.push({ id: Date.now(), name, amount, cat, date });
+  lastIncomeTpl = { name, amount, cat };
+  chromeStorage.local.set({ [KEY_LAST_INC]: lastIncomeTpl });
   saveInc();
   nEl.value = ''; aEl.value = '';
   render();
 }
+
+function repeatLastIncome() {
+  if (!lastIncomeTpl) {
+    showToast('No recent income to repeat');
+    return false;
+  }
+  const cat = lastIncomeTpl.cat && INC_CATS[lastIncomeTpl.cat] ? lastIncomeTpl.cat : 'Salary';
+  incomes.push({
+    id: Date.now(),
+    name: lastIncomeTpl.name,
+    amount: lastIncomeTpl.amount,
+    cat,
+    date: todayStr(),
+  });
+  saveInc();
+  render();
+  showToast('Repeated income: ' + lastIncomeTpl.name);
+  return true;
+}
+
 function deleteIncome(id) { incomes = incomes.filter(i => i.id !== id); saveInc(); render(); }
 
 // ── Add banks ──────────────────────────────────────────────
@@ -1286,6 +1311,7 @@ function render() {
 
   // Feature hooks (defined in other files)
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
+  if (typeof renderExpMonthSummary === 'function') renderExpMonthSummary();
   if (typeof renderBudgets    === 'function') renderBudgets();
   if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
   if (typeof renderRecurring  === 'function') renderRecurring();
@@ -1720,6 +1746,8 @@ function exportData() {
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
     catRules:     (typeof catRules     !== 'undefined') ? catRules     : {},
+    lastExpense:  lastExpenseTpl || null,
+    lastIncome:   lastIncomeTpl || null,
     petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
   };
   const json = JSON.stringify(payload, null, 2);
@@ -1900,8 +1928,12 @@ function openFabSheet() {
   sheet.classList.add('open');
   sheet.setAttribute('aria-hidden', 'false');
   document.body.classList.add('ft-fab-sheet-open');
-  const rep = document.getElementById('fab-repeat');
-  if (rep) rep.disabled = !lastExpenseTpl;
+  const repExp = document.getElementById('fab-repeat-exp');
+  const repInc = document.getElementById('fab-repeat-inc');
+  const repPet = document.getElementById('fab-repeat-petrol');
+  if (repExp) repExp.disabled = !lastExpenseTpl;
+  if (repInc) repInc.disabled = !lastIncomeTpl;
+  if (repPet) repPet.disabled = !(typeof lastPetrolTpl !== 'undefined' && lastPetrolTpl);
 }
 
 function closeFabSheet() {
@@ -1936,12 +1968,20 @@ function wireQuickAddUi() {
         if (typeof activateNavTab === 'function') activateNavTab('petrol');
         else document.querySelector('.nav-item[data-tab="petrol"]')?.click();
         setTimeout(() => document.getElementById('pt-litres-in')?.focus(), 120);
-      } else if (action === 'repeat') {
+      } else if (action === 'repeat-exp') {
         if (repeatLastExpense()) {
           if (typeof activateNavTab === 'function') activateNavTab('expenses');
         } else {
           focusExpenseForm();
         }
+      } else if (action === 'repeat-inc') {
+        if (typeof repeatLastIncome === 'function' && repeatLastIncome()) {
+          if (typeof activateNavTab === 'function') activateNavTab('income');
+        } else if (typeof activateNavTab === 'function') activateNavTab('income');
+      } else if (action === 'repeat-petrol') {
+        if (typeof repeatLastPetrol === 'function' && repeatLastPetrol()) {
+          if (typeof activateNavTab === 'function') activateNavTab('petrol');
+        } else if (typeof activateNavTab === 'function') activateNavTab('petrol');
       }
     });
   });

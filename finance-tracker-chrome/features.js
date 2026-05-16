@@ -149,6 +149,60 @@ function setDelta(id, cur, prv, lowerIsBetter) {
 }
 
 // ╔══════════════════════════════════════════════════════════╗
+//   EXPENSES MONTH SUMMARY CHIPS
+// ╚══════════════════════════════════════════════════════════╝
+function renderExpMonthSummary() {
+  var wrap = document.getElementById('exp-month-summary');
+  if (!wrap) return;
+  var me = typeof mExp === 'function' ? mExp() : [];
+  var mi = typeof mInc === 'function' ? mInc() : [];
+  var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var net = totalInc - totalExp;
+  var chips = [];
+
+  var budKeys = Object.keys(budgets || {});
+  if (budKeys.length) {
+    var limit = 0;
+    var spentOnBudgets = 0;
+    budKeys.forEach(function(cat) {
+      limit += budgets[cat];
+      spentOnBudgets += me.filter(function(e) { return e.cat === cat; })
+        .reduce(function(a, e) { return a + e.amount; }, 0);
+    });
+    var left = limit - spentOnBudgets;
+    var pct = limit > 0 ? Math.round((spentOnBudgets / limit) * 100) : 0;
+    var cls = left < 0 ? 'over' : (pct >= 75 ? 'warn' : 'ok');
+    chips.push({
+      label: 'Budgets',
+      value: left >= 0 ? fmt(left) + ' left (' + pct + '%)' : fmt(Math.abs(left)) + ' over',
+      cls: cls,
+    });
+  }
+
+  if (totalInc > 0 || totalExp > 0) {
+    chips.push({
+      label: 'Month net',
+      value: (net >= 0 ? '+' : '\u2212') + fmt(Math.abs(net)),
+      cls: net >= 0 ? 'ok' : 'over',
+    });
+  }
+
+  if (!chips.length) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML = chips.map(function(c) {
+    return (
+      '<div class="ft-chip ft-chip--summary ft-chip--summary-' + c.cls + '">' +
+      '<span>' + esc(c.label) + '</span><strong>' + esc(c.value) + '</strong></div>'
+    );
+  }).join('');
+}
+
+// ╔══════════════════════════════════════════════════════════╗
 //   BUDGET TARGETS
 // ╚══════════════════════════════════════════════════════════╝
 function renderExpBudgetChips() {
