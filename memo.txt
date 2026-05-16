@@ -1,6 +1,6 @@
 Finance Tracker — living handoff (read/save to resume work)
 ===========================================================
-Last updated: 2026-05-15
+Last updated: 2026-05-16
 
 <<<MEMO_AUTO_SUMMARY>>>
 Generated: 2026-05-14T16:32:54.765Z
@@ -74,7 +74,7 @@ IMPORTANT IDS / HOOKS
 HOW TO CONTINUE
 ---------------
 0. **Auto git summary in this file** — Between `<<<MEMO_AUTO_SUMMARY>>>` and `<<<END_MEMO_AUTO_SUMMARY>>>` is regenerated from `git log` by `node scripts/update-memo-summary.mjs`. To refresh after every local commit, run once: `git config core.hooksPath hooks` (repo `hooks/` folder). The `post-commit` hook runs that script and, if `memo.txt` changed, creates a follow-up commit `docs(memo): refresh auto git summary`. To skip hook: `SKIP_MEMO_HOOK=1 git commit …`. To refresh memo only without the extra commit: `MEMO_HOOK_NO_AUTOCOMMIT=1 git commit …` or run the node script manually.
-1. After changing any precached asset (`app.js`, `features.js`, `extras.js`, `sync.js`, `import-inline.js`, or shell HTML): bump **`BUILD_VERSION`** in `index.html`, bump **`const CACHE`** in `service-worker.js` (new string), bump every local script **`?v=`** in **`index.html`** and mirror the same **`?v=`** tags in **`finance-tracker-chrome/app.html`** when you ship the extension build.
+1. After changing precached assets: run **`node scripts/bump-build.mjs <version>`** (updates `build-id.js`, `service-worker.js` CACHE, `BUILD_VERSION`, all `?v=` in `index.html` + `finance-tracker-chrome/app.html`). Add `build-id.js` to extension packaging if used there.
 2. If `google-apps-script.js` changes: user must create a new Apps Script deployment version.
 3. Repo rule (`.cursor/rules`): when finishing a fix, `git add` relevant files, **commit**, **push** `origin/main` unless user says stop or push fails.
 
@@ -84,7 +84,48 @@ HISTORY / GOTCHAS (short)
 - iOS: avoid `body { position:fixed }` + nested scroll traps; prefer normal document scroll + bottom padding for nav.
 - PWA POST to `script.google.com` can lose body on redirect; extension avoids this; PWA uses GET/chunk strategy.
 
+ROADMAP (ideas backlog)
+-----------------------
+Done (2026-05-16 batch):
+  [x] Tab render registry (`TAB_OPEN_HOOKS`, `runTabOpenHooks`, `refreshActiveTabPanels`)
+  [x] Sync detail line in Settings (`#sync-detail`, counts + relative times)
+  [x] Mobile FAB quick-add menu + repeat last expense
+  [x] Budget alert chips on Expenses (>=75% of limit)
+  [x] Auto net worth snapshot on bank balance change (`settings.nwAutoSnapshot`)
+  [x] More menu sheet fix (category modal HTML + body portal)
+  [x] Single build id (`build-id.js`, `node scripts/bump-build.mjs`)
+  [x] GitHub Action `node --check` on core JS
+  [x] Category rules (learn on add, suggest on type/blur) — `cat_rules_v1`
+  [x] Duplicate expense confirm on add
+  [x] Budget chip tap filters transaction list
+
+Stability / tooling (todo):
+  [ ] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
+  [ ] Pre-release smoke: More sheet, Trends, add expense, sync line
+  [ ] Scan/fix remaining corrupted UI strings (em dash / closing tags)
+
+Daily logging (todo):
+  [ ] Repeat last for income + petrol
+  [ ] Month summary chip on Expenses hero (“left in budgets” / net)
+  [ ] Swipe edit/delete on transaction rows (mobile)
+
+Budgets & trends (todo):
+  [ ] Trends month column → income breakdown
+  [ ] Gentle net worth reminder if stale (14+ days)
+  [ ] Simple savings goal (target RM by date)
+
+Imports & Sheets (todo):
+  [ ] One more bank CSV (Maybank / CIMB)
+  [ ] Import review screen (tick rows, fix category)
+  [ ] Clearer sync conflict copy (device vs cloud counts)
+  [ ] Monthly backup export reminder
+
+Polish (todo):
+  [ ] Dark mode schedule
+  [ ] Share/print monthly report improvements
+  [ ] Petrol L/100 + RM/km on Expenses hero when month has fills
+
 Open
 ----
-- After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck).
+- After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck). Bump: `node scripts/bump-build.mjs <n>`.
 - If save still fails on the website: check `localStorage` key `ft.lastSyncError`; redeploy `google-apps-script.js` so `save_chunk` is live. **Sync URL** is no longer user-editable — change **`APPS_SCRIPT_WEB_APP_URL`** in both `sync.js` files and ship a new build.

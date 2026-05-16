@@ -55,6 +55,7 @@ function buildPayload() {
     banks:        banks        || [],
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
+    catRules:     (typeof catRules     !== 'undefined') ? catRules     : {},
     petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     unitTrustHoldings: (typeof utHoldings !== 'undefined') ? utHoldings : [],
@@ -389,6 +390,7 @@ function syncLoad(opts) {
 
       if (typeof recurring !== 'undefined') recurring = sanitize(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
+      if (typeof catRules !== 'undefined') catRules = p.catRules || {};
       if (typeof petrolLog !== 'undefined') petrolLog = sanitize(p.petrolLog);
       if (typeof networthHist !== 'undefined') {
         networthHist = (p.networthHist || []).filter(function(e) { return e && e.date; }).map(function(e) {

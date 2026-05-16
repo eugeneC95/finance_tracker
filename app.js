@@ -943,6 +943,17 @@ function applySettings() {
     : '';
 }
 
+function findNearDuplicateExpense(name, amount, date) {
+  const day = String(date).slice(0, 10);
+  return expenses.find(e => {
+    if (Math.abs(e.amount - amount) > 0.009) return false;
+    if (String(e.date).slice(0, 10) !== day) return false;
+    const a = String(e.name).toLowerCase();
+    const b = String(name).toLowerCase();
+    return a === b || a.includes(b) || b.includes(a);
+  });
+}
+
 // ── Add expenses ───────────────────────────────────────────
 function addExpense() {
   const nEl = document.getElementById('exp-name');
@@ -954,6 +965,12 @@ function addExpense() {
   if (!name)                        { shake(nEl); ok = false; }
   if (isNaN(amount) || amount <= 0) { shake(aEl); ok = false; }
   if (!ok) return;
+  const dup = findNearDuplicateExpense(name, amount, date);
+  if (dup) {
+    const msg = 'Similar entry: ' + dup.name + ' ' + fmt(dup.amount) + ' on ' + String(dup.date).slice(0, 10) + '\nAdd anyway?';
+    if (!confirm(msg)) return;
+  }
+  if (typeof learnCatRule === 'function') learnCatRule(name, selectedCat);
   expenses.push({ id: Date.now(), name, amount, cat: selectedCat, date });
   lastExpenseTpl = { name, amount, cat: selectedCat };
   chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
@@ -1702,6 +1719,7 @@ function exportData() {
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
+    catRules:     (typeof catRules     !== 'undefined') ? catRules     : {},
     petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
   };
   const json = JSON.stringify(payload, null, 2);
@@ -1771,6 +1789,7 @@ function importBackup(file) {
         if (d.recurring    && typeof recurring    !== 'undefined') recurring    = d.recurring;
         if (d.networthHist && typeof networthHist !== 'undefined') networthHist = d.networthHist;
         if (d.budgets      && typeof budgets      !== 'undefined') budgets      = d.budgets;
+        if (d.catRules     && typeof catRules     !== 'undefined') catRules     = d.catRules;
         if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = d.petrolLog;
       } else {
         expRes = mergeByDateAmount(expenses, d.expenses); expenses = expRes.merged;
@@ -1784,6 +1803,9 @@ function importBackup(file) {
         }
         if (d.budgets && typeof budgets !== 'undefined') {
           budgets = Object.assign({}, budgets, d.budgets);
+        }
+        if (d.catRules && typeof catRules !== 'undefined') {
+          catRules = Object.assign({}, catRules, d.catRules);
         }
         if (Array.isArray(d.unitTrustHoldings) && d.unitTrustHoldings.length) {
           utHoldings = mergeById(utHoldings, utSanitizeHoldings(d.unitTrustHoldings));
@@ -1799,6 +1821,7 @@ function importBackup(file) {
       if (typeof saveRec    === 'function') saveRec();
       if (typeof saveNWH    === 'function') saveNWH();
       if (typeof saveBud    === 'function') saveBud();
+      if (typeof saveCatRules === 'function') saveCatRules();
       if (typeof savePetrol === 'function') savePetrol();
       render();
       if (ans === 'replace') {
@@ -2108,6 +2131,23 @@ bindChange('import-file', e => importBackup(e.target.files[0]));
 ['exp-name','exp-amount'].forEach(id =>
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addExpense(); })
 );
+const expNameEl = document.getElementById('exp-name');
+if (expNameEl) {
+  let catSuggestTimer = null;
+  expNameEl.addEventListener('input', () => {
+    clearTimeout(catSuggestTimer);
+    catSuggestTimer = setTimeout(() => {
+      if (typeof applySuggestedCategory === 'function') {
+        applySuggestedCategory(expNameEl.value.trim(), { silent: true });
+      }
+    }, 400);
+  });
+  expNameEl.addEventListener('blur', () => {
+    if (typeof applySuggestedCategory === 'function') {
+      applySuggestedCategory(expNameEl.value.trim(), { silent: false });
+    }
+  });
+}
 ['inc-name','inc-amount'].forEach(id =>
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addIncome(); })
 );

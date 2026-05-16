@@ -3013,8 +3013,8 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
             <div class="panel-bd">
               <div class="settings-actions">
-                <button type="button" class="btn-ghost" id="export-btn">⬁EExport backup</button>
-                <button type="button" class="btn-ghost green" id="import-btn">⬁EImport backup</button>
+                <button type="button" class="btn-ghost" id="export-btn">⬇ Export backup</button>
+                <button type="button" class="btn-ghost green" id="import-btn">⬆ Import backup</button>
                 <input type="file" id="import-file" accept=".json" style="display:none"/>
               </div>
             </div>
@@ -3039,9 +3039,9 @@ body.dark .fs-btn.active { color: #000; }
               </div>
 
               <div class="settings-actions" style="margin-bottom:14px">
-                <button type="button" class="btn btn-primary" id="sync-save-btn">⬁ESave to Sheet now</button>
+                <button type="button" class="btn btn-primary" id="sync-save-btn">⬆ Save to Sheet now</button>
                 <button type="button" class="btn-ghost" id="sync-ping-btn">🔌 Test connection</button>
-                <button type="button" class="btn-ghost" id="sync-load-btn">⬁ELoad from Sheet</button>
+                <button type="button" class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
               </div>
               <p style="font-size:var(--f-xs);color:var(--ink3);line-height:1.5;margin:0 0 14px">The script updates the spreadsheet named <strong>Finance Tracker</strong> in your Google Drive. Unit trust data goes to tabs <strong>UTHoldings</strong> and <strong>UTNav</strong> (scroll the tab bar if you do not see them). If those tabs never appear or <strong>UTNav</strong> stays header-only, paste the latest <code style="font-size:11px">google-apps-script.js</code> into Apps Script and deploy a <strong>new version</strong>.</p>
 
@@ -3289,10 +3289,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=74"></script>
-<script src="sync.js?v=74"></script>
-<script src="features.js?v=74"></script>
-<script src="extras.js?v=74"></script>
-<script src="import-inline.js?v=57"></script>
+<script src="build-id.js?v=78"></script>
+<script src="app.js?v=78"></script>
+<script src="sync.js?v=78"></script>
+<script src="features.js?v=78"></script>
+<script src="extras.js?v=78"></script>
+<script src="import-inline.js?v=78"></script>
 </body>
 </html>

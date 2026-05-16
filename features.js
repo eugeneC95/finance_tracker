@@ -7,6 +7,7 @@ const KEY_REC      = 'recurring_v1';
 const KEY_NWH      = 'networth_history_v1';
 const KEY_BUD      = 'budgets_v1';
 const KEY_LAST_CAT = 'lastcat_v1';
+const KEY_CAT_RULES = 'cat_rules_v1';
 
 // ╔══════════════════════════════════════════════════════════╗
 //   STATE (shared with app.js via globals)
@@ -14,15 +15,17 @@ const KEY_LAST_CAT = 'lastcat_v1';
 var recurring    = [];   // [{id,name,amount,type,cat,day,active,lastApplied}]
 var networthHist = [];   // [{date,total}]
 var budgets      = {};   // {catName: amount}
+var catRules     = {};   // normalized merchant key -> category name
 
 // ╔══════════════════════════════════════════════════════════╗
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
-  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT], function(r) {
+  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES], function(r) {
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
+    catRules     = r[KEY_CAT_RULES] || {};
 
     // Restore last used category
     var lastCat = r[KEY_LAST_CAT];
@@ -42,6 +45,46 @@ function loadFeatures() {
 function saveRec()  { chromeStorage.local.set({[KEY_REC]:  recurring}); }
 function saveNWH()  { chromeStorage.local.set({[KEY_NWH]:  networthHist}); }
 function saveBud()  { chromeStorage.local.set({[KEY_BUD]:  budgets}); }
+function saveCatRules() { chromeStorage.local.set({ [KEY_CAT_RULES]: catRules }); }
+
+function normMerchantKey(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 48);
+}
+
+function learnCatRule(name, cat) {
+  if (!name || !cat || typeof EXP_CATS === 'undefined' || !EXP_CATS[cat]) return;
+  var key = normMerchantKey(name);
+  if (key.length < 3) return;
+  catRules[key] = cat;
+  saveCatRules();
+}
+
+function suggestCatForName(name) {
+  var n = normMerchantKey(name);
+  if (!n) return null;
+  if (catRules[n]) return catRules[n];
+  var best = null;
+  var bestLen = 0;
+  Object.keys(catRules).forEach(function(k) {
+    if (n.indexOf(k) >= 0 && k.length > bestLen) {
+      best = catRules[k];
+      bestLen = k.length;
+    }
+  });
+  return best;
+}
+
+function applySuggestedCategory(name, opts) {
+  opts = opts || {};
+  var cat = suggestCatForName(name);
+  if (!cat || typeof selectedCat === 'undefined' || cat === selectedCat) return false;
+  selectedCat = cat;
+  if (typeof buildCatButtons === 'function') buildCatButtons();
+  if (!opts.silent && typeof showToast === 'function') {
+    showToast('Category: ' + cat);
+  }
+  return true;
+}
 
 // ╔══════════════════════════════════════════════════════════╗
 //   REMEMBER LAST CATEGORY
@@ -134,7 +177,7 @@ function renderExpBudgetChips() {
     var info = EXP_CATS[cat] || { icon: '📦' };
     var cls = over ? 'ft-budget-chip ft-budget-chip--over' : 'ft-budget-chip ft-budget-chip--warn';
     chips.push(
-      '<button type="button" class="' + cls + '" data-bud-cat="' + esc(cat) + '" title="Scroll to budgets">' +
+      '<button type="button" class="' + cls + '" data-bud-cat="' + esc(cat) + '" title="Show ' + esc(cat) + ' transactions">' +
       esc(info.icon + ' ' + cat) + ' ' + pct + '% · ' + fmt(spent) + '/' + fmt(limit) +
       '</button>'
     );
@@ -148,9 +191,16 @@ function renderExpBudgetChips() {
   wrap.innerHTML = chips.join('');
   wrap.querySelectorAll('[data-bud-cat]').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var card = document.getElementById('exp-budget-card');
-      if (card) {
-        try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
+      var cat = btn.dataset.budCat;
+      if (cat && typeof activeFilter !== 'undefined') {
+        activeFilter = cat;
+        if (typeof render === 'function') render();
+        var listCard = document.getElementById('expense-list');
+        if (listCard) {
+          var card = listCard.closest('.card') || listCard;
+          try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
+        }
+        if (typeof showToast === 'function') showToast('Showing ' + cat);
       }
     });
   });
