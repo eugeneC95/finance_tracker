@@ -375,10 +375,15 @@ function savingsProgressSince(startDate) {
 function renderSavingsGoal() {
   var panel = document.getElementById('savings-goal-panel');
   if (!panel) return;
+  var tgtIn = document.getElementById('sg-target');
+  var dateIn = document.getElementById('sg-date');
   if (!savingsGoal || !savingsGoal.target) {
     panel.innerHTML = '<p class="ft-note">Set a target amount and date to track how much you have saved (income minus expenses since the goal started).</p>';
+    if (tgtIn) tgtIn.value = '';
+    if (dateIn) dateIn.value = '';
     return;
   }
+  if (dateIn && savingsGoal.byDate) dateIn.value = savingsGoal.byDate;
   var saved = savingsProgressSince(savingsGoal.startDate);
   var target = savingsGoal.target;
   var pct = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0;
