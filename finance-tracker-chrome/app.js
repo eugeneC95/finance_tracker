@@ -1203,6 +1203,10 @@ function render() {
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
   if (typeof renderBudgets    === 'function') renderBudgets();
   if (typeof renderRecurring  === 'function') renderRecurring();
+  const pagePetrol = document.getElementById('page-petrol');
+  if (pagePetrol && pagePetrol.classList.contains('active') && typeof renderPetrolLog === 'function') {
+    renderPetrolLog();
+  }
 }
 
 // ── Transaction list ───────────────────────────────────────

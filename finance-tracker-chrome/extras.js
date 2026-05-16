@@ -74,8 +74,64 @@ function buildCatSelects() {
 // ╔══════════════════════════════════════════════════════════╗
 //   PETROL TRACKER
 // ╚══════════════════════════════════════════════════════════╝
-/** Subsidised RON95-style ceiling; user can override per fill-up. */
 var DEFAULT_PETROL_PPL = 1.99;
+var PETROL_PPL_PRESETS = [1.99, 2.05, 2.15, 2.99];
+var ptLastEdit = 'litres';
+
+function petrolViewYm() {
+  if (typeof viewMonth !== 'undefined' && viewMonth) {
+    return viewMonth.getFullYear() + '-' + String(viewMonth.getMonth() + 1).padStart(2, '0');
+  }
+  return typeof todayStr === 'function' ? todayStr().slice(0, 7) : '';
+}
+
+function petrolEntriesForView() {
+  var ym = petrolViewYm();
+  return petrolLog.filter(function(e) { return e.date && e.date.indexOf(ym) === 0; });
+}
+
+function petrolOdoSorted() {
+  return petrolLog
+    .filter(function(e) { return e.odo > 0; })
+    .sort(function(a, b) { return a.date.localeCompare(b.date) || a.odo - b.odo; });
+}
+
+function petrolLastOdoEntry() {
+  var list = petrolOdoSorted();
+  return list.length ? list[list.length - 1] : null;
+}
+
+function petrolFillEfficiency(entry, withOdo) {
+  var idx = withOdo.findIndex(function(x) { return x.id === entry.id; });
+  if (!entry.odo || idx <= 0) return null;
+  var km = entry.odo - withOdo[idx - 1].odo;
+  if (km <= 0) return null;
+  return { km: km, l100: (entry.litres / km) * 100 };
+}
+
+function petrolAvgL100(withOdo) {
+  if (withOdo.length < 2) return 0;
+  var totalKm = 0;
+  var totalL = 0;
+  for (var i = 1; i < withOdo.length; i++) {
+    var km = withOdo[i].odo - withOdo[i - 1].odo;
+    if (km > 0) {
+      totalKm += km;
+      totalL += withOdo[i].litres;
+    }
+  }
+  return totalKm > 0 ? (totalL / totalKm) * 100 : 0;
+}
+
+function petrolCostPerKm(withOdo, avgPpl) {
+  if (withOdo.length < 2 || avgPpl <= 0) return 0;
+  var first = withOdo[0];
+  var last = withOdo[withOdo.length - 1];
+  var kmDriven = last.odo - first.odo;
+  var fuelUsed = withOdo.slice(1).reduce(function(a, e) { return a + e.litres; }, 0);
+  if (kmDriven <= 0 || fuelUsed <= 0) return 0;
+  return (fuelUsed / kmDriven) * avgPpl;
+}
 
 function ensurePetrolPplDefault() {
   var pEl = document.getElementById('pt-ppl-in');
@@ -84,48 +140,127 @@ function ensurePetrolPplDefault() {
   if (raw === '' || raw === '-' || isNaN(parseFloat(raw))) pEl.value = String(DEFAULT_PETROL_PPL);
 }
 
+function wirePetrolUi() {
+  if (document.body.dataset.ptUiWired) return;
+  document.body.dataset.ptUiWired = '1';
+
+  document.querySelectorAll('.pt-ppl-preset').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var pEl = document.getElementById('pt-ppl-in');
+      if (!pEl) return;
+      pEl.value = btn.getAttribute('data-ppl') || String(DEFAULT_PETROL_PPL);
+      ptLastEdit = 'ppl';
+      updatePetrolCalc();
+    });
+  });
+
+  var lEl = document.getElementById('pt-litres-in');
+  var pEl = document.getElementById('pt-ppl-in');
+  var tEl = document.getElementById('pt-total-in');
+  if (lEl) lEl.addEventListener('input', function() { ptLastEdit = 'litres'; updatePetrolCalc(); });
+  if (pEl) pEl.addEventListener('input', function() { ptLastEdit = 'ppl'; updatePetrolCalc(); });
+  if (tEl) tEl.addEventListener('input', function() { ptLastEdit = 'total'; updatePetrolCalc(); });
+  var oEl = document.getElementById('pt-odo');
+  if (oEl) oEl.addEventListener('input', updatePetrolCalc);
+}
+
+function updatePetrolCalc() {
+  ensurePetrolPplDefault();
+  wirePetrolUi();
+
+  var lEl = document.getElementById('pt-litres-in');
+  var pEl = document.getElementById('pt-ppl-in');
+  var tEl = document.getElementById('pt-total-in');
+  var oEl = document.getElementById('pt-odo');
+
+  var litres = parseFloat(lEl && lEl.value) || 0;
+  var ppl = parseFloat(pEl && pEl.value) || 0;
+  var totalIn = parseFloat(tEl && tEl.value);
+
+  if (ptLastEdit === 'total' && !isNaN(totalIn) && totalIn > 0 && ppl > 0) {
+    litres = totalIn / ppl;
+    if (lEl) lEl.value = litres > 0 ? String(parseFloat(litres.toFixed(2))) : '';
+  } else if (litres > 0 && ppl > 0 && tEl && ptLastEdit !== 'total') {
+    tEl.value = (litres * ppl).toFixed(2);
+  }
+
+  var total = litres > 0 && ppl > 0 ? litres * ppl : (!isNaN(totalIn) && totalIn > 0 ? totalIn : 0);
+
+  var liveTotal = document.getElementById('pt-live-total');
+  var liveSub = document.getElementById('pt-live-sub');
+  if (liveTotal) liveTotal.textContent = total > 0 ? fmt(total) : 'RM 0.00';
+
+  var parts = [];
+  if (litres > 0 && ppl > 0) parts.push(litres.toFixed(2) + ' L × RM ' + ppl.toFixed(2));
+  else if (total > 0 && ppl > 0) parts.push('≈ ' + (total / ppl).toFixed(2) + ' L at RM ' + ppl.toFixed(2));
+
+  var last = petrolLastOdoEntry();
+  var odo = parseFloat(oEl && oEl.value) || 0;
+  if (odo > 0 && last && last.odo > 0 && odo > last.odo && litres > 0) {
+    var km = odo - last.odo;
+    parts.push(km.toLocaleString() + ' km');
+    parts.push((litres / km * 100).toFixed(1) + ' L/100 km');
+  }
+  if (liveSub) liveSub.textContent = parts.length ? parts.join(' · ') : 'Enter litres and price per litre (or total RM)';
+
+  var odoHint = document.getElementById('pt-odo-hint');
+  if (odoHint) {
+    odoHint.textContent = last && last.odo
+      ? 'Last odometer: ' + last.odo.toLocaleString() + ' km (' + last.date + ')'
+      : 'Optional — two readings unlock cost/km and L/100 km';
+  }
+}
+
 function updatePetrolHint() {
-  var l   = parseFloat(document.getElementById('pt-litres-in') ? document.getElementById('pt-litres-in').value : '');
-  var ppl = parseFloat(document.getElementById('pt-ppl-in')    ? document.getElementById('pt-ppl-in').value    : '');
-  var hint = document.getElementById('pt-calc-hint');
-  if (!hint) return;
-  hint.textContent = (l > 0 && ppl > 0) ? 'Total: RM ' + (l * ppl).toFixed(2) : '';
+  updatePetrolCalc();
 }
 
 function addPetrolEntry() {
-  var stEl  = document.getElementById('pt-station');
-  var lEl   = document.getElementById('pt-litres-in');
-  var pEl   = document.getElementById('pt-ppl-in');
-  var oEl   = document.getElementById('pt-odo');
-  var dEl   = document.getElementById('pt-date');
+  updatePetrolCalc();
+
+  var stEl = document.getElementById('pt-station');
+  var lEl = document.getElementById('pt-litres-in');
+  var pEl = document.getElementById('pt-ppl-in');
+  var tEl = document.getElementById('pt-total-in');
+  var oEl = document.getElementById('pt-odo');
+  var dEl = document.getElementById('pt-date');
 
   var station = stEl ? stEl.value.trim() : '';
-  var litres  = parseFloat(lEl ? lEl.value : '');
-  var ppl     = parseFloat(pEl ? pEl.value : '');
-  var odo     = parseFloat(oEl ? oEl.value : '') || null;
-  var date    = (dEl && dEl.value) ? dEl.value : todayStr();
+  var litres = parseFloat(lEl ? lEl.value : '');
+  var ppl = parseFloat(pEl ? pEl.value : '');
+  var totalIn = parseFloat(tEl ? tEl.value : '');
+  var odo = parseFloat(oEl ? oEl.value : '') || null;
+  var date = dEl && dEl.value ? dEl.value : todayStr();
 
-  if (isNaN(litres) || litres <= 0) { if(lEl) shake(lEl); return; }
-  if (isNaN(ppl)    || ppl    <= 0) { if(pEl) shake(pEl); return; }
+  if ((isNaN(litres) || litres <= 0) && !isNaN(totalIn) && totalIn > 0 && ppl > 0) litres = totalIn / ppl;
+  if (isNaN(litres) || litres <= 0) {
+    if (lEl) shake(lEl);
+    if (tEl) shake(tEl);
+    return;
+  }
+  if (isNaN(ppl) || ppl <= 0) {
+    if (pEl) shake(pEl);
+    return;
+  }
 
   var total = parseFloat((litres * ppl).toFixed(2));
   petrolLog.unshift({ id: Date.now(), station: station, litres: litres, ppl: ppl, odo: odo, date: date, total: total });
   savePetrol();
 
-  // Auto-add as Petrol expense
   expenses.push({ id: Date.now() + 1, name: station || 'Petrol', amount: total, cat: 'Petrol', date: date });
   saveExp();
   render();
 
   if (stEl) stEl.value = '';
-  if (lEl)  lEl.value  = '';
-  if (pEl)  pEl.value  = String(DEFAULT_PETROL_PPL);
-  if (oEl)  oEl.value  = '';
-  var hint = document.getElementById('pt-calc-hint');
-  if (hint) hint.textContent = '';
+  if (lEl) lEl.value = '';
+  if (pEl) pEl.value = String(DEFAULT_PETROL_PPL);
+  if (tEl) tEl.value = '';
+  if (oEl) oEl.value = '';
+  ptLastEdit = 'litres';
+  updatePetrolCalc();
 
   renderPetrolLog();
-  showToast('Logged ' + litres + 'L for RM ' + total.toFixed(2));
+  showToast('Logged ' + litres.toFixed(1) + ' L · ' + fmt(total));
 }
 
 function deletePetrolEntry(id) {
@@ -135,100 +270,99 @@ function deletePetrolEntry(id) {
 }
 
 function renderPetrolLog() {
-  var totalSpent  = petrolLog.reduce(function(a,e){ return a+e.total;  }, 0);
-  var totalLitres = petrolLog.reduce(function(a,e){ return a+e.litres; }, 0);
-  var avgPpl      = totalLitres > 0 ? totalSpent / totalLitres : 0;
+  wirePetrolUi();
+  ensurePetrolPplDefault();
 
-  // Cost per km from consecutive odometer readings
-  var cpk = 0;
-  var withOdo = petrolLog.filter(function(e){ return e.odo; })
-    .sort(function(a,b){ return a.date.localeCompare(b.date); });
-  if (withOdo.length >= 2) {
-    var first = withOdo[0], last = withOdo[withOdo.length-1];
-    var kmDriven = last.odo - first.odo;
-    var fuelUsed = withOdo.slice(1).reduce(function(a,e){ return a+e.litres; }, 0);
-    if (kmDriven > 0 && fuelUsed > 0) cpk = (fuelUsed / kmDriven) * avgPpl;
+  var entries = petrolEntriesForView();
+  var totalSpent = entries.reduce(function(a, e) { return a + e.total; }, 0);
+  var totalLitres = entries.reduce(function(a, e) { return a + e.litres; }, 0);
+  var avgPpl = totalLitres > 0 ? totalSpent / totalLitres : 0;
+
+  var withOdo = petrolOdoSorted();
+  var cpk = petrolCostPerKm(withOdo, avgPpl);
+  var avgL100 = petrolAvgL100(withOdo);
+
+  function setEl(id, txt) {
+    var e = document.getElementById(id);
+    if (e) e.textContent = txt;
   }
 
-  function setEl(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; }
-  setEl('pt-total',  fmt(totalSpent));
-  setEl('pt-litres', totalLitres.toFixed(1) + ' L');
-  setEl('pt-ppl',    'RM ' + avgPpl.toFixed(3));
-  setEl('pt-cpk',    cpk > 0 ? 'RM ' + cpk.toFixed(3) + '/km' : '—');
+  if (typeof viewMonth !== 'undefined' && viewMonth) {
+    setEl('pt-period-label', viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' }));
+  }
+  setEl('pt-total', fmt(totalSpent));
+  setEl('pt-litres', totalLitres > 0 ? totalLitres.toFixed(1) + ' L' : '0 L');
+  setEl('pt-ppl', avgPpl > 0 ? 'RM ' + avgPpl.toFixed(2) : '—');
+  setEl('pt-cpk', cpk > 0 ? 'RM ' + cpk.toFixed(2) : '—');
+  setEl('pt-eff', avgL100 > 0 ? avgL100.toFixed(1) + ' L/100km' : '—');
 
-  ensurePetrolPplDefault();
+  updatePetrolCalc();
 
   var el = document.getElementById('pt-list');
   if (!el) return;
 
-  if (!petrolLog.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups logged yet</div>';
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups this month</div>';
     return;
   }
 
-  // Build table
-  var table = document.createElement('table');
-  table.className = 'pt-table';
+  var root = document.createElement('div');
+  root.className = 'pt-cards';
 
-  var thead = document.createElement('thead');
-  var hrow  = document.createElement('tr');
-  ['Date','Station','Litres','RM/L','Total','Odometer','Efficiency',''].forEach(function(h) {
-    var th = document.createElement('th'); th.textContent = h; hrow.appendChild(th);
-  });
-  thead.appendChild(hrow);
-  table.appendChild(thead);
-
-  var tbody = document.createElement('tbody');
-  var sorted = petrolLog.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
-
+  var sorted = entries.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
   sorted.forEach(function(e) {
-    // Efficiency: find adjacent odo reading
-    var odoIdx = withOdo.findIndex(function(x){ return x.id===e.id; });
-    var effStr = '—';
-    if (e.odo && odoIdx > 0) {
-      var km = e.odo - withOdo[odoIdx-1].odo;
-      if (km > 0) effStr = (e.litres / km * 100).toFixed(1) + ' L/100km';
+    var eff = petrolFillEfficiency(e, withOdo);
+
+    var card = document.createElement('article');
+    card.className = 'pt-card';
+
+    var head = document.createElement('div');
+    head.className = 'pt-card__head';
+    var dateEl = document.createElement('span');
+    dateEl.className = 'pt-card__date';
+    dateEl.textContent = e.date;
+    var totalEl = document.createElement('span');
+    totalEl.className = 'pt-card__total';
+    totalEl.textContent = fmt(e.total);
+    head.appendChild(dateEl);
+    head.appendChild(totalEl);
+
+    var meta = document.createElement('div');
+    meta.className = 'pt-card__meta';
+    meta.textContent = e.litres.toFixed(2) + ' L @ RM ' + e.ppl.toFixed(2) + (e.station ? ' · ' + e.station : '');
+
+    card.appendChild(head);
+    card.appendChild(meta);
+
+    if (e.odo || eff) {
+      var extra = document.createElement('div');
+      extra.className = 'pt-card__extra';
+      var bits = [];
+      if (e.odo) bits.push(e.odo.toLocaleString() + ' km');
+      if (eff) bits.push(eff.km.toLocaleString() + ' km trip · ' + eff.l100.toFixed(1) + ' L/100 km');
+      extra.textContent = bits.join(' · ');
+      card.appendChild(extra);
     }
 
-    var row = document.createElement('tr');
-
-    function td(txt, bold, label) {
-      var c = document.createElement('td');
-      c.textContent = txt;
-      if (bold) c.style.fontWeight = '600';
-      if (label) c.setAttribute('data-label', label);
-      return c;
-    }
-
-    row.appendChild(td(e.date, false, 'Date'));
-    row.appendChild(td(e.station || '—', false, 'Station'));
-    row.appendChild(td(e.litres.toFixed(2) + ' L', false, 'Litres'));
-    row.appendChild(td('RM ' + e.ppl.toFixed(3), false, 'RM/L'));
-    row.appendChild(td(fmt(e.total), true, 'Total'));
-    row.appendChild(td(e.odo ? e.odo.toLocaleString() + ' km' : '—', false, 'Odometer'));
-    row.appendChild(td(effStr, false, 'Efficiency'));
-
-    var delTd  = document.createElement('td');
-    delTd.className = 'pt-td--actions';
+    var foot = document.createElement('div');
+    foot.className = 'pt-card__foot';
     var delBtn = document.createElement('button');
     delBtn.type = 'button';
-    delBtn.className = 'del-btn';
-    delBtn.textContent = '✕';
-    delBtn.setAttribute('aria-label', 'Delete fill-up');
+    delBtn.className = 'btn-ghost pt-card__del';
+    delBtn.textContent = 'Delete';
     (function(id) {
       delBtn.addEventListener('click', function() {
         if (confirm('Delete this fill-up?')) deletePetrolEntry(id);
       });
     })(e.id);
-    delTd.appendChild(delBtn);
-    row.appendChild(delTd);
+    foot.appendChild(delBtn);
+    card.appendChild(foot);
 
-    tbody.appendChild(row);
+    root.appendChild(card);
   });
 
-  table.appendChild(tbody);
   el.innerHTML = '';
-  el.appendChild(table);
+  el.appendChild(root);
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -364,7 +498,7 @@ if (addPtBtn) addPtBtn.addEventListener('click', addPetrolEntry);
   var el = document.getElementById(id);
   if (el) el.addEventListener('input', updatePetrolHint);
 });
-['pt-station','pt-litres-in','pt-ppl-in','pt-odo'].forEach(function(id) {
+['pt-station','pt-litres-in','pt-ppl-in','pt-total-in','pt-odo'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) el.addEventListener('keydown', function(e){ if(e.key==='Enter') addPetrolEntry(); });
 });
