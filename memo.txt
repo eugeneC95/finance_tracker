@@ -104,6 +104,9 @@ Done (2026-05-16 batch):
   [x] Swipe edit/delete on mobile transaction rows
   [x] Trends tap month → income breakdown by category
   [x] Savings goal card on Expenses (target RM by date)
+  [x] Net worth stale hint at 14+ days (Assets + Trends)
+  [x] Maybank / CIMB CSV import source
+  [x] Swipe actions on search, recurring, and petrol lists
 
 Stability / tooling (todo):
   [ ] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
@@ -117,11 +120,11 @@ Daily logging (todo):
 
 Budgets & trends (todo):
   [x] Trends month column → income breakdown
-  [ ] Gentle net worth reminder if stale (14+ days)
+  [x] Gentle net worth reminder if stale (14+ days)
   [x] Simple savings goal (target RM by date)
 
 Imports & Sheets (todo):
-  [ ] One more bank CSV (Maybank / CIMB)
+  [x] One more bank CSV (Maybank / CIMB)
   [x] Import review screen (checkboxes, select all/none, category fix)
   [ ] Clearer sync conflict copy (device vs cloud counts)
   [ ] Monthly backup export reminder

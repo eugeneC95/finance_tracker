@@ -1207,12 +1207,16 @@ function closeCatDetail() {
   document.getElementById('cat-detail-overlay').classList.remove('open');
 }
 
-// ── Mobile swipe actions (edit / delete) ───────────────────
+// ── Mobile swipe actions (shared across lists) ─────────────
 let openTxSwipe = null;
+
+function ftUseSwipeRows() {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches;
+}
 
 function closeOpenTxSwipe() {
   if (!openTxSwipe) return;
-  const surface = openTxSwipe.querySelector('.tx-item__surface');
+  const surface = openTxSwipe.querySelector('.tx-item__surface, .ft-swipe-surface');
   if (surface) {
     surface.classList.remove('is-open');
     surface.style.transform = '';
@@ -1220,8 +1224,8 @@ function closeOpenTxSwipe() {
   openTxSwipe = null;
 }
 
-function wireTxSwipe(wrap, surface, isIncome, entryId) {
-  const OPEN_X = -144;
+function ftWireSwipe(wrap, surface, openWidth) {
+  const OPEN_X = -openWidth;
   const THRESH = 48;
   let startX = 0, startY = 0, tracking = false, dx = 0;
 
@@ -1272,6 +1276,32 @@ function wireTxSwipe(wrap, surface, isIncome, entryId) {
     if (e.clientX > r.right - 40) return;
     setOpen(false);
   });
+}
+
+function ftMountSwipeRow(surface, actions) {
+  if (!ftUseSwipeRows() || !actions.length) return surface;
+  const width = actions.length * 72;
+  const wrap = document.createElement('div');
+  wrap.className = 'tx-swipe-wrap';
+  const behind = document.createElement('div');
+  behind.className = 'tx-swipe-actions';
+  actions.forEach(act => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tx-swipe-act tx-swipe-act--' + (act.kind || 'edit');
+    btn.textContent = act.label;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      closeOpenTxSwipe();
+      act.onClick();
+    });
+    behind.appendChild(btn);
+  });
+  wrap.appendChild(behind);
+  if (!surface.classList.contains('tx-item__surface')) surface.classList.add('tx-item__surface', 'ft-swipe-surface');
+  wrap.appendChild(surface);
+  ftWireSwipe(wrap, surface, width);
+  return wrap;
 }
 
 document.addEventListener('touchstart', e => {
@@ -1388,6 +1418,7 @@ function render() {
   if (typeof renderBudgets    === 'function') renderBudgets();
   if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
   if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
+  if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
   if (typeof renderRecurring  === 'function') renderRecurring();
   refreshActiveTabPanels();
 }
@@ -1411,7 +1442,7 @@ function renderTxList(id, items, catMap, isIncome) {
     return;
   }
 
-  const useSwipe = typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches;
+  const useSwipe = ftUseSwipeRows();
 
   items.forEach(entry => {
     const cat      = catMap[entry.cat] || catMap['Other'];
@@ -1488,40 +1519,14 @@ function renderTxList(id, items, catMap, isIncome) {
     actions.appendChild(delBtn);
 
     if (useSwipe) {
-      const wrap = document.createElement('div');
-      wrap.className = 'tx-swipe-wrap';
-
-      const behind = document.createElement('div');
-      behind.className = 'tx-swipe-actions';
-
-      const sEdit = document.createElement('button');
-      sEdit.type = 'button';
-      sEdit.className = 'tx-swipe-act tx-swipe-act--edit';
-      sEdit.textContent = 'Edit';
-      sEdit.addEventListener('click', e => {
-        e.stopPropagation();
-        closeOpenTxSwipe();
-        openEditModal(isIncome ? 'inc' : 'exp', entry.id);
-      });
-
-      const sDel = document.createElement('button');
-      sDel.type = 'button';
-      sDel.className = 'tx-swipe-act tx-swipe-act--del';
-      sDel.textContent = 'Delete';
-      sDel.addEventListener('click', e => {
-        e.stopPropagation();
-        closeOpenTxSwipe();
-        if (confirm('Delete this entry?')) {
-          if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
-        }
-      });
-
-      behind.appendChild(sEdit);
-      behind.appendChild(sDel);
-      wrap.appendChild(behind);
-      wrap.appendChild(item);
-      el.appendChild(wrap);
-      wireTxSwipe(wrap, item, isIncome, entry.id);
+      el.appendChild(ftMountSwipeRow(item, [
+        { label: 'Edit', kind: 'edit', onClick: () => openEditModal(isIncome ? 'inc' : 'exp', entry.id) },
+        { label: 'Delete', kind: 'del', onClick: () => {
+          if (confirm('Delete this entry?')) {
+            if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
+          }
+        }},
+      ]));
     } else {
       item.appendChild(actions);
       el.appendChild(item);

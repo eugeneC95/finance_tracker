@@ -480,7 +480,8 @@ function renderSearch() {
 
     var row = document.createElement('div');
     row.className = 'tx-item';
-    row.style.cursor = 'pointer';
+    var useSwipe = typeof ftUseSwipeRows === 'function' && ftUseSwipeRows();
+    row.style.cursor = useSwipe ? 'default' : 'pointer';
 
     var ico = document.createElement('div');
     ico.className = 'tx-icon';
@@ -504,10 +505,22 @@ function renderSearch() {
     amt.textContent = (entry._type === 'inc' ? '+ ' : '') + fmt(entry.amount);
     row.appendChild(amt);
 
-    row.addEventListener('click', function() {
-      openEditModal(entry._type, entry.id);
-    });
-    list.appendChild(row);
+    if (useSwipe && typeof ftMountSwipeRow === 'function') {
+      list.appendChild(ftMountSwipeRow(row, [
+        { label: 'Edit', kind: 'edit', onClick: function() { openEditModal(entry._type, entry.id); } },
+        { label: 'Delete', kind: 'del', onClick: function() {
+          if (!confirm('Delete this entry?')) return;
+          if (entry._type === 'inc') deleteIncome(entry.id);
+          else deleteExpense(entry.id);
+          renderSearch();
+        }},
+      ]));
+    } else {
+      row.addEventListener('click', function() {
+        openEditModal(entry._type, entry.id);
+      });
+      list.appendChild(row);
+    }
   });
   el.appendChild(list);
 }
@@ -597,6 +610,7 @@ function renderRecurring() {
 
     var item = document.createElement('div');
     item.className = 'rec-item';
+    var useSwipe = typeof ftUseSwipeRows === 'function' && ftUseSwipeRows();
 
     var ico = document.createElement('div');
     ico.className = 'rec-icon';
@@ -645,15 +659,32 @@ function renderRecurring() {
       }
     }); })(r.id);
 
-    actions.appendChild(toggleBtn);
-    actions.appendChild(delBtn);
+    if (!useSwipe) {
+      actions.appendChild(toggleBtn);
+      actions.appendChild(delBtn);
+    }
 
     item.appendChild(ico);
     item.appendChild(info);
     item.appendChild(amt);
     item.appendChild(badge);
-    item.appendChild(actions);
-    el.appendChild(item);
+    if (!useSwipe) item.appendChild(actions);
+
+    if (useSwipe && typeof ftMountSwipeRow === 'function') {
+      el.appendChild(ftMountSwipeRow(item, [
+        { label: r.active ? 'Pause' : 'Resume', kind: 'edit', onClick: function() {
+          r.active = !r.active; saveRec(); renderRecurring();
+        }},
+        { label: 'Delete', kind: 'del', onClick: function() {
+          if (confirm('Delete this recurring entry?')) {
+            recurring = recurring.filter(function(x) { return x.id !== r.id; });
+            saveRec(); renderRecurring();
+          }
+        }},
+      ]));
+    } else {
+      el.appendChild(item);
+    }
   });
 }
 
@@ -671,35 +702,38 @@ function snapshotNetWorth() {
 }
 
 function renderNwSnapshotHint() {
-  var el = document.getElementById('nw-snapshot-hint');
-  if (!el) return;
+  var hints = document.querySelectorAll('.ft-nw-hint');
+  if (!hints.length) return;
   if (!banks.length) {
-    el.style.display = 'none';
+    hints.forEach(function(el) { el.style.display = 'none'; });
     return;
   }
   var needMore = networthHist.length < 2;
   var stale = false;
+  var staleDays = 0;
   if (networthHist.length) {
     var last = networthHist[networthHist.length - 1].date;
     var lastD = typeof parseTxDate === 'function' ? parseTxDate(last) : new Date(last + 'T12:00:00');
     if (lastD) {
-      var days = (Date.now() - lastD.getTime()) / 86400000;
-      stale = days > 30;
+      staleDays = Math.floor((Date.now() - lastD.getTime()) / 86400000);
+      stale = staleDays >= 14;
     }
   }
   if (!needMore && !stale) {
-    el.style.display = 'none';
+    hints.forEach(function(el) { el.style.display = 'none'; });
     return;
   }
-  el.style.display = 'block';
   var autoOn = typeof settings !== 'undefined' && settings.nwAutoSnapshot !== false;
-  el.innerHTML =
-    (needMore
-      ? 'Net worth chart needs at least <strong>two</strong> balance snapshots on different days.'
-      : 'Last net worth snapshot was over 30 days ago.') +
-    (autoOn
-      ? ' Updating any bank balance will record today automatically.'
-      : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or edit a bank balance to record today.');
+  var msg = needMore
+    ? 'Net worth chart needs at least <strong>two</strong> balance snapshots on different days.'
+    : 'Last net worth snapshot was <strong>' + staleDays + ' day' + (staleDays === 1 ? '' : 's') + '</strong> ago (14+ days).';
+  msg += autoOn
+    ? ' Updating any bank balance will record today automatically.'
+    : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or edit a bank balance to record today.';
+  hints.forEach(function(el) {
+    el.style.display = 'block';
+    el.innerHTML = msg;
+  });
 }
 
 // ╔══════════════════════════════════════════════════════════╗

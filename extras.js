@@ -360,6 +360,7 @@ function renderPetrolLog() {
   sorted.forEach(function(e) {
     var eff = petrolFillEfficiency(e, withOdo);
 
+    var useSwipe = typeof ftUseSwipeRows === 'function' && ftUseSwipeRows();
     var card = document.createElement('article');
     card.className = 'pt-card';
     if (viewYm && e.date && e.date.indexOf(viewYm) !== 0) card.className += ' pt-card--other-month';
@@ -392,21 +393,31 @@ function renderPetrolLog() {
       card.appendChild(extra);
     }
 
-    var foot = document.createElement('div');
-    foot.className = 'pt-card__foot';
-    var delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'btn-ghost pt-card__del';
-    delBtn.textContent = 'Delete';
-    (function(id) {
-      delBtn.addEventListener('click', function() {
-        if (confirm('Delete this fill-up?')) deletePetrolEntry(id);
-      });
-    })(e.id);
-    foot.appendChild(delBtn);
-    card.appendChild(foot);
+    if (!useSwipe) {
+      var foot = document.createElement('div');
+      foot.className = 'pt-card__foot';
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn-ghost pt-card__del';
+      delBtn.textContent = 'Delete';
+      (function(id) {
+        delBtn.addEventListener('click', function() {
+          if (confirm('Delete this fill-up?')) deletePetrolEntry(id);
+        });
+      })(e.id);
+      foot.appendChild(delBtn);
+      card.appendChild(foot);
+    }
 
-    root.appendChild(card);
+    if (useSwipe && typeof ftMountSwipeRow === 'function') {
+      root.appendChild(ftMountSwipeRow(card, [
+        { label: 'Delete', kind: 'del', onClick: function() {
+          if (confirm('Delete this fill-up?')) deletePetrolEntry(e.id);
+        }},
+      ]));
+    } else {
+      root.appendChild(card);
+    }
   });
 
   el.innerHTML = '';

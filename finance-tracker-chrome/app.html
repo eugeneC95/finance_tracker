@@ -1553,7 +1553,7 @@ body.dark .bar-track { background: var(--card-bg2); }
 /* ============================================================
    IMPORT WIZARD
    ============================================================ */
-.src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); max-width: 500px; margin-bottom: var(--s6); }
+.src-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s4); max-width: 560px; margin-bottom: var(--s6); }
 .src-card {
   background: var(--card-bg);
   border: 2px solid var(--line);
@@ -2687,6 +2687,7 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </section>
 
+      <div id="nw-snapshot-hint-assets" class="ft-inline-hint ft-nw-hint mb-5" style="display:none" role="status"></div>
       <div class="assets-layout">
         <section class="card assets-section mb-5">
           <div class="panel-hd">
@@ -2889,7 +2890,7 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </section>
 
-      <div id="nw-snapshot-hint" class="ft-inline-hint" style="display:none" role="status"></div>
+      <div id="nw-snapshot-hint" class="ft-inline-hint ft-nw-hint" style="display:none" role="status"></div>
 
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Monthly overview —last 6 months</span></div>
@@ -2945,17 +2946,29 @@ body.dark .fs-btn.active { color: #000; }
                     <div class="src-icon">🏦</div>
                     <div class="src-name">UOB Bank</div>
                   </div>
+                  <div class="src-card" id="iw-mbb-card">
+                    <div class="src-icon">🏛</div>
+                    <div class="src-name">Maybank / CIMB</div>
+                  </div>
                 </div>
                 <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
               </div>
               <div id="iw2" style="display:none;max-width:680px">
                 <div id="iw-tng-input" style="display:none">
-                  <details class="sync-help-details mb-4">
+                  <details class="sync-help-details mb-4" id="iw-help-uob" style="display:none">
                     <summary class="sync-help-summary">How to get TNG data</summary>
                     <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
                       <li>Open TNG app ↁE<strong>Profile</strong> ↁE<strong>Transaction History</strong></li>
                       <li>Tap the ✉︁Eemail icon —TNG will email you a PDF statement</li>
                       <li>Open the PDF, select all text, copy and paste below</li>
+                    </ol>
+                  </details>
+                  <details class="sync-help-details mb-4" id="iw-help-mbb" style="display:none">
+                    <summary class="sync-help-summary">How to export from Maybank / CIMB</summary>
+                    <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
+                      <li>Log in to <strong>Maybank2u</strong> or <strong>CIMB Clicks</strong></li>
+                      <li>Open account → <strong>Statements</strong> or transaction history</li>
+                      <li>Download <strong>CSV</strong> for your date range</li>
                     </ol>
                   </details>
                   <div class="card mb-4">
@@ -2966,7 +2979,7 @@ body.dark .fs-btn.active { color: #000; }
                     </div>
                   </div>
                 </div>
-                <div id="iw-uob-input" style="display:none">
+                <div id="iw-csv-input" style="display:none">
                   <details class="sync-help-details mb-4">
                     <summary class="sync-help-summary">How to export from UOB</summary>
                     <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
@@ -2977,7 +2990,7 @@ body.dark .fs-btn.active { color: #000; }
                     </ol>
                   </details>
                   <div class="card mb-4">
-                    <div class="panel-hd"><span class="panel-title">Upload UOB statement</span></div>
+                    <div class="panel-hd"><span class="panel-title">Upload bank CSV</span></div>
                     <div class="panel-bd">
                       <div class="file-drop" id="iw-drop">
                         <input type="file" id="iw-file" accept=".xls,.xlsx,.csv" style="display:none"/>
@@ -2985,7 +2998,7 @@ body.dark .fs-btn.active { color: #000; }
                         <div class="fd-name" id="iw-drop-lbl">Drop file or click to choose</div>
                         <div class="fd-hint">CSV · XLS · XLSX</div>
                       </div>
-                      <div class="err" id="iw-uob-err"></div>
+                      <div class="err" id="iw-csv-err"></div>
                     </div>
                   </div>
                 </div>
@@ -3382,11 +3395,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=80"></script>
-<script src="app.js?v=80"></script>
-<script src="sync.js?v=80"></script>
-<script src="features.js?v=80"></script>
-<script src="extras.js?v=80"></script>
-<script src="import-inline.js?v=80"></script>
+<script src="build-id.js?v=81"></script>
+<script src="app.js?v=81"></script>
+<script src="sync.js?v=81"></script>
+<script src="features.js?v=81"></script>
+<script src="extras.js?v=81"></script>
+<script src="import-inline.js?v=81"></script>
 </body>
 </html>

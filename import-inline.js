@@ -92,19 +92,22 @@ function iwParseCSVRow(line) {
   for(const ch of line){ if(ch==='"'){inQ=!inQ;continue;} if((ch===','||ch==='\t')&&!inQ){r.push(c);c='';continue;} c+=ch; }
   return [...r,c];
 }
-function iwParseUOB(text) {
+function iwParseBankCSV(text) {
   const rows=[], lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
   let hi=0;
-  for(let i=0;i<Math.min(20,lines.length);i++){
+  for(let i=0;i<Math.min(25,lines.length);i++){
     const low=lines[i].toLowerCase();
-    if((low.includes('date')||low.includes('tarikh'))&&(low.includes('desc')||low.includes('withdraw')||low.includes('debit')||low.includes('credit'))){hi=i;break;}
+    const hasDate=low.includes('date')||low.includes('tarikh');
+    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark');
+    const hasAmt=low.includes('withdraw')||low.includes('debit')||low.includes('credit')||low.includes('deposit')||low.includes('amount')||low.includes('jumlah')||low==='dr'||low==='cr'||low.includes('keluar')||low.includes('masuk');
+    if(hasDate&&hasDesc&&hasAmt){hi=i;break;}
   }
   const hdrs=iwParseCSVRow(lines[hi]).map(h=>h.toLowerCase().trim());
   const di=hdrs.findIndex(h=>h.includes('date')||h.includes('tarikh'));
-  const xi=hdrs.findIndex(h=>h.includes('desc')||h.includes('narrat')||h.includes('particular'));
-  const dri=hdrs.findIndex(h=>h.includes('withdraw')||h.includes('debit')||h==='dr');
-  const cri=hdrs.findIndex(h=>h.includes('deposit')||h.includes('credit')||h==='cr');
-  const ai=hdrs.findIndex(h=>h.includes('amount')||h.includes('jumlah'));
+  const xi=hdrs.findIndex(h=>/desc|narrat|particular|transaction|detail|remark/.test(h));
+  const dri=hdrs.findIndex(h=>h.includes('withdraw')||h.includes('debit')||h==='dr'||h.includes('keluar')||h.includes('money out'));
+  const cri=hdrs.findIndex(h=>h.includes('deposit')||h.includes('credit')||h==='cr'||h.includes('masuk')||h.includes('money in'));
+  const ai=hdrs.findIndex(h=>h.includes('amount')||h.includes('jumlah')||h.includes('transaction amount'));
   for(let i=hi+1;i<lines.length;i++){
     const cols=iwParseCSVRow(lines[i]); if(cols.length<3) continue;
     const dateStr=iwParseDateStr((cols[di>=0?di:0]||'').trim()); if(!dateStr) continue;
@@ -119,6 +122,7 @@ function iwParseUOB(text) {
   }
   return rows;
 }
+function iwParseUOB(text) { return iwParseBankCSV(text); }
 
 function iwAssignRowIds() {
   iwRows.forEach((row, i) => {
@@ -213,14 +217,21 @@ function iwReset() {
   iwSource=null; iwRows=[];
   document.getElementById('iw-tng-card').classList.remove('active');
   document.getElementById('iw-uob-card').classList.remove('active');
+  const mbbCard=document.getElementById('iw-mbb-card');
+  if(mbbCard) mbbCard.classList.remove('active');
   document.getElementById('iw-next1').disabled=true;
   document.getElementById('iw-tng-input').style.display='none';
-  document.getElementById('iw-uob-input').style.display='none';
+  document.getElementById('iw-csv-input').style.display='none';
+  const helpUob=document.getElementById('iw-help-uob');
+  const helpMbb=document.getElementById('iw-help-mbb');
+  if(helpUob) helpUob.style.display='none';
+  if(helpMbb) helpMbb.style.display='none';
   if(document.getElementById('iw-tng-text')) document.getElementById('iw-tng-text').value='';
   const fe=document.getElementById('iw-file'); if(fe) fe.value='';
   document.getElementById('iw-drop-lbl').textContent='Drop file or tap to choose';
   document.getElementById('iw-tng-err').textContent='';
-  document.getElementById('iw-uob-err').textContent='';
+  const csvErr=document.getElementById('iw-csv-err');
+  if(csvErr) csvErr.textContent='';
   iwGoStep(1);
 }
 
@@ -229,13 +240,22 @@ function iwSelectSource(src) {
   iwSource=src;
   document.getElementById('iw-tng-card').classList.toggle('active',src==='tng');
   document.getElementById('iw-uob-card').classList.toggle('active',src==='uob');
+  const mbbCard=document.getElementById('iw-mbb-card');
+  if(mbbCard) mbbCard.classList.toggle('active',src==='mbb');
   document.getElementById('iw-next1').disabled=false;
   document.getElementById('iw-tng-input').style.display=src==='tng'?'':'none';
-  document.getElementById('iw-uob-input').style.display=src==='uob'?'':'none';
+  const csvOn=src==='uob'||src==='mbb';
+  document.getElementById('iw-csv-input').style.display=csvOn?'':'none';
+  const helpUob=document.getElementById('iw-help-uob');
+  const helpMbb=document.getElementById('iw-help-mbb');
+  if(helpUob) helpUob.style.display=src==='uob'?'':'none';
+  if(helpMbb) helpMbb.style.display=src==='mbb'?'':'none';
 }
 
 document.getElementById('iw-tng-card').addEventListener('click',()=>iwSelectSource('tng'));
 document.getElementById('iw-uob-card').addEventListener('click',()=>iwSelectSource('uob'));
+const iwMbbCard=document.getElementById('iw-mbb-card');
+if(iwMbbCard) iwMbbCard.addEventListener('click',()=>iwSelectSource('mbb'));
 document.getElementById('iw-next1').addEventListener('click',()=>{ if(iwSource) iwGoStep(2); });
 document.getElementById('iw-back2').addEventListener('click',()=>iwGoStep(1));
 document.getElementById('iw-back3').addEventListener('click',iwReset);
@@ -254,15 +274,19 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
     document.getElementById('iw-tng-err').textContent='';
     iwRows=iwParseTNG(text);
     if(!iwRows.length){ document.getElementById('iw-tng-err').textContent='No transactions found — make sure you copied the full PDF text.'; return; }
-  } else {
+  } else if(iwSource==='uob'||iwSource==='mbb'){
     const file=document.getElementById('iw-file').files[0];
-    if(!file){ document.getElementById('iw-uob-err').textContent='Please select a file first.'; return; }
-    document.getElementById('iw-uob-err').textContent='';
+    const errEl=document.getElementById('iw-csv-err');
+    if(!file){ if(errEl) errEl.textContent='Please select a file first.'; return; }
+    if(errEl) errEl.textContent='';
     try {
       const text=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(file,'utf-8'); });
-      iwRows=iwParseUOB(text);
-    } catch(e){ document.getElementById('iw-uob-err').textContent='Could not read file: '+e.message; return; }
-    if(!iwRows.length){ document.getElementById('iw-uob-err').textContent='No transactions found — check the file is a UOB CSV/Excel export.'; return; }
+      iwRows=iwParseBankCSV(text);
+    } catch(e){ if(errEl) errEl.textContent='Could not read file: '+e.message; return; }
+    if(!iwRows.length){
+      if(errEl) errEl.textContent='No transactions found — use a CSV export from UOB, Maybank, or CIMB (date, description, debit/credit columns).';
+      return;
+    }
   }
   // Duplicate detection
   if (typeof deduplicateImportRows === 'function') {
