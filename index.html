@@ -1126,6 +1126,402 @@ body.dark .bar-track { background: var(--card-bg2); }
 }
 
 /* ============================================================
+   ASSETS PAGE
+   ============================================================ */
+.assets-hero {
+  margin-bottom: var(--s6);
+  padding: var(--s6) var(--s6) var(--s5);
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+}
+.assets-hero__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s5);
+}
+.assets-hero__main { flex: 1; min-width: 200px; }
+.assets-hero__label {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  margin-bottom: var(--s2);
+}
+.assets-hero__value {
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.assets-hero__value.green { color: var(--green); }
+.assets-hero__value.red { color: var(--red); }
+.assets-hero__hint {
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  margin-top: var(--s2);
+  max-width: 36ch;
+  line-height: 1.45;
+}
+.assets-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+.assets-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100px;
+  padding: var(--s3) var(--s4);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.assets-chip span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+}
+.assets-chip strong {
+  font-size: var(--f-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.assets-chip strong.green { color: var(--green); }
+.assets-chip strong.red { color: var(--red); }
+
+.assets-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--s6);
+  align-items: start;
+}
+.assets-section .panel-hd {
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+.assets-section__total {
+  font-size: var(--f-lg);
+  font-weight: 700;
+  color: var(--green);
+  margin-left: auto;
+}
+.assets-section__total--muted { color: var(--ink2); }
+
+.assets-form {
+  margin-top: var(--s5);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--line);
+}
+.assets-form__title {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--s4);
+}
+.assets-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3) var(--s4);
+  align-items: end;
+}
+.assets-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.assets-form-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.assets-form-grid .span-2 { grid-column: span 2; }
+.assets-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: center;
+  margin-top: var(--s4);
+}
+.assets-form-actions .btn { min-width: 120px; }
+.assets-field-hint {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-top: var(--s1);
+  line-height: 1.4;
+}
+
+.assets-acct-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+.assets-acct-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: var(--s3) var(--s4);
+  align-items: center;
+  padding: var(--s4);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.assets-acct-row__ico {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 118, 110, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.assets-acct-row__name {
+  font-size: var(--f-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.assets-acct-row__meta {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.assets-acct-row__bal {
+  font-size: var(--f-lg);
+  font-weight: 700;
+  color: var(--green);
+  text-align: right;
+  white-space: nowrap;
+}
+.assets-acct-row__actions {
+  display: flex;
+  gap: var(--s1);
+}
+.assets-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--ink2);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
+}
+.assets-icon-btn:hover {
+  border-color: var(--line2);
+  background: var(--card-bg);
+  color: var(--ink);
+}
+.assets-icon-btn.del:hover { color: var(--red); border-color: #fca5a5; }
+
+.assets-acct-edit {
+  margin: calc(-1 * var(--s1)) 0 var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  overflow: hidden;
+}
+.assets-acct-edit summary {
+  padding: var(--s3) var(--s4);
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.assets-acct-edit summary::-webkit-details-marker { display: none; }
+.assets-acct-edit summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 0.15s var(--ease-out);
+}
+.assets-acct-edit[open] summary::before { transform: rotate(90deg); }
+.assets-acct-edit__body {
+  padding: 0 var(--s4) var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.assets-help {
+  margin-bottom: var(--s5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg2);
+}
+.assets-help summary {
+  padding: var(--s3) var(--s4);
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+  list-style: none;
+}
+.assets-help summary::-webkit-details-marker { display: none; }
+.assets-help__body {
+  padding: 0 var(--s4) var(--s4);
+  font-size: var(--f-sm);
+  color: var(--ink2);
+  line-height: 1.55;
+}
+.assets-help__body code {
+  font-size: 11px;
+  background: var(--card-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.ut-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+.ut-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  margin-bottom: var(--s6);
+}
+.ut-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.ut-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--s3) var(--s4);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+  background: var(--card-bg2);
+}
+.ut-card__title {
+  flex: 1;
+  min-width: 140px;
+}
+.ut-card__name {
+  font-size: var(--f-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.ut-card__sub {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.ut-card__mv {
+  font-size: var(--f-xl);
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+.ut-card__mv--empty { color: var(--ink3); font-weight: 600; }
+.ut-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.ut-stat {
+  padding: var(--s3) var(--s4);
+  background: var(--card-bg);
+  min-width: 0;
+}
+.ut-stat__lbl {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin-bottom: 4px;
+}
+.ut-stat__val {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink);
+  word-break: break-word;
+}
+.ut-stat__val.pos { color: var(--green); }
+.ut-stat__val.neg { color: var(--red); }
+.ut-stat__val.muted { color: var(--ink3); font-weight: 500; }
+
+.ut-card__nav {
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.ut-card__nav-title {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  margin-bottom: var(--s3);
+}
+.ut-card__edit {
+  border-top: none;
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+.ut-chart-block {
+  margin-top: var(--s6);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--line);
+}
+.ut-chart-block__title {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--s1);
+}
+.ut-chart-block__sub {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-bottom: var(--s4);
+  line-height: 1.45;
+  max-width: 52ch;
+}
+
+@media (max-width: 960px) {
+  .assets-layout { grid-template-columns: 1fr; }
+  .ut-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .assets-form-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .assets-hero { padding: var(--s5); }
+  .assets-acct-row {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+  .assets-acct-row__bal {
+    grid-column: 2;
+    text-align: left;
+    font-size: var(--f-md);
+  }
+  .assets-acct-row__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .assets-form-grid,
+  .assets-form-grid--3,
+  .assets-form-grid--4 {
+    grid-template-columns: 1fr;
+  }
+  .assets-form-grid .span-2 { grid-column: span 1; }
+  .ut-card__head { flex-direction: column; align-items: stretch; }
+  .ut-card__mv { font-size: var(--f-lg); }
+}
+
+/* ============================================================
    IMPORT WIZARD
    ============================================================ */
 .src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); max-width: 500px; margin-bottom: var(--s6); }
@@ -2746,7 +3142,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v65 · 2026-05-14 12:00';
+  var BUILD_VERSION    = 'v66 · 2026-05-16 12:00';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3146,61 +3542,127 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-assets">
     <div class="page-header">
       <h2>Assets</h2>
+      <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow the month in the sidebar.</p>
     </div>
     <div class="page-body">
 
-      <div class="net-grid">
-        <div class="net-card">
-          <div class="n-lbl">Bank balance</div>
-          <div class="n-val green" id="ns-banks">RM 0</div>
-        </div>
-        <div class="net-card">
-          <div class="n-lbl">This month income</div>
-          <div class="n-val green" id="ns-income">RM 0</div>
-        </div>
-        <div class="net-card">
-          <div class="n-lbl">This month expenses</div>
-          <div class="n-val red" id="ns-exp">RM 0</div>
-        </div>
-        <div class="net-card highlight">
-          <div class="n-lbl">Net assets</div>
-          <div class="n-val" id="ns-net">RM 0</div>
-        </div>
-      </div>
-
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Bank accounts</span></div>
-        <div class="panel-bd">
-          <div class="bank-grid" id="bank-list"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 160px auto;gap:var(--s3);align-items:end">
-            <div>
-              <label class="lbl">Bank name</label>
-              <input type="text" id="bk-name" placeholder="e.g. UOB" maxlength="24"/>
+      <section class="card assets-hero" aria-label="Net assets summary">
+        <div class="assets-hero__row">
+          <div class="assets-hero__main">
+            <div class="assets-hero__label">Net assets</div>
+            <div class="assets-hero__value" id="ns-net">RM 0</div>
+            <p class="assets-hero__hint">Bank balances plus this month’s income minus expenses.</p>
+          </div>
+          <div class="assets-hero__chips">
+            <div class="assets-chip">
+              <span>Bank</span>
+              <strong class="green" id="ns-banks">RM 0</strong>
             </div>
-            <div>
-              <label class="lbl">Account type</label>
-              <input type="text" id="bk-acct" placeholder="e.g. ONE Account" maxlength="24"/>
+            <div class="assets-chip">
+              <span>Income</span>
+              <strong class="green" id="ns-income">RM 0</strong>
             </div>
-            <div>
-              <label class="lbl">Balance (RM)</label>
-              <input type="number" id="bk-balance" placeholder="0.00" min="0" step="0.01"/>
-            </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary" id="add-bank-btn" style="white-space:nowrap">+ Add</button>
+            <div class="assets-chip">
+              <span>Expenses</span>
+              <strong class="red" id="ns-exp">RM 0</strong>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="card mb-5">
-        <div class="panel-hd" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <span class="panel-title">Unit trusts / mutual funds</span>
-          <span id="ut-summary-mv" style="font-size:var(--f-lg);font-weight:700">RM 0.00</span>
-        </div>
-        <div class="panel-bd">
-          <p style="font-size:var(--f-sm);color:var(--ink2);margin-bottom:14px;line-height:1.5">There is no stable free NAV API in-app (Malaysian unit trusts vary by provider). For each holding, enter the <strong>total amount you paid in RM</strong> (one lump sum, including bank margin and fees) if you want P&amp;L; you do not need to work out a per-unit average. Enter NAV by hand or import CSV: <code style="font-size:11px">fundId,YYYY-MM-DD,NAV</code> per line, or use your <strong>fund code</strong> in the first column if it matches the code you saved. <strong>Google Sheets sync</strong> (after you redeploy <code style="font-size:11px">google-apps-script.js</code>) writes tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>. Backup version 5 includes holdings and NAV. Values recompute when you open the app, change month, or tap <strong>Refresh values</strong> (no server cron).</p>
-          <div id="ut-root"></div>
-        </div>
+      <div class="assets-layout">
+        <section class="card assets-section mb-5">
+          <div class="panel-hd">
+            <span class="panel-title">Bank accounts</span>
+          </div>
+          <div class="panel-bd">
+            <div class="assets-acct-list" id="bank-list"></div>
+            <form class="assets-form" id="bank-add-form" autocomplete="off" onsubmit="return false">
+              <div class="assets-form__title">Add account</div>
+              <div class="assets-form-grid assets-form-grid--3">
+                <div>
+                  <label class="lbl" for="bk-name">Bank</label>
+                  <input type="text" id="bk-name" placeholder="e.g. Maybank" maxlength="24"/>
+                </div>
+                <div>
+                  <label class="lbl" for="bk-acct">Account</label>
+                  <input type="text" id="bk-acct" placeholder="e.g. Savings" maxlength="24"/>
+                </div>
+                <div>
+                  <label class="lbl" for="bk-balance">Balance (RM)</label>
+                  <input type="number" id="bk-balance" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+                </div>
+              </div>
+              <div class="assets-form-actions">
+                <button type="button" class="btn btn-primary" id="add-bank-btn">Add account</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="card assets-section mb-5">
+          <div class="panel-hd">
+            <span class="panel-title">Unit trusts</span>
+            <span class="assets-section__total" id="ut-summary-mv">RM 0.00</span>
+          </div>
+          <div class="panel-bd">
+            <details class="assets-help">
+              <summary>How NAV &amp; P&amp;L work</summary>
+              <div class="assets-help__body">
+                <p>There is no live NAV feed in-app. Enter the latest <strong>NAV per unit</strong> for each fund, or import CSV (<code>fundId,YYYY-MM-DD,NAV</code> or your <strong>fund code</strong> in the first column).</p>
+                <p style="margin-top:8px">For profit/loss, enter <strong>total amount paid (RM)</strong> once (fees included). Google Sheets sync uses tabs <strong>UTHoldings</strong> and <strong>UTNav</strong> after you redeploy the script.</p>
+              </div>
+            </details>
+
+            <div class="ut-toolbar">
+              <button type="button" class="btn-ghost" id="ut-refresh-btn" title="Recompute from latest NAV">Refresh values</button>
+              <button type="button" class="btn-ghost" id="ut-csv-btn">Import NAV CSV</button>
+              <input type="file" id="ut-csv-input" accept=".csv,text/csv,text/plain" hidden/>
+            </div>
+
+            <div class="ut-list" id="ut-root"></div>
+
+            <form class="assets-form" id="ut-add-form" autocomplete="off" onsubmit="return false">
+              <div class="assets-form__title">Add fund</div>
+              <div class="assets-form-grid assets-form-grid--3">
+                <div class="span-2">
+                  <label class="lbl" for="ut-name">Fund name</label>
+                  <input type="text" id="ut-name" maxlength="80" placeholder="e.g. ABC Growth Fund"/>
+                </div>
+                <div>
+                  <label class="lbl" for="ut-code">Code <span style="font-weight:400;color:var(--ink3)">(optional)</span></label>
+                  <input type="text" id="ut-code" maxlength="32" placeholder="For CSV import"/>
+                </div>
+                <div>
+                  <label class="lbl" for="ut-units">Units held</label>
+                  <input type="number" id="ut-units" min="0" step="0.000001" placeholder="0" inputmode="decimal"/>
+                </div>
+                <div>
+                  <label class="lbl" for="ut-total-cost">Total paid (RM)</label>
+                  <input type="number" id="ut-total-cost" min="0" step="0.01" placeholder="Optional" inputmode="decimal"/>
+                  <p class="assets-field-hint">Lump sum incl. fees, for P&amp;L</p>
+                </div>
+                <div>
+                  <label class="lbl" for="ut-pdate">Purchase date</label>
+                  <input type="date" id="ut-pdate"/>
+                </div>
+                <div class="span-2">
+                  <label class="lbl" for="ut-notes">Notes</label>
+                  <input type="text" id="ut-notes" maxlength="120" placeholder="Optional"/>
+                </div>
+              </div>
+              <div class="assets-form-actions">
+                <button type="button" class="btn btn-primary" id="ut-add-btn">Add fund</button>
+              </div>
+            </form>
+
+            <div class="ut-chart-block">
+              <div class="ut-chart-block__title">Portfolio history</div>
+              <p class="ut-chart-block__sub">Uses the latest NAV you saved each day. Open the app occasionally so NAV carries forward on the chart.</p>
+              <div id="ut-chart"></div>
+            </div>
+          </div>
+        </section>
       </div>
 
     </div>
@@ -3547,7 +4009,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v65 · 2026-05-14 12:00</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v66 · 2026-05-16 12:00</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -3752,7 +4214,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
 <div class="toast" id="toast"></div>
 <div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v57 · 2026-05-14</div>
-<script src="app.js?v=65"></script>
+<script src="app.js?v=66"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>

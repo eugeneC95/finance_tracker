@@ -519,6 +519,48 @@ function addUtHolding() {
   showToast('Fund added');
 }
 
+function wireAssetsPageControls() {
+  const utAdd = document.getElementById('ut-add-btn');
+  if (utAdd && !utAdd.dataset.wired) {
+    utAdd.dataset.wired = '1';
+    utAdd.addEventListener('click', addUtHolding);
+    ['ut-name', 'ut-units'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addUtHolding(); });
+    });
+  }
+  const utRef = document.getElementById('ut-refresh-btn');
+  if (utRef && !utRef.dataset.wired) {
+    utRef.dataset.wired = '1';
+    utRef.addEventListener('click', () => render());
+  }
+  const utCsv = document.getElementById('ut-csv-btn');
+  const utCsvIn = document.getElementById('ut-csv-input');
+  if (utCsv && utCsvIn && !utCsv.dataset.wired) {
+    utCsv.dataset.wired = '1';
+    utCsv.addEventListener('click', () => utCsvIn.click());
+    utCsvIn.addEventListener('change', () => {
+      const f = utCsvIn.files && utCsvIn.files[0];
+      utCsvIn.value = '';
+      if (f) importUtNavCsv(f);
+    });
+  }
+}
+
+function utAppendStat(parent, label, text, cls) {
+  const box = document.createElement('div');
+  box.className = 'ut-stat';
+  const lbl = document.createElement('div');
+  lbl.className = 'ut-stat__lbl';
+  lbl.textContent = label;
+  const val = document.createElement('div');
+  val.className = 'ut-stat__val' + (cls ? ' ' + cls : '');
+  val.textContent = text;
+  box.appendChild(lbl);
+  box.appendChild(val);
+  parent.appendChild(box);
+}
+
 function renderUnitTrustPanel() {
   const root = document.getElementById('ut-root');
   if (!root) return;
@@ -529,147 +571,125 @@ function renderUnitTrustPanel() {
 
   root.innerHTML = '';
 
-  const toolbar = document.createElement('div');
-  toolbar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px';
-  const refBtn = document.createElement('button');
-  refBtn.type = 'button';
-  refBtn.className = 'btn-ghost';
-  refBtn.style.height = '38px';
-  refBtn.textContent = 'Refresh values';
-  refBtn.title = 'Recompute from latest NAV (offline; open app to update)';
-  refBtn.addEventListener('click', () => render());
-  const csvBtn = document.createElement('button');
-  csvBtn.type = 'button';
-  csvBtn.className = 'btn-ghost';
-  csvBtn.style.height = '38px';
-  csvBtn.textContent = 'Import NAV CSV';
-  const csvInput = document.createElement('input');
-  csvInput.type = 'file';
-  csvInput.accept = '.csv,text/csv,text/plain';
-  csvInput.style.display = 'none';
-  csvInput.addEventListener('change', () => {
-    const f = csvInput.files && csvInput.files[0];
-    csvInput.value = '';
-    if (f) importUtNavCsv(f);
-  });
-  csvBtn.addEventListener('click', () => csvInput.click());
-  toolbar.appendChild(refBtn);
-  toolbar.appendChild(csvBtn);
-  toolbar.appendChild(csvInput);
-  root.appendChild(toolbar);
+  if (!utHoldings.length) {
+    const em = document.createElement('div');
+    em.className = 'empty';
+    em.style.padding = 'var(--s6) 0';
+    const ico = document.createElement('div');
+    ico.className = 'empty-icon';
+    ico.textContent = '📊';
+    em.appendChild(ico);
+    em.appendChild(document.createTextNode('No unit trust holdings yet — add a fund below'));
+    root.appendChild(em);
+  }
 
   utHoldings.forEach(h => {
     const last = utLatestNavEntry(h.id);
     const prev = utPrevNavEntry(h.id);
     const mv = last ? h.units * last.nav : null;
-    let pnlStr = '';
     const costBasis = utCostBasis(h);
-    if (last && costBasis != null) {
-      const pnl = mv - costBasis;
-      pnlStr = ' · P&amp;L ' + (pnl >= 0 ? '+' : '') + fmt(pnl);
-    }
-    let dNavStr = '';
+    let pnl = null;
+    if (last && costBasis != null) pnl = mv - costBasis;
+    let dayChg = null;
+    let dayPct = null;
     if (last && prev) {
-      const dNav = last.nav - prev.nav;
-      const dRm = h.units * dNav;
-      dNavStr =
-        ' · vs prior NAV: ' +
-        (dRm >= 0 ? '+' : '') +
-        fmt(dRm) +
-        ' (' +
-        (prev.nav ? ((dNav / prev.nav) * 100).toFixed(2) : '0') +
-        '%)';
+      dayChg = h.units * (last.nav - prev.nav);
+      dayPct = prev.nav ? ((last.nav - prev.nav) / prev.nav) * 100 : 0;
     }
 
     const card = document.createElement('div');
-    card.className = 'bank-card';
-    card.style.marginBottom = '10px';
+    card.className = 'ut-card';
 
     const head = document.createElement('div');
-    head.className = 'bank-main';
-    head.innerHTML =
-      '<div class="bank-ico">📊</div>' +
-      '<div class="bank-info">' +
-        '<div class="bank-name">' +
-        esc(h.name) +
-        '</div>' +
-        '<div class="bank-type">ID ' +
-        h.id +
-        (h.fundCode ? ' · Code ' + esc(h.fundCode) : '') +
-        (h.notes ? ' · ' + esc(h.notes) : '') +
-        '</div>' +
-      '</div>' +
-      '<div class="bank-bal">' +
-      (mv != null ? fmt(mv) : '—') +
-      '</div>';
+    head.className = 'ut-card__head';
+
+    const title = document.createElement('div');
+    title.className = 'ut-card__title';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'ut-card__name';
+    nameEl.textContent = h.name;
+    title.appendChild(nameEl);
+    const sub = document.createElement('div');
+    sub.className = 'ut-card__sub';
+    const bits = [];
+    if (h.fundCode) bits.push('Code ' + h.fundCode);
+    if (h.notes) bits.push(h.notes);
+    sub.textContent = bits.length ? bits.join(' · ') : 'Fund ID ' + h.id;
+    title.appendChild(sub);
+
+    const mvEl = document.createElement('div');
+    mvEl.className = 'ut-card__mv' + (mv == null ? ' ut-card__mv--empty' : '');
+    mvEl.textContent = mv != null ? fmt(mv) : 'No NAV';
 
     const delBtn = document.createElement('button');
-    delBtn.className = 'bank-card-btn del';
+    delBtn.type = 'button';
+    delBtn.className = 'assets-icon-btn del';
     delBtn.title = 'Remove fund';
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', () => {
       if (confirm('Remove this fund and its NAV history?')) deleteUtHolding(h.id);
     });
+
+    head.appendChild(title);
+    head.appendChild(mvEl);
     head.appendChild(delBtn);
 
-    const meta = document.createElement('div');
-    meta.style.cssText =
-      'font-size:var(--f-sm);color:var(--ink2);padding:0 12px 10px 48px;line-height:1.45';
-    meta.innerHTML =
-      'Units <strong>' +
-      h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }) +
-      '</strong>' +
-      (last
-        ? ' · Latest NAV <strong>' +
-          last.nav.toFixed(4) +
-          '</strong> <span style="color:var(--ink3)">(' +
-          esc(last.date) +
-          ')</span>'
-        : ' · <span style="color:var(--ink3)">No NAV yet — add below</span>') +
-      pnlStr +
-      dNavStr;
+    const stats = document.createElement('div');
+    stats.className = 'ut-stats';
+    utAppendStat(stats, 'Units', h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }), '');
+    utAppendStat(stats, 'Latest NAV', last ? last.nav.toFixed(4) + ' (' + last.date + ')' : '—', last ? '' : 'muted');
+    if (pnl != null) {
+      utAppendStat(stats, 'P&L', (pnl >= 0 ? '+' : '') + fmt(pnl), pnl >= 0 ? 'pos' : 'neg');
+    } else {
+      utAppendStat(stats, 'P&L', 'Add total paid', 'muted');
+    }
+    if (dayChg != null) {
+      utAppendStat(stats, 'vs prior NAV', (dayChg >= 0 ? '+' : '') + fmt(dayChg) + ' (' + dayPct.toFixed(2) + '%)', dayChg >= 0 ? 'pos' : 'neg');
+    } else {
+      utAppendStat(stats, 'vs prior NAV', '—', 'muted');
+    }
 
-    const navForm = document.createElement('div');
-    navForm.style.cssText =
-      'display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:end;padding:0 12px 12px 48px;border-top:1px solid var(--line)';
+    const navBlock = document.createElement('div');
+    navBlock.className = 'ut-card__nav';
+    const navTitle = document.createElement('div');
+    navTitle.className = 'ut-card__nav-title';
+    navTitle.textContent = 'Update NAV';
+    navBlock.appendChild(navTitle);
 
-    const dateCol = document.createElement('div');
-    const dl = document.createElement('label');
-    dl.className = 'lbl';
-    dl.style.fontSize = 'var(--f-xs)';
-    dl.textContent = 'NAV date';
+    const navGrid = document.createElement('div');
+    navGrid.className = 'assets-form-grid assets-form-grid--3';
+
+    const dateWrap = document.createElement('div');
+    const dateLab = document.createElement('label');
+    dateLab.className = 'lbl';
+    dateLab.textContent = 'Date';
     const dateInp = document.createElement('input');
     dateInp.type = 'date';
-    dateInp.className = 'ut-nav-date';
-    dateInp.dataset.fund = String(h.id);
     dateInp.value = last ? last.date : todayStr();
-    dateCol.appendChild(dl);
-    dateCol.appendChild(dateInp);
+    dateWrap.appendChild(dateLab);
+    dateWrap.appendChild(dateInp);
 
-    const navCol = document.createElement('div');
-    const nl = document.createElement('label');
-    nl.className = 'lbl';
-    nl.style.fontSize = 'var(--f-xs)';
-    nl.textContent = 'NAV (per unit)';
+    const navWrap = document.createElement('div');
+    const navLab = document.createElement('label');
+    navLab.className = 'lbl';
+    navLab.textContent = 'NAV per unit';
     const navInp = document.createElement('input');
     navInp.type = 'number';
-    navInp.className = 'ut-nav-val';
-    navInp.dataset.fund = String(h.id);
     navInp.placeholder = '0.0000';
     navInp.min = '0';
     navInp.step = '0.0001';
-    navCol.appendChild(nl);
-    navCol.appendChild(navInp);
+    navInp.inputMode = 'decimal';
+    navWrap.appendChild(navLab);
+    navWrap.appendChild(navInp);
 
+    const saveWrap = document.createElement('div');
     const saveNav = document.createElement('button');
     saveNav.type = 'button';
     saveNav.className = 'btn btn-primary';
-    saveNav.style.height = '38px';
+    saveNav.style.height = '42px';
     saveNav.textContent = 'Save NAV';
     saveNav.addEventListener('click', () => {
-      const ds = dateInp.value;
-      const nv = navInp.value;
-      if (!upsertUtNav(h.id, ds, nv)) {
+      if (!upsertUtNav(h.id, dateInp.value, navInp.value)) {
         shake(navInp);
         return;
       }
@@ -677,66 +697,67 @@ function renderUnitTrustPanel() {
       showToast('NAV saved');
       render();
     });
+    saveWrap.appendChild(saveNav);
 
-    navForm.appendChild(dateCol);
-    navForm.appendChild(navCol);
-    navForm.appendChild(saveNav);
+    navGrid.appendChild(dateWrap);
+    navGrid.appendChild(navWrap);
+    navGrid.appendChild(saveWrap);
+    navBlock.appendChild(navGrid);
 
-    const editRow = document.createElement('div');
-    editRow.style.cssText =
-      'display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:0 12px 12px 48px;border-top:1px solid var(--line)';
-    const unitsCol = document.createElement('div');
-    unitsCol.style.flex = '1';
-    unitsCol.style.minWidth = '120px';
+    const edit = document.createElement('details');
+    edit.className = 'assets-acct-edit ut-card__edit';
+    const sum = document.createElement('summary');
+    sum.textContent = 'Edit holding';
+    edit.appendChild(sum);
+    const editBody = document.createElement('div');
+    editBody.className = 'assets-acct-edit__body';
+
+    const editGrid = document.createElement('div');
+    editGrid.className = 'assets-form-grid assets-form-grid--3';
+
+    const unitsWrap = document.createElement('div');
     const unitsLab = document.createElement('label');
     unitsLab.className = 'lbl';
-    unitsLab.style.fontSize = 'var(--f-xs)';
-    unitsLab.textContent = 'Units (edit)';
+    unitsLab.textContent = 'Units';
     const unitsInp = document.createElement('input');
     unitsInp.type = 'number';
-    unitsInp.style.width = '100%';
     unitsInp.min = '0';
     unitsInp.step = '0.000001';
     unitsInp.value = String(h.units);
+    unitsWrap.appendChild(unitsLab);
+    unitsWrap.appendChild(unitsInp);
+
+    const costWrap = document.createElement('div');
+    const costLab = document.createElement('label');
+    costLab.className = 'lbl';
+    costLab.textContent = 'Total paid (RM)';
+    const costInp = document.createElement('input');
+    costInp.type = 'number';
+    costInp.min = '0';
+    costInp.step = '0.01';
+    costInp.placeholder = 'Optional';
+    const cb0 = utCostBasis(h);
+    costInp.value = cb0 != null ? String(cb0) : '';
+    costWrap.appendChild(costLab);
+    costWrap.appendChild(costInp);
+
+    const saveRow = document.createElement('div');
+    saveRow.className = 'assets-form-actions';
     const saveUnits = document.createElement('button');
     saveUnits.type = 'button';
     saveUnits.className = 'btn-ghost';
-    saveUnits.style.height = '38px';
     saveUnits.textContent = 'Save units';
     saveUnits.addEventListener('click', () => {
       const u = parseFloat(unitsInp.value);
-      if (isNaN(u) || u <= 0) {
-        shake(unitsInp);
-        return;
-      }
+      if (isNaN(u) || u <= 0) { shake(unitsInp); return; }
       h.units = u;
       saveUtHoldings();
       showToast('Units updated');
       render();
     });
-    unitsCol.appendChild(unitsLab);
-    unitsCol.appendChild(unitsInp);
-    editRow.appendChild(unitsCol);
-    editRow.appendChild(saveUnits);
-
-    const costCol = document.createElement('div');
-    costCol.style.flex = '1';
-    costCol.style.minWidth = '120px';
-    const costLab = document.createElement('label');
-    costLab.className = 'lbl';
-    costLab.style.fontSize = 'var(--f-xs)';
-    costLab.textContent = 'Total paid (RM, edit)';
-    const costInp = document.createElement('input');
-    costInp.type = 'number';
-    costInp.style.width = '100%';
-    costInp.min = '0';
-    costInp.step = '0.01';
-    const cb0 = utCostBasis(h);
-    costInp.value = cb0 != null ? String(cb0) : '';
     const saveCost = document.createElement('button');
     saveCost.type = 'button';
     saveCost.className = 'btn-ghost';
-    saveCost.style.height = '38px';
     saveCost.textContent = 'Save cost';
     saveCost.addEventListener('click', () => {
       const raw = costInp.value.trim();
@@ -749,69 +770,32 @@ function renderUnitTrustPanel() {
         return;
       }
       const t = parseFloat(raw);
-      if (isNaN(t) || t <= 0) {
-        shake(costInp);
-        return;
-      }
+      if (isNaN(t) || t <= 0) { shake(costInp); return; }
       h.totalCost = t;
       delete h.avgCost;
       saveUtHoldings();
       showToast('Total cost updated');
       render();
     });
-    costCol.appendChild(costLab);
-    costCol.appendChild(costInp);
-    editRow.appendChild(costCol);
-    editRow.appendChild(saveCost);
+    saveRow.appendChild(saveUnits);
+    saveRow.appendChild(saveCost);
+
+    editGrid.appendChild(unitsWrap);
+    editGrid.appendChild(costWrap);
+    editGrid.appendChild(document.createElement('div'));
+    editBody.appendChild(editGrid);
+    editBody.appendChild(saveRow);
+    edit.appendChild(editBody);
 
     card.appendChild(head);
-    card.appendChild(meta);
-    card.appendChild(navForm);
-    card.appendChild(editRow);
+    card.appendChild(stats);
+    card.appendChild(navBlock);
+    card.appendChild(edit);
     root.appendChild(card);
   });
 
-  const addCard = document.createElement('div');
-  addCard.className = 'card';
-  addCard.style.cssText = 'margin-top:14px;padding:14px;background:var(--card-bg2);border:1px solid var(--line);border-radius:var(--radius-sm)';
-  addCard.innerHTML =
-    '<div class="lbl" style="margin-bottom:10px;font-weight:600">Add holding</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:10px;align-items:end">' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Fund name</label><input type="text" id="ut-name" maxlength="80" placeholder="e.g. ABC Growth"/></div>' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Fund code (optional)</label><input type="text" id="ut-code" maxlength="32" placeholder="for CSV match"/></div>' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Units</label><input type="number" id="ut-units" min="0" step="0.000001" placeholder="0"/></div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:10px">' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Total paid (RM, optional)</label><input type="number" id="ut-total-cost" min="0" step="0.01" placeholder="What you paid incl. fees"/></div>' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Purchase date</label><input type="date" id="ut-pdate"/></div>' +
-    '<div><label class="lbl" style="font-size:var(--f-xs)">Notes</label><input type="text" id="ut-notes" maxlength="120"/></div>' +
-    '<div style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="ut-add-btn" style="height:38px">+ Add fund</button></div>' +
-    '</div>';
-  root.appendChild(addCard);
-  const addBtn = document.getElementById('ut-add-btn');
-  if (addBtn) addBtn.addEventListener('click', addUtHolding);
-  ['ut-name', 'ut-units'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addUtHolding(); });
-  });
-
-  const chartHdr = document.createElement('div');
-  chartHdr.className = 'lbl';
-  chartHdr.style.cssText = 'margin-top:8px;font-weight:600';
-  chartHdr.textContent = 'Portfolio value by calendar day';
-  const chartSub = document.createElement('p');
-  chartSub.style.cssText =
-    'font-size:var(--f-xs);color:var(--ink3);margin:4px 0 8px;line-height:1.45';
-  chartSub.textContent =
-    'Uses latest NAV per fund each day (opening the app once per day carries NAV forward so the timeline grows).';
-  root.appendChild(chartHdr);
-  root.appendChild(chartSub);
-
-  const chartSlot = document.createElement('div');
-  chartSlot.id = 'ut-chart';
-  chartSlot.style.marginTop = '16px';
-  root.appendChild(chartSlot);
-  renderUtChart(chartSlot);
+  const chartSlot = document.getElementById('ut-chart');
+  if (chartSlot) renderUtChart(chartSlot);
 }
 
 // ── Category buttons ───────────────────────────────────────
@@ -891,6 +875,7 @@ function buildCatButtons() {
     if (ed) ed.value = todayStr();
     if (id) id.value = todayStr();
     buildCatButtons();
+    wireAssetsPageControls();
   } catch (e) {}
   load();
 })();
@@ -1199,7 +1184,7 @@ function render() {
   const nnet = document.getElementById('ns-net');
   const na   = totalBanks + totalInc - totalExp;
   nnet.textContent = fmt(na);
-  nnet.className   = 'n-val ' + (na>=0 ? 'green' : 'red');
+  nnet.className   = 'assets-hero__value ' + (na >= 0 ? 'green' : 'red');
 
   const utSumEl = document.getElementById('ut-summary-mv');
   if (utSumEl) utSumEl.textContent = fmt(computeUtTotalMarketValue());
@@ -1479,91 +1464,146 @@ function renderMonthDailyLineChart(el, dateKeys, values, opts) {
 // ── Bank list ──────────────────────────────────────────────
 function renderBankList() {
   const el = document.getElementById('bank-list');
+  if (!el) return;
   el.innerHTML = '';
 
   if (!banks.length) {
-    el.innerHTML = '<div class="empty" style="padding:8px 0"><div class="empty-icon">🏦</div>No accounts yet</div>';
+    const em = document.createElement('div');
+    em.className = 'empty';
+    em.style.padding = 'var(--s4) 0';
+    const ico = document.createElement('div');
+    ico.className = 'empty-icon';
+    ico.textContent = '🏦';
+    em.appendChild(ico);
+    em.appendChild(document.createTextNode('No bank accounts yet'));
+    el.appendChild(em);
     return;
   }
 
   banks.forEach(b => {
-    const wrap = document.createElement('div');
-    wrap.className = 'bank-card';
+    const row = document.createElement('div');
+    row.className = 'assets-acct-row';
 
-    const main = document.createElement('div');
-    main.className = 'bank-main';
-    main.innerHTML =
-      '<div class="bank-ico">🏦</div>' +
-      '<div class="bank-info">' +
-        '<div class="bank-name">' + esc(b.name) + '</div>' +
-        '<div class="bank-type">' + esc(b.acct) + '</div>' +
-      '</div>' +
-      '<div class="bank-bal">' + fmt(b.balance) + '</div>';
+    const ico = document.createElement('div');
+    ico.className = 'assets-acct-row__ico';
+    ico.textContent = '🏦';
 
-    const editBtn = document.createElement('button');
-    editBtn.className = 'bank-card-btn';
-    editBtn.title = 'Edit';
-    editBtn.textContent = '✏';
-    editBtn.addEventListener('click', () => {
-      const form = wrap.querySelector('.bank-edit-form');
-      const isOpen = form.classList.contains('open');
-      document.querySelectorAll('.bank-edit-form.open').forEach(f => f.classList.remove('open'));
-      if (!isOpen) form.classList.add('open');
-    });
+    const body = document.createElement('div');
+    const nameEl = document.createElement('div');
+    nameEl.className = 'assets-acct-row__name';
+    nameEl.textContent = b.name;
+    const meta = document.createElement('div');
+    meta.className = 'assets-acct-row__meta';
+    meta.textContent = b.acct || 'Account';
+    body.appendChild(nameEl);
+    body.appendChild(meta);
+
+    const bal = document.createElement('div');
+    bal.className = 'assets-acct-row__bal';
+    bal.textContent = fmt(b.balance);
+
+    const actions = document.createElement('div');
+    actions.className = 'assets-acct-row__actions';
 
     const delBtn = document.createElement('button');
-    delBtn.className = 'bank-card-btn del';
+    delBtn.type = 'button';
+    delBtn.className = 'assets-icon-btn del';
     delBtn.title = 'Delete';
     delBtn.textContent = '✕';
     delBtn.addEventListener('click', () => {
       if (confirm('Delete this account?')) deleteBank(b.id);
     });
+    actions.appendChild(delBtn);
 
-    main.appendChild(editBtn);
-    main.appendChild(delBtn);
-    wrap.appendChild(main);
+    row.appendChild(ico);
+    row.appendChild(body);
+    row.appendChild(bal);
+    row.appendChild(actions);
 
-    // Edit form
-    const form = document.createElement('div');
-    form.className = 'bank-edit-form';
-    form.innerHTML =
-      '<div><label class="lbl" style="font-size:var(--f-xs)">Bank</label>' +
-        '<input type="text" class="be-name" value="' + esc(b.name) + '" maxlength="24"/></div>' +
-      '<div><label class="lbl" style="font-size:var(--f-xs)">Type</label>' +
-        '<input type="text" class="be-acct" value="' + esc(b.acct) + '" maxlength="24"/></div>' +
-      '<div><label class="lbl" style="font-size:var(--f-xs)">Balance</label>' +
-        '<input type="number" class="be-bal" value="' + b.balance + '" min="0" step="0.01"/></div>';
+    const edit = document.createElement('details');
+    edit.className = 'assets-acct-edit';
+    const sum = document.createElement('summary');
+    sum.textContent = 'Edit account';
+    edit.appendChild(sum);
+    const editBody = document.createElement('div');
+    editBody.className = 'assets-acct-edit__body';
 
-    const btnWrap = document.createElement('div');
-    btnWrap.className = 'bank-edit-btns';
+    const grid = document.createElement('div');
+    grid.className = 'assets-form-grid assets-form-grid--3';
 
+    const nameWrap = document.createElement('div');
+    const nameLab = document.createElement('label');
+    nameLab.className = 'lbl';
+    nameLab.textContent = 'Bank';
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text';
+    nameInp.className = 'be-name';
+    nameInp.value = b.name;
+    nameInp.maxLength = 24;
+    nameWrap.appendChild(nameLab);
+    nameWrap.appendChild(nameInp);
+
+    const acctWrap = document.createElement('div');
+    const acctLab = document.createElement('label');
+    acctLab.className = 'lbl';
+    acctLab.textContent = 'Account';
+    const acctInp = document.createElement('input');
+    acctInp.type = 'text';
+    acctInp.className = 'be-acct';
+    acctInp.value = b.acct;
+    acctInp.maxLength = 24;
+    acctWrap.appendChild(acctLab);
+    acctWrap.appendChild(acctInp);
+
+    const balWrap = document.createElement('div');
+    const balLab = document.createElement('label');
+    balLab.className = 'lbl';
+    balLab.textContent = 'Balance (RM)';
+    const balInp = document.createElement('input');
+    balInp.type = 'number';
+    balInp.className = 'be-bal';
+    balInp.value = String(b.balance);
+    balInp.min = '0';
+    balInp.step = '0.01';
+    balWrap.appendChild(balLab);
+    balWrap.appendChild(balInp);
+
+    grid.appendChild(nameWrap);
+    grid.appendChild(acctWrap);
+    grid.appendChild(balWrap);
+    editBody.appendChild(grid);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'assets-form-actions';
     const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
     saveBtn.className = 'btn btn-primary';
-    saveBtn.style.cssText = 'height:38px;font-size:var(--f-sm)';
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', () => {
-      const nameVal = form.querySelector('.be-name').value.trim();
-      const acctVal = form.querySelector('.be-acct').value.trim();
-      const balVal  = parseFloat(form.querySelector('.be-bal').value);
-      if (!nameVal || isNaN(balVal) || balVal < 0) { shake(form.querySelector('.be-name')); return; }
-      b.name = nameVal; b.acct = acctVal || 'Account'; b.balance = balVal;
+      const nameVal = nameInp.value.trim();
+      const acctVal = acctInp.value.trim();
+      const balVal = parseFloat(balInp.value);
+      if (!nameVal || isNaN(balVal) || balVal < 0) { shake(nameInp); return; }
+      b.name = nameVal;
+      b.acct = acctVal || 'Account';
+      b.balance = balVal;
       saveBanks();
       if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
       render();
       showToast('Account updated');
     });
-
     const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
     cancelBtn.className = 'btn-ghost';
-    cancelBtn.style.cssText = 'height:38px;font-size:var(--f-sm)';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => form.classList.remove('open'));
+    cancelBtn.addEventListener('click', () => edit.removeAttribute('open'));
+    btnRow.appendChild(saveBtn);
+    btnRow.appendChild(cancelBtn);
+    editBody.appendChild(btnRow);
+    edit.appendChild(editBody);
 
-    btnWrap.appendChild(saveBtn);
-    btnWrap.appendChild(cancelBtn);
-    form.appendChild(btnWrap);
-    wrap.appendChild(form);
-    el.appendChild(wrap);
+    el.appendChild(row);
+    el.appendChild(edit);
   });
 }
 
