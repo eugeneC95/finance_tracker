@@ -691,7 +691,6 @@ function renderUnitTrustPanel() {
     const saveNav = document.createElement('button');
     saveNav.type = 'button';
     saveNav.className = 'btn btn-primary';
-    saveNav.style.height = '42px';
     saveNav.textContent = 'Save NAV';
     saveNav.addEventListener('click', () => {
       if (!upsertUtNav(h.id, dateInp.value, navInp.value)) {
