@@ -2966,7 +2966,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   .ft-fab { display: flex; }
 }
 .ft-fab-sheet {
-  position: fixed; inset: 0; z-index: 95;
+  position: fixed; inset: 0; z-index: 100003;
   display: flex; align-items: flex-end; justify-content: center;
   pointer-events: none; opacity: 0; transition: opacity .2s ease;
 }
@@ -3473,7 +3473,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v76 · 2026-05-16 23:45';
+  var BUILD_VERSION    = 'v77 · 2026-05-16 23:45';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4584,12 +4584,15 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="cat-stat">
         <div class="cs-lbl">Total</div>
         <div class="cs-val" id="cd-total">—</div>
+      </div>
       <div class="cat-stat">
         <div class="cs-lbl">Entries</div>
         <div class="cs-val" id="cd-count">—</div>
+      </div>
       <div class="cat-stat">
         <div class="cs-lbl">Average</div>
         <div class="cs-val" id="cd-avg">—</div>
+      </div>
     </div>
     <div class="cat-list" id="cd-list"></div>
   </div>
@@ -4620,7 +4623,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v76 · 2026-05-16</div>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v77 · 2026-05-16</div>
 <script src="app.js?v=76"></script>
 <script src="sync.js?v=76"></script>
 <script src="features.js?v=76"></script>

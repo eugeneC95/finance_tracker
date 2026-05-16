@@ -1958,10 +1958,22 @@ function closeMobileNavMore() {
   document.body.classList.remove('mobile-nav-sheet-open');
 }
 
+function isMobileDockLayout() {
+  if (!window.matchMedia) return true;
+  return window.matchMedia('(max-width: 680px)').matches;
+}
+
+function ensureBodyPortal(id) {
+  const el = document.getElementById(id);
+  if (el && el.parentElement !== document.body) document.body.appendChild(el);
+}
+
 function openMobileNavMore() {
   const sheet = document.getElementById('mobile-nav-more-sheet');
   const opener = document.getElementById('nav-more-open');
-  if (!sheet || !(window.matchMedia && window.matchMedia('(max-width: 680px)').matches)) return;
+  if (!sheet) return;
+  if (!isMobileDockLayout()) return;
+  if (typeof closeFabSheet === 'function') closeFabSheet();
   sheet.classList.add('open');
   sheet.setAttribute('aria-hidden', 'false');
   if (opener) opener.setAttribute('aria-expanded', 'true');
@@ -1970,6 +1982,7 @@ function openMobileNavMore() {
 
 // ── Tab open hooks (sidebar, mobile More, and data refresh) ──
 const TAB_OPEN_HOOKS = {
+  recurring: () => { if (typeof renderRecurring === 'function') renderRecurring(); },
   petrol: () => { if (typeof renderPetrolLog === 'function') renderPetrolLog(); },
   report: () => { if (typeof renderReport === 'function') renderReport(); },
   trends: () => { if (typeof renderTrends === 'function') renderTrends(); },
@@ -2024,10 +2037,13 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => activateNavTab(btn.dataset.tab));
 });
 
+['mobile-nav-more-sheet', 'ft-fab-sheet', 'ft-fab'].forEach(ensureBodyPortal);
+
 const navMoreOpen = document.getElementById('nav-more-open');
 if (navMoreOpen) {
   navMoreOpen.addEventListener('click', e => {
     e.preventDefault();
+    e.stopPropagation();
     const sheet = document.getElementById('mobile-nav-more-sheet');
     if (sheet && sheet.classList.contains('open')) closeMobileNavMore();
     else openMobileNavMore();
