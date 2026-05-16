@@ -1248,6 +1248,209 @@ body.dark .bar-track { background: var(--card-bg2); }
 }
 
 /* ============================================================
+   FT UI — shared patterns (all pages)
+   ============================================================ */
+.ft-page-hero,
+.assets-hero {
+  margin-bottom: var(--s6);
+  padding: var(--s6);
+  background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+  border: 1px solid var(--line);
+}
+.ft-page-hero__row,
+.assets-hero__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s5);
+}
+.ft-page-hero__main,
+.assets-hero__main { flex: 1; min-width: 200px; }
+.ft-page-hero__label,
+.assets-hero__label {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  margin-bottom: var(--s2);
+}
+.ft-page-hero__value,
+.assets-hero__value {
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.ft-page-hero__value.green,
+.assets-hero__value.green { color: var(--green); }
+.ft-page-hero__value.red,
+.assets-hero__value.red { color: var(--red); }
+.ft-page-hero__hint,
+.assets-hero__hint {
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  margin-top: var(--s2);
+  max-width: 40ch;
+  line-height: 1.45;
+}
+.ft-page-hero__chips,
+.assets-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+.ft-chip,
+.assets-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+  padding: var(--s3) var(--s4);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.ft-chip span,
+.assets-chip span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+}
+.ft-chip strong,
+.assets-chip strong {
+  font-size: var(--f-md);
+  font-weight: 700;
+}
+.ft-chip strong.green,
+.assets-chip strong.green { color: var(--green); }
+.ft-chip strong.red,
+.assets-chip strong.red { color: var(--red); }
+.ft-chip__sub {
+  font-size: var(--f-xs);
+  font-weight: 600;
+  margin-top: 2px;
+  color: var(--ink2);
+}
+
+.ft-form,
+.assets-form { margin-top: var(--s5); padding-top: var(--s5); border-top: 1px solid var(--line); }
+.ft-form--inline,
+.ft-form--compact { margin-top: 0; padding-top: 0; border-top: none; }
+.ft-form__title,
+.assets-form__title {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: var(--s4);
+}
+.ft-form-grid,
+.assets-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3) var(--s4);
+  align-items: end;
+}
+.ft-form-grid--3,
+.assets-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ft-form-grid--rec { grid-template-columns: 1.4fr 120px 100px 110px 1fr auto; }
+.ft-form-grid .span-2,
+.assets-form-grid .span-2 { grid-column: span 2; }
+.ft-form-actions,
+.assets-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: center;
+  margin-top: var(--s4);
+}
+.ft-form-actions .btn { min-width: 120px; }
+.ft-field-hint,
+.assets-field-hint {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-top: var(--s1);
+  line-height: 1.4;
+}
+.ft-note {
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  margin: 0 0 var(--s4);
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
+.stat-row { gap: var(--s4); }
+.stat-card { transition: box-shadow 0.2s var(--ease-out), transform 0.16s var(--ease-out); }
+.panel-title {
+  font-size: var(--f-sm);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink2);
+  font-weight: 700;
+}
+
+.ft-budget-list { display: flex; flex-direction: column; gap: var(--s4); }
+.ft-budget-item {
+  padding: var(--s4);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.ft-budget-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s3);
+}
+.ft-budget-item__cat { font-size: var(--f-sm); font-weight: 700; flex: 1; min-width: 100px; }
+.ft-budget-item__nums { font-size: var(--f-xs); color: var(--ink2); }
+.ft-budget-item__pct { font-size: var(--f-xs); font-weight: 700; }
+.ft-budget-track {
+  height: 8px;
+  background: var(--card-bg);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.ft-budget-fill { height: 100%; border-radius: 999px; transition: width 0.4s var(--ease-out); }
+.ft-badge { font-size: 10px; font-weight: 700; color: #fff; padding: 2px 8px; border-radius: 999px; }
+.ft-badge--over { background: var(--red); }
+.ft-badge--warn { background: #BA7517; }
+
+#rec-list { display: flex; flex-direction: column; gap: var(--s2); }
+.rec-item {
+  padding: var(--s4);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  border-bottom: none;
+}
+.rec-item:last-child { border-bottom: none; }
+.rec-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); }
+.rec-actions { opacity: 1; }
+
+#inc-add-row.ft-form-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 140px 1fr 150px auto;
+  gap: var(--s3) var(--s4);
+  align-items: end;
+}
+
+@media (max-width: 960px) {
+  .ft-form-grid--rec { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #inc-add-row.ft-form-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 680px) {
+  .ft-form-grid--rec,
+  #inc-add-row.ft-form-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
    IMPORT WIZARD
    ============================================================ */
 .src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); max-width: 500px; margin-bottom: var(--s6); }
@@ -2049,7 +2252,10 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page active" id="page-expenses">
     <div class="page-header">
       <div class="page-header__top">
-        <h2>Expenses</h2>
+        <div>
+          <h2>Expenses</h2>
+          <p class="sub">Track spending for the month in the sidebar. Use search to find any transaction.</p>
+        </div>
         <button type="button" class="exp-search-toggle" id="exp-search-toggle" aria-expanded="false" aria-controls="exp-search-pop" title="Search all months (Ctrl+F)">🔍</button>
       </div>
     </div>
@@ -2065,26 +2271,30 @@ body.dark .fs-btn.active { color: #000; }
     </div>
     <div class="page-body">
 
-      <div class="stat-row">
-        <div class="stat-card">
-          <div class="s-label">Spent this month</div>
-          <div class="s-value red" id="c-total">RM 0.00</div>
-          <div id="mom-exp" style="font-size:var(--f-xs);margin-top:4px;font-weight:600"></div>
+      <section class="card ft-page-hero" aria-label="Expense summary">
+        <div class="ft-page-hero__row">
+          <div class="ft-page-hero__main">
+            <div class="ft-page-hero__label">Spent this month</div>
+            <div class="ft-page-hero__value red" id="c-total">RM 0.00</div>
+            <div id="mom-exp" class="ft-chip__sub"></div>
+          </div>
+          <div class="ft-page-hero__chips">
+            <div class="ft-chip">
+              <span>Today</span>
+              <strong id="c-today">RM 0.00</strong>
+            </div>
+            <div class="ft-chip">
+              <span>Entries</span>
+              <strong id="c-count">0</strong>
+            </div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="s-label">Spent today</div>
-          <div class="s-value" id="c-today">RM 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div class="s-label">Transactions</div>
-          <div class="s-value" id="c-count">0</div>
-        </div>
-      </div>
+      </section>
 
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
-          <p style="font-size:var(--f-xs);color:var(--ink3);margin:0 0 10px;line-height:1.45">Sum of expenses recorded for each calendar day in the month shown above (switch month with the arrows).</p>
+          <p class="ft-note">Daily totals for the selected month — use the sidebar arrows to change month.</p>
           <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
       </div>
@@ -2094,9 +2304,11 @@ body.dark .fs-btn.active { color: #000; }
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
         <div class="panel-bd">
           <div id="budget-panel"></div>
-          <div style="display:grid;grid-template-columns:1fr 160px auto;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+          <form class="ft-form ft-form--compact" onsubmit="return false">
+            <div class="ft-form__title">Set a monthly limit</div>
+            <div class="ft-form-grid ft-form-grid--3">
             <div>
-              <label class="lbl">Category</label>
+              <label class="lbl" for="bud-cat">Category</label>
               <select id="bud-cat">
                 <option value="Food">🍜 Food &amp; drink</option>
                 <option value="Shopping">🛍 Shopping</option>
@@ -2113,13 +2325,14 @@ body.dark .fs-btn.active { color: #000; }
               </select>
             </div>
             <div>
-              <label class="lbl">Monthly limit (RM)</label>
-              <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01"/>
+              <label class="lbl" for="bud-amount">Monthly limit (RM)</label>
+              <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01" inputmode="decimal"/>
             </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary" id="add-bud-btn">Set</button>
+            <div class="ft-form-actions" style="margin-top:0">
+              <button type="button" class="btn btn-primary" id="add-bud-btn">Set budget</button>
             </div>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -2188,39 +2401,44 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-income">
     <div class="page-header">
       <h2>Income</h2>
+      <p class="sub">Record income and compare with expenses for the selected month.</p>
     </div>
     <div class="page-body">
 
-      <div class="stat-row">
-        <div class="stat-card">
-          <div class="s-label">Total income</div>
-          <div class="s-value green" id="ic-total">RM 0.00</div>
-          <div id="mom-inc" style="font-size:var(--f-xs);margin-top:4px;font-weight:600"></div>
+      <section class="card ft-page-hero" aria-label="Income summary">
+        <div class="ft-page-hero__row">
+          <div class="ft-page-hero__main">
+            <div class="ft-page-hero__label">Net this month</div>
+            <div class="ft-page-hero__value" id="ic-net">RM 0.00</div>
+            <div id="mom-inc" class="ft-chip__sub"></div>
+          </div>
+          <div class="ft-page-hero__chips">
+            <div class="ft-chip">
+              <span>Income</span>
+              <strong class="green" id="ic-total">RM 0.00</strong>
+            </div>
+            <div class="ft-chip">
+              <span>Expenses</span>
+              <strong class="red" id="ic-exp">RM 0.00</strong>
+            </div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="s-label">Total expenses</div>
-          <div class="s-value red" id="ic-exp">RM 0.00</div>
-        </div>
-        <div class="stat-card">
-          <div class="s-label">Net this month</div>
-          <div class="s-value" id="ic-net">RM 0.00</div>
-        </div>
-      </div>
+      </section>
 
       <div class="card mb-6">
         <div class="panel-hd"><span class="panel-title">Add income</span></div>
         <div class="panel-bd">
-          <div class="add-row" style="grid-template-columns:1fr 150px 150px 150px auto">
+          <div class="ft-form-grid" id="inc-add-row">
             <div>
-              <label class="lbl">Description</label>
-              <input type="text" id="inc-name" placeholder="Income description" maxlength="80"/>
+              <label class="lbl" for="inc-name">Description</label>
+              <input type="text" id="inc-name" placeholder="e.g. Salary, freelance" maxlength="80"/>
             </div>
             <div>
-              <label class="lbl">Amount (RM)</label>
-              <input type="number" id="inc-amount" placeholder="0.00" min="0" step="0.01"/>
+              <label class="lbl" for="inc-amount">Amount (RM)</label>
+              <input type="number" id="inc-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
             </div>
             <div>
-              <label class="lbl">Category</label>
+              <label class="lbl" for="inc-cat">Category</label>
               <select id="inc-cat">
                 <option value="Salary">💼 Salary</option>
                 <option value="Freelance">💻 Freelance</option>
@@ -2232,11 +2450,11 @@ body.dark .fs-btn.active { color: #000; }
               </select>
             </div>
             <div>
-              <label class="lbl">Date</label>
+              <label class="lbl" for="inc-date">Date</label>
               <input type="date" id="inc-date"/>
             </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-green" id="add-inc-btn">Add</button>
+            <div class="ft-form-actions" style="margin-top:0">
+              <button type="button" class="btn btn-green" id="add-inc-btn">Add income</button>
             </div>
           </div>
         </div>
@@ -2402,12 +2620,13 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-recurring">
     <div class="page-header">
       <h2>Recurring</h2>
+      <p class="sub">Bills and income that repeat every month — applied when you open the app.</p>
     </div>
     <div class="page-body">
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Add recurring entry</span></div>
         <div class="panel-bd">
-          <div style="display:grid;grid-template-columns:1fr 120px 100px 120px 90px auto;gap:12px;align-items:end">
+          <div class="ft-form-grid ft-form-grid--rec ft-form--compact">
             <div>
               <label class="lbl">Description</label>
               <input type="text" id="rec-name" placeholder="e.g. Unifi Bill" maxlength="80"/>
@@ -2457,8 +2676,8 @@ body.dark .fs-btn.active { color: #000; }
                 </optgroup>
               </select>
             </div>
-            <div style="display:flex;align-items:flex-end">
-              <button class="btn btn-primary" id="add-rec-btn">Add</button>
+            <div class="ft-form-actions" style="margin-top:0">
+              <button type="button" class="btn btn-primary" id="add-rec-btn">Add recurring</button>
             </div>
           </div>
         </div>
@@ -2477,13 +2696,27 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-trends">
     <div class="page-header">
       <h2>Trends</h2>
+      <p class="sub">Six-month patterns, weekday spending, and net worth over time.</p>
     </div>
     <div class="page-body">
-      <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
-        <div class="stat-card"><div class="s-label">Avg monthly spend</div><div class="s-value red" id="tr-avg-exp">RM 0</div></div>
-        <div class="stat-card"><div class="s-label">Avg monthly income</div><div class="s-value green" id="tr-avg-inc">RM 0</div></div>
-        <div class="stat-card"><div class="s-label">Best savings month</div><div class="s-value" id="tr-best">—</div></div>
-      </div>
+      <section class="card ft-page-hero" aria-label="Trend highlights">
+        <div class="ft-page-hero__row">
+          <div class="ft-page-hero__chips" style="width:100%">
+            <div class="ft-chip">
+              <span>Avg spend / mo</span>
+              <strong class="red" id="tr-avg-exp">RM 0</strong>
+            </div>
+            <div class="ft-chip">
+              <span>Avg income / mo</span>
+              <strong class="green" id="tr-avg-inc">RM 0</strong>
+            </div>
+            <div class="ft-chip">
+              <span>Best savings</span>
+              <strong id="tr-best">—</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Monthly overview — last 6 months</span></div>
@@ -2512,6 +2745,7 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-settings">
     <div class="page-header">
       <h2>Settings</h2>
+      <p class="sub">Appearance, backup, import from bank/TNG, and Google Sheets sync.</p>
     </div>
     <div class="page-body">
       <div class="settings-grid">
@@ -2730,7 +2964,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v66 · 2026-05-16 12:00</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v67 · 2026-05-16 14:00</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -2809,10 +3043,11 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-report">
     <div class="page-header">
       <h2>Monthly Report</h2>
+      <p class="sub">Print-friendly summary of the month in the sidebar.</p>
     </div>
     <div class="page-body">
-      <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-primary" id="print-report-btn">🖨 Print / Save PDF</button>
+      <div class="ft-toolbar">
+        <button type="button" class="btn btn-primary" id="print-report-btn">Print or save PDF</button>
       </div>
       <div id="report-content"></div>
     </div>
@@ -2892,7 +3127,7 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=66"></script>
+<script src="app.js?v=67"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>

@@ -1173,7 +1173,7 @@ function render() {
   document.getElementById('ic-exp').textContent   = fmt(totalExp);
   const nel = document.getElementById('ic-net');
   nel.textContent = fmt(Math.abs(net));
-  nel.className   = 's-value ' + (net>=0 ? 'green' : 'red');
+  nel.className   = 'ft-page-hero__value ' + (net >= 0 ? 'green' : 'red');
   renderTxList('income-list', [...mi].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id), INC_CATS, true);
   renderBarChart('inc-chart', mi, INC_CATS, true);
 

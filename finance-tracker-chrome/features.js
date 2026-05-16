@@ -19,7 +19,7 @@ var budgets      = {};   // {catName: amount}
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
-  chrome.storage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT], function(r) {
+  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT], function(r) {
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
@@ -39,9 +39,9 @@ function loadFeatures() {
   });
 }
 
-function saveRec()  { chrome.storage.local.set({[KEY_REC]:  recurring}); }
-function saveNWH()  { chrome.storage.local.set({[KEY_NWH]:  networthHist}); }
-function saveBud()  { chrome.storage.local.set({[KEY_BUD]:  budgets}); }
+function saveRec()  { chromeStorage.local.set({[KEY_REC]:  recurring}); }
+function saveNWH()  { chromeStorage.local.set({[KEY_NWH]:  networthHist}); }
+function saveBud()  { chromeStorage.local.set({[KEY_BUD]:  budgets}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   REMEMBER LAST CATEGORY
@@ -49,7 +49,7 @@ function saveBud()  { chrome.storage.local.set({[KEY_BUD]:  budgets}); }
 document.getElementById('cat-btns').addEventListener('click', function(e) {
   var btn = e.target.closest('.cat-btn');
   if (btn && btn.dataset.cat) {
-    chrome.storage.local.set({[KEY_LAST_CAT]: btn.dataset.cat});
+    chromeStorage.local.set({[KEY_LAST_CAT]: btn.dataset.cat});
   }
 });
 
@@ -126,6 +126,7 @@ function renderBudgets() {
   }
 
   el.innerHTML = '';
+  el.className = 'ft-budget-list';
   keys.sort().forEach(function(cat) {
     var limit = budgets[cat];
     var spent = catTotals[cat] || 0;
@@ -136,21 +137,22 @@ function renderBudgets() {
     var catInfo = EXP_CATS[cat] || {icon:'📦'};
 
     var row = document.createElement('div');
-    row.style.cssText = 'margin-bottom:14px';
+    row.className = 'ft-budget-item';
 
     var header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px';
+    header.className = 'ft-budget-item__head';
     header.innerHTML =
-      '<span style="font-size:16px">' + catInfo.icon + '</span>' +
-      '<span style="font-size:var(--f-sm);font-weight:600;flex:1">' + esc(cat) + '</span>' +
-      '<span style="font-size:var(--f-xs);color:var(--ink2)">' + fmt(spent) + ' / ' + fmt(limit) + '</span>' +
-      '<span style="font-size:var(--f-xs);font-weight:700;color:' + color + '">' + pct + '%</span>' +
-      (over ? '<span style="font-size:10px;font-weight:700;color:#fff;background:#E24B4A;padding:2px 6px;border-radius:999px">OVER</span>' : '') +
-      (warn ? '<span style="font-size:10px;font-weight:700;color:#fff;background:#BA7517;padding:2px 6px;border-radius:999px">75%</span>' : '');
+      '<span style="font-size:18px" aria-hidden="true">' + catInfo.icon + '</span>' +
+      '<span class="ft-budget-item__cat">' + esc(cat) + '</span>' +
+      '<span class="ft-budget-item__nums">' + fmt(spent) + ' / ' + fmt(limit) + '</span>' +
+      '<span class="ft-budget-item__pct" style="color:' + color + '">' + pct + '%</span>' +
+      (over ? '<span class="ft-badge ft-badge--over">Over</span>' : '') +
+      (warn ? '<span class="ft-badge ft-badge--warn">75%+</span>' : '');
 
     var delBtn = document.createElement('button');
-    delBtn.className = 'tx-action-btn del';
-    delBtn.style.opacity = '1';
+    delBtn.type = 'button';
+    delBtn.className = 'assets-icon-btn del';
+    delBtn.title = 'Remove budget';
     delBtn.textContent = '✕';
     delBtn.dataset.cat = cat;
     delBtn.addEventListener('click', function() {
@@ -159,9 +161,11 @@ function renderBudgets() {
     header.appendChild(delBtn);
 
     var track = document.createElement('div');
-    track.style.cssText = 'height:8px;background:var(--card-bg2);border-radius:999px;overflow:hidden';
+    track.className = 'ft-budget-track';
     var fill = document.createElement('div');
-    fill.style.cssText = 'height:100%;width:'+pct+'%;background:'+color+';border-radius:999px;transition:width .4s ease';
+    fill.className = 'ft-budget-fill';
+    fill.style.width = pct + '%';
+    fill.style.background = color;
     track.appendChild(fill);
 
     row.appendChild(header);
