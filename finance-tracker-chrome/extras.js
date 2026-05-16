@@ -273,14 +273,16 @@ function renderPetrolLog() {
   wirePetrolUi();
   ensurePetrolPplDefault();
 
-  var entries = petrolEntriesForView();
-  var totalSpent = entries.reduce(function(a, e) { return a + e.total; }, 0);
-  var totalLitres = entries.reduce(function(a, e) { return a + e.litres; }, 0);
+  var monthEntries = petrolEntriesForView();
+  var allEntries = petrolLog.slice();
+  var totalSpent = monthEntries.reduce(function(a, e) { return a + e.total; }, 0);
+  var totalLitres = monthEntries.reduce(function(a, e) { return a + e.litres; }, 0);
   var avgPpl = totalLitres > 0 ? totalSpent / totalLitres : 0;
 
   var withOdo = petrolOdoSorted();
   var cpk = petrolCostPerKm(withOdo, avgPpl);
   var avgL100 = petrolAvgL100(withOdo);
+  var viewYm = petrolViewYm();
 
   function setEl(id, txt) {
     var e = document.getElementById(id);
@@ -296,25 +298,37 @@ function renderPetrolLog() {
   setEl('pt-cpk', cpk > 0 ? 'RM ' + cpk.toFixed(2) : '—');
   setEl('pt-eff', avgL100 > 0 ? avgL100.toFixed(1) + ' L/100km' : '—');
 
+  var histNote = document.getElementById('pt-history-note');
+  if (histNote) {
+    if (!allEntries.length) histNote.textContent = '';
+    else if (monthEntries.length === allEntries.length) {
+      histNote.textContent = allEntries.length + (allEntries.length === 1 ? ' fill-up' : ' fill-ups');
+    } else {
+      histNote.textContent =
+        allEntries.length + ' total · ' + monthEntries.length + ' this month';
+    }
+  }
+
   updatePetrolCalc();
 
   var el = document.getElementById('pt-list');
   if (!el) return;
 
-  if (!entries.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups this month</div>';
+  if (!allEntries.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups logged yet</div>';
     return;
   }
 
   var root = document.createElement('div');
   root.className = 'pt-cards';
 
-  var sorted = entries.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+  var sorted = allEntries.slice().sort(function(a, b) { return b.date.localeCompare(a.date) || b.id - a.id; });
   sorted.forEach(function(e) {
     var eff = petrolFillEfficiency(e, withOdo);
 
     var card = document.createElement('article');
     card.className = 'pt-card';
+    if (viewYm && e.date && e.date.indexOf(viewYm) !== 0) card.className += ' pt-card--other-month';
 
     var head = document.createElement('div');
     head.className = 'pt-card__head';

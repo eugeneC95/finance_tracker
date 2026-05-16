@@ -2136,7 +2136,31 @@ body.dark .fs-btn.active { color: #000; }
   outline: none;
   box-shadow: var(--focus-ring);
 }
-#page-petrol .pt-form-meta { margin-bottom: var(--s4); }
+#page-petrol .pt-form-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  margin-bottom: var(--s4);
+}
+#page-petrol .pt-meta-field { width: 100%; }
+#page-petrol .pt-optional {
+  font-weight: 400;
+  color: var(--ink3);
+}
+.panel-hd--stack {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: var(--s2);
+}
+.pt-history-note {
+  font-size: var(--f-sm);
+  color: var(--ink3);
+  font-weight: 500;
+}
+.pt-card--other-month {
+  border-style: dashed;
+  background: var(--card-bg);
+}
 #page-petrol .pt-field-hint {
   font-size: var(--f-sm);
   color: var(--ink3);
@@ -2220,9 +2244,11 @@ body.dark .fs-btn.active { color: #000; }
     gap: 14px;
     padding-bottom: 28px;
   }
-  #page-petrol .page-body--petrol > .pt-form-card { order: 1; margin-bottom: 0 !important; }
-  #page-petrol .page-body--petrol > .pt-hero { order: 2; margin-bottom: 0 !important; }
-  #page-petrol .page-body--petrol > .pt-history-card { order: 3; }
+  #page-petrol .page-body--petrol > .pt-hero { order: 1; margin-bottom: 0 !important; }
+  #page-petrol .page-body--petrol > .pt-history-card { order: 2; margin-bottom: 0 !important; }
+  #page-petrol .page-body--petrol > .pt-form-card { order: 3; margin-bottom: 0 !important; }
+  #page-petrol .page-body--petrol { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  body:has(#page-petrol.active) .ft-fab { display: none !important; }
   #page-petrol .ft-page-hero__chips {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3050,7 +3076,7 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-petrol">
     <div class="page-header">
       <h2>Petrol log</h2>
-      <p class="sub">Enter litres and price — we calculate the total. Add odometer when you can for km and fuel economy.</p>
+      <p class="sub">Summary uses the month in the sidebar. History lists every fill-up.</p>
     </div>
     <div class="page-body page-body--petrol">
 
@@ -3101,17 +3127,17 @@ body.dark .fs-btn.active { color: #000; }
             </div>
           </div>
 
-          <div class="ft-form-grid pt-form-meta">
-            <div>
-              <label class="lbl" for="pt-odo">Odometer (km)</label>
+          <div class="pt-form-meta">
+            <div class="pt-meta-field">
+              <label class="lbl" for="pt-odo">Odometer (km) <span class="pt-optional">optional</span></label>
               <input type="number" id="pt-odo" placeholder="e.g. 54320" min="0" step="1" inputmode="numeric"/>
               <p class="pt-field-hint" id="pt-odo-hint"></p>
             </div>
-            <div>
+            <div class="pt-meta-field">
               <label class="lbl" for="pt-station">Station / note</label>
               <input type="text" id="pt-station" placeholder="Optional" maxlength="60"/>
             </div>
-            <div>
+            <div class="pt-meta-field">
               <label class="lbl" for="pt-date">Date</label>
               <input type="date" id="pt-date"/>
             </div>
@@ -3133,7 +3159,10 @@ body.dark .fs-btn.active { color: #000; }
       </div>
 
       <div class="card pt-history-card">
-        <div class="panel-hd"><span class="panel-title">Fill-up history</span></div>
+        <div class="panel-hd panel-hd--stack">
+          <span class="panel-title">Fill-up history</span>
+          <span class="pt-history-note" id="pt-history-note"></span>
+        </div>
         <div class="panel-bd panel-bd--flush">
           <div class="pt-list-scroll" role="region" aria-label="Fill-up history">
             <div id="pt-list"></div>
@@ -3232,10 +3261,10 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=71"></script>
+<script src="app.js?v=72"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
-<script src="extras.js?v=71"></script>
+<script src="extras.js?v=72"></script>
 <script src="import-inline.js?v=57"></script>
 </body>
 </html>
