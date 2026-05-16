@@ -2359,7 +2359,7 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </section>
 
-      <div class="card mb-5">
+      <div class="card mb-5 exp-daily-card">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
           <p class="ft-note">Daily totals for the selected month — use the sidebar arrows to change month.</p>
@@ -2367,45 +2367,8 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
-      <!-- Budget overview -->
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
-        <div class="panel-bd">
-          <div id="budget-panel"></div>
-          <form class="ft-form ft-form--compact" onsubmit="return false">
-            <div class="ft-form__title">Set a monthly limit</div>
-            <div class="ft-form-grid ft-form-grid--3">
-            <div>
-              <label class="lbl" for="bud-cat">Category</label>
-              <select id="bud-cat">
-                <option value="Food">🍜 Food &amp; drink</option>
-                <option value="Shopping">🛍 Shopping</option>
-                <option value="Health">💊 Health</option>
-                <option value="Bills">🧾 Bills</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Petrol">⛽ Petrol</option>
-                <option value="Car Service">🔧 Car service</option>
-                <option value="Toll">🛣 Toll</option>
-                <option value="Parking">🅿️ Parking</option>
-                <option value="Car Expenses">🚗 Car expenses</option>
-                <option value="Transport">🚌 Transport</option>
-                <option value="Other">📦 Other</option>
-              </select>
-            </div>
-            <div>
-              <label class="lbl" for="bud-amount">Monthly limit (RM)</label>
-              <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01" inputmode="decimal"/>
-            </div>
-            <div class="ft-form-actions" style="margin-top:0">
-              <button type="button" class="btn btn-primary" id="add-bud-btn">Set budget</button>
-            </div>
-            </div>
-          </form>
-        </div>
-      </div>
-
       <!-- Add expense card -->
-      <div class="card mb-6">
+      <div class="card mb-6 exp-add-card">
         <div class="panel-hd"><span class="panel-title">Add expense</span></div>
         <div class="panel-bd">
           <div class="cat-groups" id="cat-btns"></div>
@@ -2462,6 +2425,42 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
+      <!-- Budget overview (occasional use — bottom of page) -->
+      <div class="card mb-5 exp-budget-card" id="exp-budget-card">
+        <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
+        <div class="panel-bd">
+          <div id="budget-panel"></div>
+          <form class="ft-form ft-form--compact" onsubmit="return false">
+            <div class="ft-form__title">Set a monthly limit</div>
+            <div class="ft-form-grid ft-form-grid--3">
+            <div>
+              <label class="lbl" for="bud-cat">Category</label>
+              <select id="bud-cat">
+                <option value="Food">🍜 Food &amp; drink</option>
+                <option value="Shopping">🛍 Shopping</option>
+                <option value="Health">💊 Health</option>
+                <option value="Bills">🧾 Bills</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+                <option value="Petrol">⛽ Petrol</option>
+                <option value="Car Service">🔧 Car service</option>
+                <option value="Toll">🛣 Toll</option>
+                <option value="Parking">🅿️ Parking</option>
+                <option value="Car Expenses">🚗 Car expenses</option>
+                <option value="Transport">🚌 Transport</option>
+                <option value="Other">📦 Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl" for="bud-amount">Monthly limit (RM)</label>
+              <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01" inputmode="decimal"/>
+            </div>
+            <div class="ft-form-actions" style="margin-top:0">
+              <button type="button" class="btn btn-primary" id="add-bud-btn">Set budget</button>
+            </div>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3197,7 +3196,7 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=69"></script>
+<script src="app.js?v=70"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>
