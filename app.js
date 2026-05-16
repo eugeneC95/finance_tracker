@@ -394,17 +394,33 @@ function deleteUtHolding(id) {
   showToast('Fund removed');
 }
 
+function utDownsampleSeries(series, maxPts) {
+  if (series.length <= maxPts) return series;
+  const out = [];
+  for (let i = 0; i < maxPts; i++) {
+    const idx = Math.round((i / (maxPts - 1)) * (series.length - 1));
+    out.push(series[idx]);
+  }
+  return out;
+}
+
+function utFmtChartDate(ymd) {
+  const p = String(ymd).split('-');
+  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return mo[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10);
+}
+
 function renderUtChart(el) {
   if (!el) return;
-  const series = utBuildPortfolioSeries();
-  if (series.length < 2) {
-    el.innerHTML =
-      '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:var(--f-sm)">Portfolio line needs NAV on at least two calendar days (open the app daily to carry forward NAV, or import CSV).</div>';
+  const full = utBuildPortfolioSeries();
+  if (full.length < 2) {
+    el.innerHTML = '<div class="ut-chart-empty">Add NAV on two or more days to see a trend line.</div>';
     return;
   }
+  const series = utDownsampleSeries(full, 48);
   const W = el.clientWidth || 600;
-  const H = 160;
-  const PAD = { t: 10, r: 16, b: 28, l: 64 };
+  const H = 96;
+  const PAD = { t: 8, r: 8, b: 8, l: 8 };
   const cW = W - PAD.l - PAD.r;
   const cH = H - PAD.t - PAD.b;
   const vals = series.map(s => s.total);
@@ -418,27 +434,45 @@ function renderUtChart(el) {
   const path = 'M ' + pts.join(' L ');
   const area = 'M ' + xOf(0) + ',' + (PAD.t + cH) + ' L ' + pts.join(' L ') + ' L ' + xOf(n - 1) + ',' + (PAD.t + cH) + ' Z';
   const lc = vals[vals.length - 1] >= vals[0] ? '#1A9E6E' : '#E24B4A';
-  const yLbls = [
-    { v: maxV, y: yOf(maxV) },
-    { v: (minV + maxV) / 2, y: yOf((minV + maxV) / 2) },
-    { v: minV, y: yOf(minV) },
-  ];
-  const xIdxs = [0, Math.floor((n - 1) / 2), n - 1].filter((v, i, a) => a.indexOf(v) === i);
-  const xLbls = xIdxs.map(i => ({ lbl: series[i].date.slice(5), x: xOf(i) }));
-  const circles = series.map((s, i) =>
-    '<circle cx="' + xOf(i) + '" cy="' + yOf(s.total) + '" r="3.5" fill="' + lc + '" stroke="white" stroke-width="1.5"><title>' +
-    esc(s.date) + ': ' + fmt(s.total) + '</title></circle>'
-  ).join('');
-  el.innerHTML =
-    '<div class="nw-chart-wrap"><svg class="nw-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+  const lastI = n - 1;
+  const endDot =
+    '<circle cx="' + xOf(lastI) + '" cy="' + yOf(vals[lastI]) + '" r="4" fill="' + lc + '" stroke="white" stroke-width="2"/>';
+  const svg =
+    '<svg class="nw-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
     '<defs><linearGradient id="ut-grad" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0%" stop-color="' + lc + '" stop-opacity="0.15"/>' +
+    '<stop offset="0%" stop-color="' + lc + '" stop-opacity="0.12"/>' +
     '<stop offset="100%" stop-color="' + lc + '" stop-opacity="0"/></linearGradient></defs>' +
     '<path d="' + area + '" fill="url(#ut-grad)"/>' +
     '<path d="' + path + '" fill="none" stroke="' + lc + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
-    yLbls.map(l => '<text class="nw-axis-lbl" x="' + (PAD.l - 6) + '" y="' + (l.y + 3) + '" text-anchor="end">' + fmt(l.v) + '</text>').join('') +
-    xLbls.map(l => '<text class="nw-axis-lbl" x="' + l.x + '" y="' + (H - 4) + '" text-anchor="middle">' + esc(l.lbl) + '</text>').join('') +
-    circles + '</svg></div>';
+    endDot +
+    '</svg>';
+  const first = full[0];
+  const last = full[full.length - 1];
+  const pct = first.total ? ((last.total - first.total) / first.total) * 100 : 0;
+  const pctCls = pct >= 0 ? 'ut-chart-cap__chg--up' : 'ut-chart-cap__chg--down';
+  const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+  el.innerHTML =
+    '<div class="ut-chart-simple">' +
+    '<div class="nw-chart-wrap ut-chart-simple__plot">' +
+    svg +
+    '</div>' +
+    '<div class="ut-chart-cap">' +
+    '<div class="ut-chart-cap__end"><span class="ut-chart-cap__date">' +
+    esc(utFmtChartDate(first.date)) +
+    '</span><span class="ut-chart-cap__val">' +
+    fmt(first.total) +
+    '</span></div>' +
+    '<span class="ut-chart-cap__chg ' +
+    pctCls +
+    '">' +
+    pctStr +
+    '</span>' +
+    '<div class="ut-chart-cap__end ut-chart-cap__end--right"><span class="ut-chart-cap__date">' +
+    esc(utFmtChartDate(last.date)) +
+    '</span><span class="ut-chart-cap__val">' +
+    fmt(last.total) +
+    '</span></div>' +
+    '</div></div>';
 }
 
 function importUtNavCsv(file) {

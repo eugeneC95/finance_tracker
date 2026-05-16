@@ -1481,15 +1481,48 @@ body.dark .bar-track { background: var(--card-bg2); }
   font-size: var(--f-sm);
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: var(--s1);
 }
-.ut-chart-block__sub {
+.ut-chart-block__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+}
+.ut-chart-block__hint {
   font-size: var(--f-xs);
   color: var(--ink3);
-  margin-bottom: var(--s4);
-  line-height: 1.45;
-  max-width: 52ch;
 }
+.ut-chart-simple__plot { height: 100px; }
+.ut-chart-empty {
+  text-align: center;
+  padding: var(--s5);
+  color: var(--ink3);
+  font-size: var(--f-sm);
+}
+.ut-chart-cap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}
+.ut-chart-cap__end {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ut-chart-cap__end--right { text-align: right; }
+.ut-chart-cap__date { font-size: var(--f-xs); color: var(--ink3); }
+.ut-chart-cap__val { font-size: var(--f-sm); font-weight: 700; color: var(--ink); }
+.ut-chart-cap__chg {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ut-chart-cap__chg--up { color: var(--green); }
+.ut-chart-cap__chg--down { color: var(--red); }
 
 @media (max-width: 960px) {
   .assets-layout { grid-template-columns: 1fr; }
@@ -3345,7 +3378,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v67 · 2026-05-16 14:00';
+  var BUILD_VERSION    = 'v68 · 2026-05-16 16:00';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3875,8 +3908,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </form>
 
             <div class="ut-chart-block">
-              <div class="ut-chart-block__title">Portfolio history</div>
-              <p class="ut-chart-block__sub">Uses the latest NAV you saved each day. Open the app occasionally so NAV carries forward on the chart.</p>
+              <div class="ut-chart-block__head">
+                <span class="ut-chart-block__title">Portfolio trend</span>
+                <span class="ut-chart-block__hint">From saved NAV</span>
+              </div>
               <div id="ut-chart"></div>
             </div>
           </div>
@@ -4449,7 +4484,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
 <div class="toast" id="toast"></div>
 <div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v57 · 2026-05-14</div>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=68"></script>
 <script src="sync.js?v=62"></script>
 <script src="features.js?v=57"></script>
 <script src="extras.js?v=57"></script>
