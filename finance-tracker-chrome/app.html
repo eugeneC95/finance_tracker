@@ -2381,6 +2381,8 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </section>
 
+      <div id="exp-budget-chips" class="exp-budget-chips-wrap" hidden aria-label="Budget alerts"></div>
+
       <div class="card mb-5 exp-daily-card">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
@@ -2809,6 +2811,8 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </section>
 
+      <div id="nw-snapshot-hint" class="ft-inline-hint" style="display:none" role="status"></div>
+
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Monthly overview — last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
@@ -2982,6 +2986,17 @@ body.dark .fs-btn.active { color: #000; }
             </div>
             <div class="setting-row">
               <div>
+                <div class="s-lbl">Auto-snapshot net worth</div>
+                <div style="font-size:var(--f-xs);color:var(--ink3);margin-top:2px">Record total when bank balances change</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="set-nw-auto" checked/>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div>
                 <div class="s-lbl">Compact view</div>
               </div>
               <label class="toggle">
@@ -3016,6 +3031,7 @@ body.dark .fs-btn.active { color: #000; }
               </span>
             </div>
             <div class="panel-bd">
+              <div id="sync-detail" class="sync-detail"></div>
 
               <div style="margin-bottom:12px">
                 <label class="lbl">Apps Script web app (built into this app)</label>
@@ -3187,6 +3203,18 @@ body.dark .fs-btn.active { color: #000; }
     </div>
   </div>
 
+<!-- Quick-add menu (mobile FAB) -->
+<div id="ft-fab-sheet" class="ft-fab-sheet" aria-hidden="true" role="dialog" aria-label="Quick add">
+  <div class="ft-fab-sheet__backdrop" aria-hidden="true"></div>
+  <div class="ft-fab-sheet__panel">
+    <button type="button" class="ft-fab-sheet__btn" data-fab="expense">Add expense</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="income">Add income</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="petrol">Petrol</button>
+    <button type="button" class="ft-fab-sheet__btn" data-fab="repeat" id="fab-repeat">Repeat last</button>
+  </div>
+</div>
+<button id="ft-fab" class="ft-fab" type="button" aria-label="Quick add">+</button>
+
 </main>
 
 <!-- ══════════════════════════════════════════
@@ -3261,10 +3289,10 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=73"></script>
-<script src="sync.js?v=62"></script>
-<script src="features.js?v=73"></script>
-<script src="extras.js?v=73"></script>
+<script src="app.js?v=74"></script>
+<script src="sync.js?v=74"></script>
+<script src="features.js?v=74"></script>
+<script src="extras.js?v=74"></script>
 <script src="import-inline.js?v=57"></script>
 </body>
 </html>

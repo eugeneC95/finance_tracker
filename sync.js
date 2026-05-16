@@ -539,15 +539,40 @@ function scheduleAutoSync() {
 })();
 
 // ── UI ─────────────────────────────────────────────────────
+function syncDataCounts() {
+  return {
+    expenses: (expenses || []).length,
+    incomes: (incomes || []).length,
+    banks: (banks || []).length,
+  };
+}
+
 function setSyncStatus(status, message) {
   syncState.status  = status;
   syncState.message = message;
+  if (status === 'ok' || status === 'error') {
+    syncState.counts = syncDataCounts();
+  }
+  persistSyncState();
   updateSyncUI();
+}
+
+function fmtRelativeTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return Math.floor(sec / 60) + ' min ago';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' h ago';
+  if (sec < 172800) return 'yesterday';
+  return d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
 }
 
 function updateSyncUI() {
   var dot = document.getElementById('sync-dot');
   var msg = document.getElementById('sync-msg');
+  var detail = document.getElementById('sync-detail');
   var disp = document.getElementById('sync-url-display');
 
   if (disp) disp.textContent = syncUrl || '';
@@ -569,9 +594,28 @@ function updateSyncUI() {
   if (syncState.message) {
     msg.textContent = syncState.message;
   } else {
-    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open or return to the app; auto-saves 4 s after changes' : 'Sync URL not set in app build';
+    msg.textContent = syncUrl ? 'Auto-saves ~3 s after changes' : 'Sync URL not set in app build';
   }
   msg.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
+
+  if (detail) {
+    var parts = [];
+    var c = syncState.counts;
+    if (c) {
+      parts.push(c.expenses + ' expenses · ' + c.incomes + ' income · ' + c.banks + ' banks');
+    }
+    if (syncState.lastSaved) {
+      parts.push('Last saved ' + fmtRelativeTime(syncState.lastSaved) + ' (' + fmtTime(syncState.lastSaved) + ')');
+    }
+    if (syncState.lastLoaded) {
+      parts.push('Last loaded ' + fmtRelativeTime(syncState.lastLoaded));
+    }
+    if (syncState.status === 'error' && syncState.message) {
+      parts.push(syncState.message);
+    }
+    detail.textContent = parts.length ? parts.join(' · ') : 'Opens or returns to the app: loads from your Sheet. Edits auto-save after a short pause.';
+    detail.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
+  }
 }
 
 function fmtTime(iso) {

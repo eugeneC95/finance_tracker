@@ -1,5 +1,29 @@
 'use strict';
 
+// ── localStorage adapter (replaces chrome.storage for PWA) ─
+var chromeStorage = {
+  local: {
+    get: function(keys, cb) {
+      var result = {};
+      (Array.isArray(keys) ? keys : [keys]).forEach(function(k) {
+        try { var v = localStorage.getItem(k); result[k] = v ? JSON.parse(v) : undefined; }
+        catch(e) { result[k] = undefined; }
+      });
+      cb(result);
+    },
+    set: function(obj, cb) {
+      Object.keys(obj).forEach(function(k) {
+        try { localStorage.setItem(k, JSON.stringify(obj[k])); } catch(e) {}
+      });
+      if (cb) cb();
+    },
+    remove: function(keys, cb) {
+      (Array.isArray(keys) ? keys : [keys]).forEach(function(k) { localStorage.removeItem(k); });
+      if (cb) cb();
+    }
+  }
+};
+
 // ── Category definitions ───────────────────────────────────
 const EXP_CATS = {
   // Food & drink
@@ -83,6 +107,7 @@ const KEY_BANKS = 'banks_v1';
 const KEY_SETS  = 'settings_v1';
 const KEY_UT_HOLD = 'unit_trust_holdings_v1';
 const KEY_UT_NAV  = 'unit_trust_nav_v1';
+const KEY_LAST_EXP = 'last_expense_v1';
 
 // ── Storage read generation (avoid stale load() overwriting a fresh Sheet load)
 let _storageReadGen = 0;
@@ -92,7 +117,8 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 let expenses = [], incomes = [], banks = [];
 let utHoldings = [];
 let utNavPoints = [];
-let settings = { dark:false, fontSize:'fs-md', currency:'RM', showDrag:true, compact:false };
+let settings = { dark:false, fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true };
+let lastExpenseTpl = null;
 let viewMonth = new Date(); viewMonth.setDate(1);
 let activeFilter = 'All';
 let selectedCat  = 'Food';
@@ -135,27 +161,33 @@ function viewYM() {
 // ── Storage ────────────────────────────────────────────────
 function load() {
   const gen = _storageReadGen;
-  chrome.storage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV], r => {
+  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP], r => {
     if (gen !== _storageReadGen) return;
-    expenses = r[KEY_EXP]   || [];
-    incomes  = r[KEY_INC]   || [];
-    banks    = r[KEY_BANKS] || [];
-    utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
-    utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
-    utCarryForwardNavSnapshotForToday();
-    if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
-    applySettings();
-    render();
-    window.__ftAppReady = true;
-    try { window.dispatchEvent(new Event('ft-app-ready')); } catch (e) {}
+    try {
+      expenses = r[KEY_EXP]   || [];
+      incomes  = r[KEY_INC]   || [];
+      banks    = r[KEY_BANKS] || [];
+      utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
+      utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
+      utCarryForwardNavSnapshotForToday();
+      if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
+      lastExpenseTpl = r[KEY_LAST_EXP] || null;
+      applySettings();
+      render();
+      window.__ftAppReady = true;
+    } catch (e) {
+      window.__ftAppReady = false;
+    } finally {
+      try { window.dispatchEvent(new Event('ft-app-ready')); } catch (e) {}
+    }
   });
 }
-function saveExp()   { chrome.storage.local.set({[KEY_EXP]:   expenses}); }
-function saveInc()   { chrome.storage.local.set({[KEY_INC]:   incomes}); }
-function saveBanks() { chrome.storage.local.set({[KEY_BANKS]: banks}); }
-function saveSets()  { chrome.storage.local.set({[KEY_SETS]:  settings}); }
-function saveUtHoldings() { chrome.storage.local.set({ [KEY_UT_HOLD]: utHoldings }); }
-function saveUtNav()      { chrome.storage.local.set({ [KEY_UT_NAV]:  utNavPoints }); }
+function saveExp()   { chromeStorage.local.set({[KEY_EXP]:   expenses}); }
+function saveInc()   { chromeStorage.local.set({[KEY_INC]:   incomes}); }
+function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
+function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
+function saveUtHoldings() { chromeStorage.local.set({ [KEY_UT_HOLD]: utHoldings }); }
+function saveUtNav()      { chromeStorage.local.set({ [KEY_UT_NAV]:  utNavPoints }); }
 
 function utDedupeNavPoints() {
   const map = new Map();
@@ -901,6 +933,8 @@ function applySettings() {
   if (dragEl) dragEl.checked = settings.showDrag !== false;
   const compEl = document.getElementById('set-compact');
   if (compEl) compEl.checked = !!settings.compact;
+  const nwAutoEl = document.getElementById('set-nw-auto');
+  if (nwAutoEl) nwAutoEl.checked = settings.nwAutoSnapshot !== false;
   b.classList.toggle('compact', !!settings.compact);
   let cs = document.getElementById('compact-style');
   if (!cs) { cs = document.createElement('style'); cs.id = 'compact-style'; document.head.appendChild(cs); }
@@ -921,10 +955,38 @@ function addExpense() {
   if (isNaN(amount) || amount <= 0) { shake(aEl); ok = false; }
   if (!ok) return;
   expenses.push({ id: Date.now(), name, amount, cat: selectedCat, date });
+  lastExpenseTpl = { name, amount, cat: selectedCat };
+  chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
   saveExp();
   nEl.value = ''; aEl.value = '';
   nEl.focus();
   render();
+}
+
+function repeatLastExpense() {
+  if (!lastExpenseTpl) {
+    showToast('No recent expense to repeat');
+    return false;
+  }
+  const cat = lastExpenseTpl.cat && EXP_CATS[lastExpenseTpl.cat] ? lastExpenseTpl.cat : selectedCat;
+  selectedCat = cat;
+  buildCatButtons();
+  expenses.push({
+    id: Date.now(),
+    name: lastExpenseTpl.name,
+    amount: lastExpenseTpl.amount,
+    cat,
+    date: todayStr(),
+  });
+  saveExp();
+  render();
+  showToast('Repeated: ' + lastExpenseTpl.name);
+  return true;
+}
+
+function maybeSnapshotNetWorth() {
+  if (settings.nwAutoSnapshot === false) return;
+  if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
 }
 function deleteExpense(id) { expenses = expenses.filter(e => e.id !== id); saveExp(); render(); }
 
@@ -961,10 +1023,16 @@ function addBank() {
   if (!ok) return;
   banks.push({ id: Date.now(), name, acct: acct || 'Account', balance });
   saveBanks();
+  maybeSnapshotNetWorth();
   nEl.value = ''; aEl.value = ''; bEl.value = '';
   render();
 }
-function deleteBank(id) { banks = banks.filter(b => b.id !== id); saveBanks(); render(); }
+function deleteBank(id) {
+  banks = banks.filter(b => b.id !== id);
+  saveBanks();
+  maybeSnapshotNetWorth();
+  render();
+}
 
 // ── Edit modal ─────────────────────────────────────────────
 let editCtx = null;
@@ -1202,15 +1270,9 @@ function render() {
   // Feature hooks (defined in other files)
   if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
   if (typeof renderBudgets    === 'function') renderBudgets();
+  if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
   if (typeof renderRecurring  === 'function') renderRecurring();
-  const pagePetrol = document.getElementById('page-petrol');
-  if (pagePetrol && pagePetrol.classList.contains('active') && typeof renderPetrolLog === 'function') {
-    renderPetrolLog();
-  }
-  const pageTrends = document.getElementById('page-trends');
-  if (pageTrends && pageTrends.classList.contains('active') && typeof renderTrends === 'function') {
-    renderTrends();
-  }
+  refreshActiveTabPanels();
 }
 
 // ── Transaction list ───────────────────────────────────────
@@ -1600,7 +1662,7 @@ function renderBankList() {
       b.acct = acctVal || 'Account';
       b.balance = balVal;
       saveBanks();
-      if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
+      maybeSnapshotNetWorth();
       render();
       showToast('Account updated');
     });
@@ -1673,6 +1735,7 @@ function importBackup(file) {
 
       bumpStorageReadGeneration();
 
+      // Match key for "same date and amount" overwrite.
       function keyDA(x) { return String(x.date) + '|' + Number(x.amount).toFixed(2); }
       function mergeByDateAmount(existing, incoming) {
         if (!Array.isArray(incoming) || !incoming.length) return { merged: existing.slice(), overwritten: 0, added: 0 };
@@ -1767,6 +1830,92 @@ document.getElementById('set-drag').addEventListener('change', e => {
 document.getElementById('set-compact').addEventListener('change', e => {
   settings.compact = e.target.checked; saveSets(); applySettings();
 });
+const setNwAuto = document.getElementById('set-nw-auto');
+if (setNwAuto) {
+  setNwAuto.addEventListener('change', e => {
+    settings.nwAutoSnapshot = e.target.checked;
+    saveSets();
+    showToast(settings.nwAutoSnapshot ? 'Net worth will snapshot when banks change' : 'Net worth auto-snapshot off');
+  });
+}
+
+// ── Quick-add FAB (mobile) ───────────────────────────────────
+function focusExpenseForm() {
+  if (typeof activateNavTab === 'function') activateNavTab('expenses');
+  else {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const tab = document.querySelector('.nav-item[data-tab="expenses"]');
+    if (tab) tab.classList.add('active');
+    const page = document.getElementById('page-expenses');
+    if (page) page.classList.add('active');
+  }
+  setTimeout(() => {
+    const amt = document.getElementById('exp-amount');
+    const card = amt ? amt.closest('.card') : null;
+    if (card) {
+      try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
+    }
+    if (amt) {
+      try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); }
+      try { amt.select(); } catch (e) {}
+    }
+  }, 60);
+}
+
+function openFabSheet() {
+  const sheet = document.getElementById('ft-fab-sheet');
+  if (!sheet) return;
+  sheet.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('ft-fab-sheet-open');
+  const rep = document.getElementById('fab-repeat');
+  if (rep) rep.disabled = !lastExpenseTpl;
+}
+
+function closeFabSheet() {
+  const sheet = document.getElementById('ft-fab-sheet');
+  if (!sheet) return;
+  sheet.classList.remove('open');
+  sheet.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('ft-fab-sheet-open');
+}
+
+function wireQuickAddUi() {
+  const fab = document.getElementById('ft-fab');
+  const sheet = document.getElementById('ft-fab-sheet');
+  if (!fab || !sheet) return;
+  fab.addEventListener('click', () => {
+    if (sheet.classList.contains('open')) closeFabSheet();
+    else openFabSheet();
+  });
+  const backdrop = sheet.querySelector('.ft-fab-sheet__backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeFabSheet);
+  sheet.querySelectorAll('[data-fab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.fab;
+      closeFabSheet();
+      if (action === 'expense') {
+        focusExpenseForm();
+      } else if (action === 'income') {
+        if (typeof activateNavTab === 'function') activateNavTab('income');
+        else document.querySelector('.nav-item[data-tab="income"]')?.click();
+        setTimeout(() => document.getElementById('inc-amount')?.focus(), 80);
+      } else if (action === 'petrol') {
+        if (typeof activateNavTab === 'function') activateNavTab('petrol');
+        else document.querySelector('.nav-item[data-tab="petrol"]')?.click();
+        setTimeout(() => document.getElementById('pt-litres-in')?.focus(), 120);
+      } else if (action === 'repeat') {
+        if (repeatLastExpense()) {
+          if (typeof activateNavTab === 'function') activateNavTab('expenses');
+        } else {
+          focusExpenseForm();
+        }
+      }
+    });
+  });
+}
+wireQuickAddUi();
 
 // ── Modal listeners ─────────────────────────────────────────
 document.getElementById('edit-save').addEventListener('click', saveEdit);
@@ -1787,41 +1936,122 @@ document.getElementById('cat-detail-overlay').addEventListener('click', e => {
 });
 
 // ── Nav ────────────────────────────────────────────────────
+// Desktop: full sidebar. Mobile (≤680px): five dock slots + More sheet.
+const MOBILE_OVERFLOW_TABS = new Set(['recurring', 'trends', 'petrol', 'report']);
+
+function closeMobileNavMore() {
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  const opener = document.getElementById('nav-more-open');
+  if (sheet) {
+    sheet.classList.remove('open');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+  if (opener) opener.setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('mobile-nav-sheet-open');
+}
+
+function openMobileNavMore() {
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  const opener = document.getElementById('nav-more-open');
+  if (!sheet || !(window.matchMedia && window.matchMedia('(max-width: 680px)').matches)) return;
+  sheet.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  if (opener) opener.setAttribute('aria-expanded', 'true');
+  document.body.classList.add('mobile-nav-sheet-open');
+}
+
+// ── Tab open hooks (sidebar, mobile More, and data refresh) ──
+const TAB_OPEN_HOOKS = {
+  petrol: () => { if (typeof renderPetrolLog === 'function') renderPetrolLog(); },
+  report: () => { if (typeof renderReport === 'function') renderReport(); },
+  trends: () => { if (typeof renderTrends === 'function') renderTrends(); },
+  assets: () => {
+    renderBankList();
+    renderUnitTrustPanel();
+  },
+};
+const TAB_OPEN_DELAY_MS = { trends: 50, petrol: 10, report: 10 };
+
+function runTabOpenHooks(tab) {
+  const fn = TAB_OPEN_HOOKS[tab];
+  if (!fn) return;
+  const delay = TAB_OPEN_DELAY_MS[tab] || 0;
+  if (delay) setTimeout(fn, delay);
+  else fn();
+}
+
+function refreshActiveTabPanels() {
+  const page = document.querySelector('.page.active');
+  if (!page || !page.id) return;
+  runTabOpenHooks(page.id.replace(/^page-/, ''));
+}
+
+function activateNavTab(tab) {
+  if (!tab) return;
+  const page = document.getElementById('page-' + tab);
+  if (!page) return;
+  if (tab !== 'expenses' && typeof closeExpSearch === 'function') closeExpSearch();
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  page.classList.add('active');
+  const moreOpen = document.getElementById('nav-more-open');
+  if (MOBILE_OVERFLOW_TABS.has(tab)) {
+    if (moreOpen) moreOpen.classList.add('active');
+  } else {
+    const dock = document.querySelector('.nav-item[data-tab="' + tab + '"]');
+    if (dock) dock.classList.add('active');
+  }
+  scrollNavItemIntoView(document.querySelector('.nav-item.active'));
+  closeMobileNavMore();
+  runTabOpenHooks(tab);
+}
+
 function scrollNavItemIntoView(btn) {
   if (!btn) return;
-  var strip = btn.closest('.sb-nav');
+  const strip = btn.closest('.sb-nav');
   if (!strip) return;
-  if (window.matchMedia && window.matchMedia('(max-width: 680px)').matches) {
-    try {
-      var stripWidth = strip.clientWidth;
-      var itemsPerPage = 4;
-      var index = Array.prototype.indexOf.call(strip.children, btn);
-      if (index < 0) return;
-      var pageIndex = Math.floor(index / itemsPerPage);
-      strip.scrollTo({ left: pageIndex * stripWidth, behavior: 'smooth' });
-    } catch (e) {}
-  }
 }
-document.querySelectorAll('.nav-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    if (btn.dataset.tab !== 'expenses' && typeof closeExpSearch === 'function') closeExpSearch();
-    btn.classList.add('active');
-    var tab = btn.dataset.tab;
-    document.getElementById('page-' + tab).classList.add('active');
-    scrollNavItemIntoView(btn);
-    if (tab === 'petrol' && typeof renderPetrolLog === 'function') setTimeout(renderPetrolLog, 10);
-    if (tab === 'report' && typeof renderReport === 'function') setTimeout(renderReport, 10);
-    if (tab === 'trends' && typeof renderTrends === 'function') setTimeout(renderTrends, 50);
-    if (tab === 'assets') {
-      renderBankList();
-      renderUnitTrustPanel();
-    }
-  });
+
+document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => activateNavTab(btn.dataset.tab));
 });
-window.addEventListener('load', function() {
-  var active = document.querySelector('.nav-item.active');
+
+const navMoreOpen = document.getElementById('nav-more-open');
+if (navMoreOpen) {
+  navMoreOpen.addEventListener('click', e => {
+    e.preventDefault();
+    const sheet = document.getElementById('mobile-nav-more-sheet');
+    if (sheet && sheet.classList.contains('open')) closeMobileNavMore();
+    else openMobileNavMore();
+  });
+}
+
+const mobileNavSheet = document.getElementById('mobile-nav-more-sheet');
+if (mobileNavSheet) {
+  const backdrop = mobileNavSheet.querySelector('.mobile-nav-sheet__backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeMobileNavMore);
+  mobileNavSheet.querySelectorAll('.mobile-nav-sheet__btn[data-tab]').forEach(b => {
+    b.addEventListener('click', () => activateNavTab(b.dataset.tab));
+  });
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const fabSheet = document.getElementById('ft-fab-sheet');
+  if (fabSheet && fabSheet.classList.contains('open')) {
+    closeFabSheet();
+    return;
+  }
+  const sheet = document.getElementById('mobile-nav-more-sheet');
+  if (sheet && sheet.classList.contains('open')) closeMobileNavMore();
+});
+
+window.addEventListener('resize', () => {
+  if (window.matchMedia && !window.matchMedia('(max-width: 680px)').matches) closeMobileNavMore();
+});
+
+window.addEventListener('load', () => {
+  const active = document.querySelector('.nav-item.active');
   if (active) scrollNavItemIntoView(active);
 });
 
@@ -1853,8 +2083,3 @@ document.getElementById('import-file').addEventListener('change', e => importBac
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addBank(); })
 );
 
-// ── Init ───────────────────────────────────────────────────
-document.getElementById('exp-date').value = todayStr();
-document.getElementById('inc-date').value = todayStr();
-buildCatButtons();
-load();

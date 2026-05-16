@@ -2965,6 +2965,47 @@ body.dark .ft-fab { background: #fff; color: #000; }
 @media (max-width: 680px) {
   .ft-fab { display: flex; }
 }
+.ft-fab-sheet {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; align-items: flex-end; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity .2s ease;
+}
+.ft-fab-sheet.open { pointer-events: auto; opacity: 1; }
+.ft-fab-sheet__backdrop {
+  position: absolute; inset: 0; background: rgba(0,0,0,.35);
+}
+.ft-fab-sheet__panel {
+  position: relative; width: 100%; max-width: 420px;
+  margin: 0 12px calc(58px + env(safe-area-inset-bottom, 0px) + 72px);
+  padding: 10px; border-radius: var(--radius-lg);
+  background: var(--card-bg); border: 1px solid var(--line);
+  box-shadow: 0 12px 40px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ft-fab-sheet__btn {
+  width: 100%; min-height: 48px; border: 0; border-radius: var(--radius-sm);
+  background: var(--card-bg2); color: var(--ink); font-size: var(--f-md);
+  font-weight: 600; text-align: left; padding: 12px 14px; cursor: pointer;
+}
+.ft-fab-sheet__btn:disabled { opacity: .45; cursor: not-allowed; }
+.ft-fab-sheet__btn:active:not(:disabled) { transform: scale(.98); }
+.exp-budget-chips-wrap {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s4);
+}
+.ft-budget-chip {
+  font-size: var(--f-xs); font-weight: 600; padding: 8px 12px;
+  border-radius: 999px; border: 1px solid var(--line);
+  background: var(--card-bg2); color: var(--ink2); cursor: pointer;
+}
+.ft-budget-chip--warn { border-color: #BA7517; color: #BA7517; }
+.ft-budget-chip--over { border-color: var(--red); color: var(--red); background: rgba(226,75,74,.08); }
+.ft-inline-hint {
+  font-size: var(--f-xs); color: var(--ink2); line-height: 1.5;
+  padding: 10px 12px; margin-bottom: var(--s4);
+  background: var(--card-bg2); border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+.sync-detail { min-height: 1.2em; }
 
 /* Tablet */
 @media (min-width: 681px) and (max-width: 900px) {
@@ -3432,7 +3473,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v73 · 2026-05-16 22:30';
+  var BUILD_VERSION    = 'v74 · 2026-05-16 23:45';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4076,6 +4117,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
       </section>
 
+      <div id="nw-snapshot-hint" class="ft-inline-hint" style="display:none" role="status"></div>
+
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Monthly overview — last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
@@ -4252,6 +4295,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </div>
               <label class="toggle">
                 <input type="checkbox" id="set-drag" checked/>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="s-lbl">Auto-snapshot net worth</div>
+                <div style="font-size:var(--f-xs);color:var(--ink3);margin-top:2px">Record total when bank balances change</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="set-nw-auto" checked/>
                 <div class="toggle-track"></div>
                 <div class="toggle-knob"></div>
               </label>
@@ -4544,28 +4598,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
 <!-- v21: Floating quick-add button (mobile only via CSS) -->
 <button id="ft-fab" class="ft-fab" type="button" aria-label="Quick add expense">+</button>
-<script>
-(function wireFab(){
-  var fab = document.getElementById('ft-fab');
-  if (!fab) return;
-  fab.addEventListener('click', function() {
-    var expTab = document.querySelector('.nav-item[data-tab="expenses"]');
-    if (expTab && !expTab.classList.contains('active')) expTab.click();
-    setTimeout(function() {
-      var amt = document.getElementById('exp-amount');
-      var card = amt ? amt.closest('.card') : null;
-      if (card) {
-        try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
-      }
-      if (amt) {
-        try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); }
-        try { amt.select(); } catch (e) {}
-      }
-    }, 60);
-  });
-})();
-</script>
-
 <div id="mobile-nav-more-sheet" class="mobile-nav-sheet" aria-hidden="true" role="dialog" aria-modal="true" aria-label="More sections">
   <div class="mobile-nav-sheet__backdrop" aria-hidden="true"></div>
   <div class="mobile-nav-sheet__panel">
@@ -4579,11 +4611,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v57 · 2026-05-14</div>
-<script src="app.js?v=73"></script>
-<script src="sync.js?v=62"></script>
-<script src="features.js?v=73"></script>
-<script src="extras.js?v=73"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v74 · 2026-05-16</div>
+<script src="app.js?v=74"></script>
+<script src="sync.js?v=74"></script>
+<script src="features.js?v=74"></script>
+<script src="extras.js?v=74"></script>
 <script src="import-inline.js?v=57"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──

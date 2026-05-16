@@ -101,27 +101,77 @@ function setDelta(id, cur, prv, lowerIsBetter) {
   var pct  = Math.round(((cur-prv)/prv)*100);
   var up   = cur >= prv;
   var good = lowerIsBetter ? !up : up;
-  el.textContent = (up ? '↑' : '↓') + ' ' + Math.abs(pct) + '% vs last month';
+  el.textContent = (up ? 'ↁE : 'ↁE) + ' ' + Math.abs(pct) + '% vs last month';
   el.style.color = good ? 'var(--green)' : 'var(--red)';
 }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   BUDGET TARGETS
 // ╚══════════════════════════════════════════════════════════╝
+function renderExpBudgetChips() {
+  var wrap = document.getElementById('exp-budget-chips');
+  if (!wrap) return;
+  var keys = Object.keys(budgets || {});
+  if (!keys.length) {
+    wrap.innerHTML = '';
+    wrap.hidden = true;
+    return;
+  }
+  var catTotals = {};
+  var ym = typeof viewYM === 'function' ? viewYM() : '';
+  expenses.filter(function(e) {
+    return typeof inVM === 'function' ? inVM(e.date) : (ym && String(e.date).indexOf(ym) === 0);
+  }).forEach(function(e) {
+    catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount;
+  });
+  var chips = [];
+  keys.forEach(function(cat) {
+    var limit = budgets[cat];
+    var spent = catTotals[cat] || 0;
+    var pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+    if (pct < 75) return;
+    var over = spent > limit;
+    var info = EXP_CATS[cat] || { icon: '📦' };
+    var cls = over ? 'ft-budget-chip ft-budget-chip--over' : 'ft-budget-chip ft-budget-chip--warn';
+    chips.push(
+      '<button type="button" class="' + cls + '" data-bud-cat="' + esc(cat) + '" title="Scroll to budgets">' +
+      esc(info.icon + ' ' + cat) + ' ' + pct + '% · ' + fmt(spent) + '/' + fmt(limit) +
+      '</button>'
+    );
+  });
+  if (!chips.length) {
+    wrap.innerHTML = '';
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML = chips.join('');
+  wrap.querySelectorAll('[data-bud-cat]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var card = document.getElementById('exp-budget-card');
+      if (card) {
+        try { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { card.scrollIntoView(); }
+      }
+    });
+  });
+}
+
 function renderBudgets() {
   var el = document.getElementById('budget-panel');
   if (!el) return;
 
-  var now    = new Date();
-  var curYM  = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var ym = typeof viewYM === 'function' ? viewYM() : '';
   var catTotals = {};
-  expenses.filter(function(e){return e.date.startsWith(curYM);}).forEach(function(e){
-    catTotals[e.cat] = (catTotals[e.cat]||0) + e.amount;
+  expenses.filter(function(e) {
+    return typeof inVM === 'function' ? inVM(e.date) : (ym && String(e.date).indexOf(ym) === 0);
+  }).forEach(function(e) {
+    catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount;
   });
 
   var keys = Object.keys(budgets);
   if (!keys.length) {
     el.innerHTML = '<div class="empty" style="padding:12px 0"><div class="empty-icon">🎯</div>No budgets set. Add limits below.</div>';
+    renderExpBudgetChips();
     return;
   }
 
@@ -153,7 +203,7 @@ function renderBudgets() {
     delBtn.type = 'button';
     delBtn.className = 'assets-icon-btn del';
     delBtn.title = 'Remove budget';
-    delBtn.textContent = '✕';
+    delBtn.textContent = '✁E;
     delBtn.dataset.cat = cat;
     delBtn.addEventListener('click', function() {
       delete budgets[delBtn.dataset.cat]; saveBud(); renderBudgets();
@@ -175,12 +225,13 @@ function renderBudgets() {
     // Over-budget toast (once per month per category)
     if (over) {
       var key = 'bud-warned-'+cat;
-      if (sessionStorage.getItem(key) !== curYM) {
-        sessionStorage.setItem(key, curYM);
+      if (sessionStorage.getItem(key) !== ym) {
+        sessionStorage.setItem(key, ym);
         showToast('Over budget: ' + cat);
       }
     }
   });
+  renderExpBudgetChips();
 }
 
 function addBudget() {
@@ -408,7 +459,7 @@ function renderRecurring() {
     var delBtn = document.createElement('button');
     delBtn.className = 'tx-action-btn del';
     delBtn.title = 'Delete';
-    delBtn.textContent = '✕';
+    delBtn.textContent = '✁E;
     (function(rid){ delBtn.addEventListener('click', function() {
       if (confirm('Delete this recurring entry?')) {
         recurring = recurring.filter(function(x){ return x.id !== rid; });
@@ -439,6 +490,38 @@ function snapshotNetWorth() {
   else networthHist.push({ date:today, total:total });
   networthHist = networthHist.sort(function(a,b){ return a.date.localeCompare(b.date); }).slice(-365);
   saveNWH();
+}
+
+function renderNwSnapshotHint() {
+  var el = document.getElementById('nw-snapshot-hint');
+  if (!el) return;
+  if (!banks.length) {
+    el.style.display = 'none';
+    return;
+  }
+  var needMore = networthHist.length < 2;
+  var stale = false;
+  if (networthHist.length) {
+    var last = networthHist[networthHist.length - 1].date;
+    var lastD = typeof parseTxDate === 'function' ? parseTxDate(last) : new Date(last + 'T12:00:00');
+    if (lastD) {
+      var days = (Date.now() - lastD.getTime()) / 86400000;
+      stale = days > 30;
+    }
+  }
+  if (!needMore && !stale) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  var autoOn = typeof settings !== 'undefined' && settings.nwAutoSnapshot !== false;
+  el.innerHTML =
+    (needMore
+      ? 'Net worth chart needs at least <strong>two</strong> balance snapshots on different days.'
+      : 'Last net worth snapshot was over 30 days ago.') +
+    (autoOn
+      ? ' Updating any bank balance will record today automatically.'
+      : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or edit a bank balance to record today.');
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -478,7 +561,7 @@ function renderTrends() {
 
   var teEl = document.getElementById('tr-avg-exp'); if(teEl) teEl.textContent = fmt(avgExp);
   var tiEl = document.getElementById('tr-avg-inc'); if(tiEl) tiEl.textContent = fmt(avgInc);
-  var tbEl = document.getElementById('tr-best');    if(tbEl) tbEl.textContent = bestM ? bestM.lbl + ' (+'+fmt(bestNet)+')' : '—';
+  var tbEl = document.getElementById('tr-best');    if(tbEl) tbEl.textContent = bestM ? bestM.lbl + ' (+'+fmt(bestNet)+')' : ' E;
 
   var trendEl = document.getElementById('trend-chart');
   if (!trendEl) return;
@@ -511,7 +594,7 @@ function renderTrends() {
     lbl.style.cssText = 'font-size:var(--f-xs);text-align:center;margin-top:4px';
     lbl.innerHTML =
       '<div style="font-weight:'+(m.isCurrent?700:400)+';color:'+(m.isCurrent?'var(--ink)':'var(--ink3)')+'">'+m.lbl+'</div>'+
-      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):'—')+'</div>';
+      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):' E)+'</div>';
 
     col.appendChild(bars); col.appendChild(lbl);
     col.addEventListener('click', function() {
@@ -531,6 +614,7 @@ function renderTrends() {
   trendEl.appendChild(cols);
 
   renderDayBreakdown();
+  renderNwSnapshotHint();
   renderNetWorthChart();
   requestAnimationFrame(function() {
     if (document.getElementById('page-trends') && document.getElementById('page-trends').classList.contains('active')) {
@@ -611,7 +695,7 @@ function renderDayBreakdown() {
     fill.style.cssText = 'width:'+pct+'%;background:#7F77DD';
     track.appendChild(fill);
     var val = document.createElement('div'); val.className='bar-value'; val.style.width='100px';
-    val.textContent = avgs[i]>0 ? fmt(avgs[i])+' avg' : '—';
+    val.textContent = avgs[i]>0 ? fmt(avgs[i])+' avg' : ' E;
     row.appendChild(lbl); row.appendChild(track); row.appendChild(val);
     el.appendChild(row);
   });
@@ -714,14 +798,6 @@ if (expSearchBd) expSearchBd.addEventListener('click', closeExpSearch);
 var expSearchCls = document.getElementById('exp-search-close');
 if (expSearchCls) expSearchCls.addEventListener('click', closeExpSearch);
 
-// Nav tab triggers (trends needs a chart pass when opened)
-document.querySelectorAll('.nav-item').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    var tab = btn.dataset.tab;
-    if (tab === 'trends') setTimeout(renderTrends, 30);
-  });
-});
-
 // Keyboard shortcut: Ctrl+F opens global search on Expenses
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
@@ -755,6 +831,6 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ╔══════════════════════════════════════════════════════════╗
-//   INIT — called after DOM ready
+//   INIT  Ecalled after DOM ready
 // ╚══════════════════════════════════════════════════════════╝
 loadFeatures();

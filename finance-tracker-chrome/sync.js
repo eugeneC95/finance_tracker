@@ -1,8 +1,8 @@
 'use strict';
 
 // ╔══════════════════════════════════════════════════════════╗
-//   GOOGLE SHEETS SYNC  — GET-only, no CORS preflight (Chrome)
-//   Same Sheet contract as ../sync.js (PWA); fetch via background SYNC_FETCH
+//   GOOGLE SHEETS SYNC  — GET-only, no CORS preflight (PWA)
+//   Same Sheet contract as finance-tracker-chrome/sync.js
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_STATE = 'sync_state_v1';
@@ -17,7 +17,8 @@ function applyHardcodedSyncUrl_() {
   syncUrl = canonicalSyncExecUrl(APPS_SCRIPT_WEB_APP_URL);
 }
 
-// Same as ../sync.js — …/exec only, no ?query (duplicate ?action= breaks Apps Script).
+// Apps Script URL must be …/exec with no ?query — duplicate ?action= breaks routing
+// (server can report "Unknown action: save_chunk" even when the new code is deployed).
 function canonicalSyncExecUrl(url) {
   var u = String(url || '').trim();
   if (!u) return u;
@@ -31,18 +32,19 @@ function canonicalSyncExecUrl(url) {
 
 // ── Load settings from chrome.storage ─────────────────────
 function loadSyncSettings(cb) {
-  chrome.storage.local.remove(['sync_url_v1'], function() {
-    chrome.storage.local.get([KEY_SYNC_STATE], function(r) {
-      applyHardcodedSyncUrl_();
-      syncState = r[KEY_SYNC_STATE] || syncState;
-      updateSyncUI();
-      if (cb) cb();
-    });
+  try {
+    chromeStorage.local.remove('sync_url_v1');
+  } catch (e) {}
+  chromeStorage.local.get([KEY_SYNC_STATE], function(r) {
+    applyHardcodedSyncUrl_();
+    syncState = r[KEY_SYNC_STATE] || syncState;
+    updateSyncUI();
+    if (cb) cb();
   });
 }
 
 function persistSyncState() {
-  chrome.storage.local.set({ [KEY_SYNC_STATE]: syncState });
+  chromeStorage.local.set({ [KEY_SYNC_STATE]: syncState });
 }
 
 // ── Build payload ──────────────────────────────────────────
@@ -61,9 +63,9 @@ function buildPayload() {
 }
 
 // ── Core fetch ─────────────────────────────────────────────
-// GET for ping / load / save (query) / save_chunk. Extension fetches go
-// through background.js (SYNC_FETCH). Large saves use POST body there; PWA
-// uses GET + parallel save_chunk batches (POST body lost on redirect).
+// GET for ping / load / save (query) / save_chunk. For "save" with a POST body
+// we only use that path when explicitly needed — the PWA avoids POST here
+// because Apps Script returns a 302 and fetch drops the body on redirect.
 function scriptFetch(url, params, body) {
   url = canonicalSyncExecUrl(url);
   var qs = Object.keys(params)
@@ -71,52 +73,31 @@ function scriptFetch(url, params, body) {
     .join('&');
   var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + qs;
   var hasBody = typeof body === 'string' && body.length > 0;
-  var method  = hasBody ? 'POST' : 'GET';
 
-  function directFetch() {
-    var opts = { method: method, redirect: 'follow' };
-    if (hasBody) {
-      opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-      opts.body    = body;
-    }
-    try { if (fullUrl.length > 6000) console.log('[sync] URL ' + fullUrl.length + ' chars'); } catch (e) {}
-    return fetch(fullUrl, opts).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status + ' from Apps Script');
-      return r.text().then(function(text) {
-        var t = (text || '').trim();
-        if (!t) throw new Error('Empty response from server');
-        try {
-          return JSON.parse(t);
-        } catch (parseErr) {
-          throw new Error('Server did not return JSON. First part: ' + t.slice(0, 160));
-        }
-      });
-    });
+  var opts = { method: hasBody ? 'POST' : 'GET', redirect: 'follow' };
+  if (hasBody) {
+    opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    opts.body = body;
   }
 
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-    return new Promise(function(resolve, reject) {
-      chrome.runtime.sendMessage(
-        { type: 'SYNC_FETCH', url: fullUrl, method: method, body: hasBody ? body : undefined },
-        function(response) {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
-          }
-          if (!response || !response.ok) {
-            reject(new Error((response && response.error) || 'Sync request failed'));
-            return;
-          }
-          resolve(response.data);
-        }
-      );
-    });
-  }
+  // Log URL length so users can diagnose 414/CORS easily via console.
+  try { if (fullUrl.length > 6000) console.log('[sync] URL ' + fullUrl.length + ' chars'); } catch (e) {}
 
-  return directFetch();
+  return fetch(fullUrl, opts).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' from Apps Script');
+    return r.text().then(function(text) {
+      var t = (text || '').trim();
+      if (!t) throw new Error('Empty response from server');
+      try {
+        return JSON.parse(t);
+      } catch (parseErr) {
+        throw new Error('Server did not return JSON. First part: ' + t.slice(0, 160));
+      }
+    });
+  });
 }
 
-// Map Apps Script error strings to actionable copy (same as ../sync.js).
+// Map Apps Script error strings to actionable copy (also used after thrown fetch/parse errors).
 function humanizeSaveApiError(raw) {
   if (!raw || typeof raw !== 'string') return 'unknown';
   if (/no data received/i.test(raw)) {
@@ -167,14 +148,24 @@ function syncPing() {
 }
 
 // ── Save ───────────────────────────────────────────────────
-// Same contract as ../sync.js for small payloads (GET save). Large payloads:
-// extension uses one POST via background.js (body survives redirect); PWA uses
-// parallel-batched save_chunk GETs (POST body is dropped on redirect).
+// On PWA (github.io origin) the Apps Script /macros/s/.../exec POST returns
+// a 302 to script.googleusercontent.com. Per HTTP/1.1, fetch converts POST
+// to GET on the follow and DROPS THE BODY, so doPost runs without
+// e.postData.contents, falls through to doGet, which responds
+// {ok:false, error:"No data received"}.
+//
+// v14 sent small saves as GET ?action=save&data=... (survives redirect).
+// Realistic datasets (~37 expense rows + other tabs) still URL-encode to
+// >6500 chars, so the code fell back to POST and hit the same bug.
+//
+// v17: if encodeURIComponent(json) >= SAVE_URL_LIMIT, send save_chunk GETs
+// (see google-apps-script.js). Chunks run in small parallel batches on the PWA
+// to cut wall-clock time vs strictly sequential requests.
 var SAVE_URL_LIMIT = 6500;
+// Raw JSON per chunk; balance URL limits vs number of round-trips.
 var CHUNK_PAYLOAD_CHARS = 2200;
+// How many save_chunk requests to run at once (PWA only; server uses LockService).
 var SAVE_CHUNK_PARALLEL = 4;
-// Max JSON chars to send in one extension POST (runtime messaging / Apps Script limits).
-var EXT_POST_SAVE_MAX_CHARS = 2500000;
 
 function syncSaveChunked(fullJson) {
   var sessionId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
@@ -249,11 +240,6 @@ function syncSave(silent) {
 
   if (encoded.length < SAVE_URL_LIMIT) {
     promise = scriptFetch(syncUrl, { action: 'save', data: json });
-  } else if (
-    typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id &&
-    json.length <= EXT_POST_SAVE_MAX_CHARS
-  ) {
-    promise = scriptFetch(syncUrl, { action: 'save' }, json);
   } else {
     promise = syncSaveChunked(json);
   }
@@ -336,6 +322,8 @@ function syncLoad(opts) {
       try {
       var p = data.payload || {};
 
+      // Never default missing/unparseable sheet dates to "today" — that silently moves every
+      // affected row into the current month (e.g. April looks empty, May doubles).
       var BAD_SHEET_DATE = '1900-01-02';
 
       function sheetDateField_(o) {
@@ -376,8 +364,7 @@ function syncLoad(opts) {
         }
       }
 
-      // Match PWA: coerce ids/amounts/dates from Sheet so rows are not dropped and filters work.
-      // Apps Script uses sheet header text as JSON keys — "ID" vs "id" matters; missing id gets synthetic.
+      // Same rules as finance-tracker-chrome/sync.js (Sheet headers may use id / ID / Id).
       function sanitize(arr) {
         if (!Array.isArray(arr)) return [];
         return arr.filter(function(e) {
@@ -423,7 +410,6 @@ function syncLoad(opts) {
         }
       }
 
-      // Move the visible month to the latest loaded transaction so lists are not empty by accident.
       try {
         if (typeof viewMonth !== 'undefined') {
           var best = null;
@@ -442,7 +428,6 @@ function syncLoad(opts) {
         }
       } catch (e4) { console.warn('syncLoad viewMonth', e4); }
 
-      // Persist everything locally
       saveExp(); saveInc(); saveBanks();
       if (typeof saveRec === 'function') saveRec();
       if (typeof saveBud === 'function') saveBud();
@@ -479,12 +464,18 @@ function syncLoad(opts) {
 }
 
 // ── Auto-load on app start ─────────────────────────────────
-// Same as ../sync.js: after local storage + first render, pull Google Sheets once.
+// Fires once per page session after the local data is loaded and rendered.
+// Pulls the latest Google Sheets snapshot so the iPhone PWA (which is
+// killed/rehydrated aggressively by iOS) shows fresh data on every launch.
 var _autoLoadFired = false;
 function syncAutoLoad() {
   if (_autoLoadFired) return;
+  // Do NOT set _autoLoadFired until syncUrl is known — ft-app-ready can fire
+  // before loadSyncSettings finishes; burning the flag early skipped cloud
+  // pull forever (Sheet data incl. unit trust never applied on the website).
   if (!syncUrl) return;
   _autoLoadFired = true;
+  // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
     syncLoad({ skipConfirm: true, silent: true, autoStart: true });
   }, 120);
@@ -492,6 +483,7 @@ function syncAutoLoad() {
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
 
+// When the tab / PWA regains focus, pull the Sheet again so local state matches the spreadsheet.
 function scheduleDebouncedSheetPull_() {
   clearTimeout(scheduleDebouncedSheetPull_._t);
   scheduleDebouncedSheetPull_._t = setTimeout(function() {
@@ -515,7 +507,9 @@ function scheduleAutoSync() {
   syncTimer = setTimeout(function() { syncSave(true); }, 2800);
 }
 
-// Patch save* functions to trigger auto-sync (see ../sync.js).
+// Patch save* functions to trigger auto-sync. app.js defines saveExp/Inc/Banks
+// before this file; features.js / extras.js define saveRec/Bud/Petrol/NWH after,
+// so we hook the first three immediately and the rest on window load.
 (function() {
   function wrapSave(name) {
     var cur = typeof window[name] === 'function' ? window[name] : null;
@@ -540,19 +534,45 @@ function scheduleAutoSync() {
     wrapSave('savePetrol');
     wrapSave('saveNWH');
   }
+  // Runs after remaining <script> tags (features.js, extras.js) in this document.
   setTimeout(hookDeferredSaves, 0);
 })();
 
 // ── UI ─────────────────────────────────────────────────────
+function syncDataCounts() {
+  return {
+    expenses: (expenses || []).length,
+    incomes: (incomes || []).length,
+    banks: (banks || []).length,
+  };
+}
+
 function setSyncStatus(status, message) {
   syncState.status  = status;
   syncState.message = message;
+  if (status === 'ok' || status === 'error') {
+    syncState.counts = syncDataCounts();
+  }
+  persistSyncState();
   updateSyncUI();
+}
+
+function fmtRelativeTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return 'just now';
+  if (sec < 3600) return Math.floor(sec / 60) + ' min ago';
+  if (sec < 86400) return Math.floor(sec / 3600) + ' h ago';
+  if (sec < 172800) return 'yesterday';
+  return d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
 }
 
 function updateSyncUI() {
   var dot = document.getElementById('sync-dot');
   var msg = document.getElementById('sync-msg');
+  var detail = document.getElementById('sync-detail');
   var disp = document.getElementById('sync-url-display');
 
   if (disp) disp.textContent = syncUrl || '';
@@ -574,9 +594,28 @@ function updateSyncUI() {
   if (syncState.message) {
     msg.textContent = syncState.message;
   } else {
-    msg.textContent = syncUrl ? 'Loads from Google Sheets when you open or return to the app; auto-saves 4 s after changes' : 'Sync URL not set in app build';
+    msg.textContent = syncUrl ? 'Auto-saves ~3 s after changes' : 'Sync URL not set in app build';
   }
   msg.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
+
+  if (detail) {
+    var parts = [];
+    var c = syncState.counts;
+    if (c) {
+      parts.push(c.expenses + ' expenses · ' + c.incomes + ' income · ' + c.banks + ' banks');
+    }
+    if (syncState.lastSaved) {
+      parts.push('Last saved ' + fmtRelativeTime(syncState.lastSaved) + ' (' + fmtTime(syncState.lastSaved) + ')');
+    }
+    if (syncState.lastLoaded) {
+      parts.push('Last loaded ' + fmtRelativeTime(syncState.lastLoaded));
+    }
+    if (syncState.status === 'error' && syncState.message) {
+      parts.push(syncState.message);
+    }
+    detail.textContent = parts.length ? parts.join(' · ') : 'Opens or returns to the app: loads from your Sheet. Edits auto-save after a short pause.';
+    detail.style.color = syncState.status === 'error' ? 'var(--red)' : 'var(--ink3)';
+  }
 }
 
 function fmtTime(iso) {
@@ -600,5 +639,7 @@ function wireSyncUI() {
 // ── Init ───────────────────────────────────────────────────
 loadSyncSettings(function() {
   wireSyncUI();
+  // Cover the race where app.js dispatched ft-app-ready before sync.js
+  // attached its listener. syncAutoLoad guards itself against double-firing.
   if (window.__ftAppReady) syncAutoLoad();
 });

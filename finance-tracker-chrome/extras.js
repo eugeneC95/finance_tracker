@@ -8,14 +8,14 @@ var KEY_PETROL = 'petrol_v1';
 var petrolLog = [];
 
 function loadExtras() {
-  chrome.storage.local.get([KEY_PETROL], function(r) {
+  chromeStorage.local.get([KEY_PETROL], function(r) {
     petrolLog = r[KEY_PETROL] || [];
     renderPetrolLog();
     buildCatSelects();
   });
 }
 
-function savePetrol() { chrome.storage.local.set({[KEY_PETROL]: petrolLog}); }
+function savePetrol() { chromeStorage.local.set({[KEY_PETROL]: petrolLog}); }
 
 // ╔══════════════════════════════════════════════════════════╗
 //   CATEGORY SELECT REBUILD
@@ -522,14 +522,5 @@ if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 // Report
 var printBtn = document.getElementById('print-report-btn');
 if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
-
-// Nav triggers for petrol/report pages
-document.querySelectorAll('.nav-item').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    var tab = btn.dataset.tab;
-    if (tab === 'petrol') setTimeout(renderPetrolLog, 10);
-    if (tab === 'report') setTimeout(renderReport, 10);
-  });
-});
 
 loadExtras();
