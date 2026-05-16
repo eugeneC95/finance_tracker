@@ -1815,19 +1815,27 @@ function importBackup(file) {
 }
 
 // ── Settings listeners ─────────────────────────────────────
-document.getElementById('set-dark').addEventListener('change', e => {
+function bindChange(id, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', fn);
+}
+function bindInput(id, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', fn);
+}
+bindChange('set-dark', e => {
   settings.dark = e.target.checked; saveSets(); applySettings();
 });
 document.querySelectorAll('.fs-btn').forEach(b => b.addEventListener('click', () => {
   settings.fontSize = b.dataset.fs; saveSets(); applySettings();
 }));
-document.getElementById('set-currency').addEventListener('input', e => {
+bindInput('set-currency', e => {
   settings.currency = e.target.value || 'RM'; saveSets(); render();
 });
-document.getElementById('set-drag').addEventListener('change', e => {
+bindChange('set-drag', e => {
   settings.showDrag = e.target.checked; saveSets(); render();
 });
-document.getElementById('set-compact').addEventListener('change', e => {
+bindChange('set-compact', e => {
   settings.compact = e.target.checked; saveSets(); applySettings();
 });
 const setNwAuto = document.getElementById('set-nw-auto');
@@ -2055,23 +2063,31 @@ window.addEventListener('load', () => {
   if (active) scrollNavItemIntoView(active);
 });
 
-document.getElementById('prev-month').addEventListener('click', () => {
-  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1); render();
+function bindClick(id, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', fn);
+}
+bindClick('prev-month', () => {
+  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
+  render();
 });
-document.getElementById('next-month').addEventListener('click', () => {
-  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1); render();
+bindClick('next-month', () => {
+  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
+  render();
 });
 
 // ── Action buttons ─────────────────────────────────────────
-document.getElementById('add-exp-btn').addEventListener('click', addExpense);
-document.getElementById('add-inc-btn').addEventListener('click', addIncome);
-document.getElementById('add-bank-btn').addEventListener('click', addBank);
-document.getElementById('export-btn').addEventListener('click', exportData);
-document.getElementById('import-btn').addEventListener('click', () => {
-  document.getElementById('import-file').value = '';
-  document.getElementById('import-file').click();
+bindClick('add-exp-btn', addExpense);
+bindClick('add-inc-btn', addIncome);
+bindClick('add-bank-btn', addBank);
+bindClick('export-btn', exportData);
+bindClick('import-btn', () => {
+  const inp = document.getElementById('import-file');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
 });
-document.getElementById('import-file').addEventListener('change', e => importBackup(e.target.files[0]));
+bindChange('import-file', e => importBackup(e.target.files[0]));
 
 ['exp-name','exp-amount'].forEach(id =>
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addExpense(); })

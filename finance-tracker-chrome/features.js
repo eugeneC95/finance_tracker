@@ -101,7 +101,7 @@ function setDelta(id, cur, prv, lowerIsBetter) {
   var pct  = Math.round(((cur-prv)/prv)*100);
   var up   = cur >= prv;
   var good = lowerIsBetter ? !up : up;
-  el.textContent = (up ? 'ↁE : 'ↁE) + ' ' + Math.abs(pct) + '% vs last month';
+  el.textContent = (up ? '\u2191' : '\u2193') + ' ' + Math.abs(pct) + '% vs last month';
   el.style.color = good ? 'var(--green)' : 'var(--red)';
 }
 
@@ -203,7 +203,7 @@ function renderBudgets() {
     delBtn.type = 'button';
     delBtn.className = 'assets-icon-btn del';
     delBtn.title = 'Remove budget';
-    delBtn.textContent = '✁E;
+    delBtn.textContent = '\u2715';
     delBtn.dataset.cat = cat;
     delBtn.addEventListener('click', function() {
       delete budgets[delBtn.dataset.cat]; saveBud(); renderBudgets();
@@ -459,7 +459,7 @@ function renderRecurring() {
     var delBtn = document.createElement('button');
     delBtn.className = 'tx-action-btn del';
     delBtn.title = 'Delete';
-    delBtn.textContent = '✁E;
+    delBtn.textContent = '\u2715';
     (function(rid){ delBtn.addEventListener('click', function() {
       if (confirm('Delete this recurring entry?')) {
         recurring = recurring.filter(function(x){ return x.id !== rid; });
@@ -561,7 +561,7 @@ function renderTrends() {
 
   var teEl = document.getElementById('tr-avg-exp'); if(teEl) teEl.textContent = fmt(avgExp);
   var tiEl = document.getElementById('tr-avg-inc'); if(tiEl) tiEl.textContent = fmt(avgInc);
-  var tbEl = document.getElementById('tr-best');    if(tbEl) tbEl.textContent = bestM ? bestM.lbl + ' (+'+fmt(bestNet)+')' : ' E;
+  var tbEl = document.getElementById('tr-best');    if(tbEl) tbEl.textContent = bestM ? bestM.lbl + ' (+'+fmt(bestNet)+')' : '\u2014';
 
   var trendEl = document.getElementById('trend-chart');
   if (!trendEl) return;
@@ -594,7 +594,7 @@ function renderTrends() {
     lbl.style.cssText = 'font-size:var(--f-xs);text-align:center;margin-top:4px';
     lbl.innerHTML =
       '<div style="font-weight:'+(m.isCurrent?700:400)+';color:'+(m.isCurrent?'var(--ink)':'var(--ink3)')+'">'+m.lbl+'</div>'+
-      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):' E)+'</div>';
+      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):'\u2014')+'</div>';
 
     col.appendChild(bars); col.appendChild(lbl);
     col.addEventListener('click', function() {
@@ -695,7 +695,7 @@ function renderDayBreakdown() {
     fill.style.cssText = 'width:'+pct+'%;background:#7F77DD';
     track.appendChild(fill);
     var val = document.createElement('div'); val.className='bar-value'; val.style.width='100px';
-    val.textContent = avgs[i]>0 ? fmt(avgs[i])+' avg' : ' E;
+    val.textContent = avgs[i]>0 ? fmt(avgs[i])+' avg' : '\u2014';
     row.appendChild(lbl); row.appendChild(track); row.appendChild(val);
     el.appendChild(row);
   });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script>
-// On-screen JS error reporter  Emirrors index.html (PWA). DevTools is the
+// On-screen JS error reporter —mirrors index.html (PWA). DevTools is the
 // primary debug surface in the extension, but a visible banner is useful
 // when reproducing user-reported issues without opening the console.
 (function(){
@@ -47,7 +47,7 @@ input, select, textarea { font-family: inherit; }
    DESIGN TOKENS
    ============================================================ */
 :root {
-  /* Colours  Elight */
+  /* Colours —light */
   --page-bg  : #F2F2F0;
   --card-bg  : #FFFFFF;
   --card-bg2 : #F8F8F6;
@@ -75,7 +75,7 @@ input, select, textarea { font-family: inherit; }
   --s8  : 36px;
   --s10 : 48px;
 
-  /* Type scale  E16px base avoids iOS input zoom */
+  /* Type scale —16px base avoids iOS input zoom */
   --f-xs : 12px;
   --f-sm : 14px;
   --f-md : 16px;
@@ -468,7 +468,7 @@ body.dark .btn-primary { color: #000; }
 .btn-ghost.green:hover { background: rgba(26,158,110,.08); }
 
 
-/* Comfortable density  Echips, budgets, heroes */
+/* Comfortable density —chips, budgets, heroes */
 .ft-chip span,
 .assets-chip span {
   font-size: var(--f-xs);
@@ -549,7 +549,7 @@ body.dark .cat-btn.active { color: #000; }
   align-items: end;
 }
 
-/* Add expense  Eprimary form */
+/* Add expense —primary form */
 .exp-add-form {
   direction: ltr;
   display: flex;
@@ -1315,7 +1315,7 @@ body.dark .bar-track { background: var(--card-bg2); }
 }
 
 /* ============================================================
-   FT UI  Eshared patterns (all pages)
+   FT UI —shared patterns (all pages)
    ============================================================ */
 .ft-page-hero,
 .assets-hero {
@@ -1811,7 +1811,7 @@ body.dark .fs-btn.active { color: #000; }
   border-radius: var(--radius-sm);
 }
 
-/* Settings  Ebackup / Sheets: full-width actions */
+/* Settings —backup / Sheets: full-width actions */
 .settings-actions {
   display: flex;
   flex-direction: column;
@@ -2319,7 +2319,7 @@ body.dark .fs-btn.active { color: #000; }
     </button>
     <div class="nav-spacer"></div>
     <button class="nav-item" data-tab="settings">
-      <span class="icon">⚙︁E/span> Settings
+      <span class="icon">⚙️</span> Settings
     </button>
   </nav>
 
@@ -2327,7 +2327,7 @@ body.dark .fs-btn.active { color: #000; }
     <div class="month-lbl">Viewing period</div>
     <div class="month-row">
       <button class="month-arrow" id="prev-month">‹</button>
-      <span class="month-name" id="month-label"> E/span>
+      <span class="month-name" id="month-label">—</span>
       <button class="month-arrow" id="next-month">›</button>
     </div>
   </div>
@@ -2350,11 +2350,11 @@ body.dark .fs-btn.active { color: #000; }
       </div>
     </div>
     <div id="exp-search-pop" class="exp-search-pop" aria-hidden="true" role="dialog" aria-label="Search transactions">
-      <button type="button" class="exp-search-pop__backdrop" id="exp-search-backdrop" tabindex="-1" aria-label="Close search"></button>
+      <button type="button" class="exp-search-pop__backdrop" id="exp-search-backdrop" tabindex="-1" aria-label="Close search">✕</button>
       <div class="exp-search-pop__panel" role="search">
         <div class="exp-search-pop__toolbar">
           <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
-          <button type="button" class="exp-search-pop__close" id="exp-search-close" aria-label="Close search">✁E/button>
+          <button type="button" class="exp-search-pop__close" id="exp-search-close" aria-label="Close search">✕</button>
         </div>
         <div id="search-results"></div>
       </div>
@@ -2386,7 +2386,7 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-5 exp-daily-card">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
-          <p class="ft-note">Daily totals for the selected month  Euse the sidebar arrows to change month.</p>
+          <p class="ft-note">Daily totals for the selected month —use the sidebar arrows to change month.</p>
           <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
       </div>
@@ -2449,7 +2449,7 @@ body.dark .fs-btn.active { color: #000; }
         </div>
       </div>
 
-      <!-- Budget overview (occasional use  Ebottom of page) -->
+      <!-- Budget overview (occasional use —bottom of page) -->
       <div class="card mb-5 exp-budget-card" id="exp-budget-card">
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
         <div class="panel-bd">
@@ -2468,7 +2468,7 @@ body.dark .fs-btn.active { color: #000; }
                 <option value="Petrol">⛽ Petrol</option>
                 <option value="Car Service">🔧 Car service</option>
                 <option value="Toll">🛣 Toll</option>
-                <option value="Parking">�E�E�EParking</option>
+                <option value="Parking">�E�E�EParking</option>
                 <option value="Car Expenses">🚗 Car expenses</option>
                 <option value="Transport">🚌 Transport</option>
                 <option value="Other">📦 Other</option>
@@ -2713,7 +2713,7 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-recurring">
     <div class="page-header">
       <h2>Recurring</h2>
-      <p class="sub">Bills and income that repeat every month  Eapplied when you open the app.</p>
+      <p class="sub">Bills and income that repeat every month —applied when you open the app.</p>
     </div>
     <div class="page-body">
       <div class="card mb-5">
@@ -2754,7 +2754,7 @@ body.dark .fs-btn.active { color: #000; }
                   <option value="Petrol">⛽ Petrol</option>
                   <option value="Car Service">🔧 Car service</option>
                   <option value="Toll">🛣 Toll</option>
-                  <option value="Parking">�E�E�EParking</option>
+                  <option value="Parking">�E�E�EParking</option>
                   <option value="Car Expenses">🚗 Car expenses</option>
                   <option value="Transport">🚌 Transport</option>
                   <option value="Other">📦 Other</option>
@@ -2805,7 +2805,7 @@ body.dark .fs-btn.active { color: #000; }
             </div>
             <div class="ft-chip">
               <span>Best savings</span>
-              <strong id="tr-best"> E/strong>
+              <strong id="tr-best">—</strong>
             </div>
           </div>
         </div>
@@ -2814,7 +2814,7 @@ body.dark .fs-btn.active { color: #000; }
       <div id="nw-snapshot-hint" class="ft-inline-hint" style="display:none" role="status"></div>
 
       <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Monthly overview  Elast 6 months</span></div>
+        <div class="panel-hd"><span class="panel-title">Monthly overview —last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
           <div id="trend-chart"></div>
         </div>
@@ -2860,7 +2860,7 @@ body.dark .fs-btn.active { color: #000; }
                     <div class="src-name">UOB Bank</div>
                   </div>
                 </div>
-                <button class="btn btn-primary" id="iw-next1" disabled>Next ↁE/button>
+                <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
               </div>
               <div id="iw2" style="display:none;max-width:680px">
                 <div id="iw-tng-input" style="display:none">
@@ -2868,7 +2868,7 @@ body.dark .fs-btn.active { color: #000; }
                     <summary class="sync-help-summary">How to get TNG data</summary>
                     <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
                       <li>Open TNG app ↁE<strong>Profile</strong> ↁE<strong>Transaction History</strong></li>
-                      <li>Tap the ✉︁Eemail icon  ETNG will email you a PDF statement</li>
+                      <li>Tap the ✉︁Eemail icon —TNG will email you a PDF statement</li>
                       <li>Open the PDF, select all text, copy and paste below</li>
                     </ol>
                   </details>
@@ -2904,8 +2904,8 @@ body.dark .fs-btn.active { color: #000; }
                   </div>
                 </div>
                 <div class="btn-row">
-                  <button class="btn-ghost" id="iw-back2">ↁEBack</button>
-                  <button class="btn btn-primary" id="iw-parse">Parse transactions ↁE/button>
+                  <button class="btn-ghost" id="iw-back2">← Back</button>
+                  <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
                 </div>
               </div>
               <div id="iw3" style="display:none">
@@ -2925,7 +2925,7 @@ body.dark .fs-btn.active { color: #000; }
                   </table>
                 </div>
                 <div class="btn-row">
-                  <button class="btn-ghost" id="iw-back3">ↁEStart over</button>
+                  <button class="btn-ghost" id="iw-back3">← Start over</button>
                   <button class="btn btn-green" id="iw-import">✁EImport selected</button>
                 </div>
               </div>
@@ -3026,7 +3026,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd">
               <span class="panel-title">Google Sheets sync</span>
               <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs);min-width:0;flex-shrink:1">
-                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">◁E/span>
+                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">○</span>
                 <span id="sync-msg" style="color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not configured</span>
               </span>
             </div>
@@ -3056,7 +3056,7 @@ body.dark .fs-btn.active { color: #000; }
                 4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
                 5. Click Deploy ↁEGoogle will ask you to authorise ↁEclick Allow<br/>
                 6. Deploy, authorise, then use <strong>Test connection</strong> below (the web app URL is fixed in this app).<br/><br/>
-                <strong>⚠�E�EIf "Failed to fetch" appears:</strong><br/>
+                <strong>⚠�E�EIf "Failed to fetch" appears:</strong><br/>
                 • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
                 • Re-deploy: Deploy ↁEManage deployments ↁEEdit ↁENew version ↁEDeploy<br/>
                 • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
@@ -3104,9 +3104,9 @@ body.dark .fs-btn.active { color: #000; }
           </div>
           <div class="ft-page-hero__chips">
             <div class="ft-chip"><span>Litres</span><strong id="pt-litres">0 L</strong></div>
-            <div class="ft-chip"><span>Avg RM/L</span><strong id="pt-ppl"> E/strong></div>
-            <div class="ft-chip"><span>Cost / km</span><strong id="pt-cpk"> E/strong></div>
-            <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff"> E/strong></div>
+            <div class="ft-chip"><span>Avg RM/L</span><strong id="pt-ppl">—</strong></div>
+            <div class="ft-chip"><span>Cost / km</span><strong id="pt-cpk">—</strong></div>
+            <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff">—</strong></div>
           </div>
         </div>
       </section>
@@ -3224,7 +3224,7 @@ body.dark .fs-btn.active { color: #000; }
   <div class="modal modal--edit" role="dialog" aria-modal="true" aria-labelledby="edit-title">
     <div class="modal-hd">
       <div class="modal-title" id="edit-title">Edit entry</div>
-      <button type="button" class="modal-close" id="edit-close" aria-label="Close">✁E/button>
+      <button type="button" class="modal-close" id="edit-close" aria-label="Close">✕</button>
     </div>
     <div class="modal-bd edit-modal-bd">
       <div class="edit-field">
@@ -3267,21 +3267,18 @@ body.dark .fs-btn.active { color: #000; }
         <div class="modal-title" id="cd-title">Category</div>
         <div style="font-size:var(--f-sm);color:var(--ink3);margin-top:2px" id="cd-sub"></div>
       </div>
-      <button class="modal-close" id="cd-close">✁E/button>
+      <button class="modal-close" id="cd-close">✕</button>
     </div>
     <div class="cat-stats">
       <div class="cat-stat">
         <div class="cs-lbl">Total</div>
-        <div class="cs-val" id="cd-total"> E/div>
-      </div>
+        <div class="cs-val" id="cd-total">—</div>
       <div class="cat-stat">
         <div class="cs-lbl">Entries</div>
-        <div class="cs-val" id="cd-count"> E/div>
-      </div>
+        <div class="cs-val" id="cd-count">—</div>
       <div class="cat-stat">
         <div class="cs-lbl">Average</div>
-        <div class="cs-val" id="cd-avg"> E/div>
-      </div>
+        <div class="cs-val" id="cd-avg">—</div>
     </div>
     <div class="cat-list" id="cd-list"></div>
   </div>

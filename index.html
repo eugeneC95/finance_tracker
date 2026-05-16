@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <script>
-// On-screen JS error reporter  EiOS Safari has no console, so any failure
+// On-screen JS error reporter —iOS Safari has no console, so any failure
 // has to be made visible inside the page itself. Mounts as soon as <body>
 // exists. Toggle off later by removing this <script>.
 (function(){
@@ -35,15 +35,15 @@
 <script>
 // v9: The lock screen is now an in-page overlay inside this file. We no
 // longer navigate to a separate lock.html (which broke on iOS standalone
-// PWAs  Ecross-file location.replace inside the PWA shell silently
+// PWAs —cross-file location.replace inside the PWA shell silently
 // fails). Instead we set window.__ftUnlocked here, and the overlay at
 // the top of <body> shows/hides itself accordingly.
 //
 // Unlock sources (any one is sufficient):
-//   ?debug=1                             Ediagnostics bypass (no auth)
-//   #u=<timestamp> in URL               Ehash-token fallback (legacy)
-//   sessionStorage  ('ft-unlocked')     Esame-session token
-//   localStorage    ('ft_unlock_bridge')  Eshort-lived bridge (~45 s)
+//   ?debug=1                            —diagnostics bypass (no auth)
+//   #u=<timestamp> in URL              —hash-token fallback (legacy)
+//   sessionStorage  ('ft-unlocked')    —same-session token
+//   localStorage    ('ft_unlock_bridge') —short-lived bridge (~45 s)
 //
 // ?reset=1 clears session unlock and the short-lived bridge so the lock
 // overlay appears again on the next paint (PIN is fixed in source).
@@ -109,7 +109,7 @@ input, select, textarea { font-family: inherit; }
    DESIGN TOKENS
    ============================================================ */
 :root {
-  /* Colours  Elight */
+  /* Colours —light */
   --page-bg  : #eef1ee;
   --card-bg  : #FFFFFF;
   --card-bg2 : #f4f6f4;
@@ -139,7 +139,7 @@ input, select, textarea { font-family: inherit; }
   --s8  : 36px;
   --s10 : 48px;
 
-  /* Type scale  E16px base avoids iOS input zoom */
+  /* Type scale —16px base avoids iOS input zoom */
   --f-xs : 12px;
   --f-sm : 14px;
   --f-md : 16px;
@@ -225,7 +225,7 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ── Large screens: visible “redesign Elayer (v22 only touched ≤680px) ── */
+/* ── Large screens: visible “redesign—layer (v22 only touched ≤680px) ── */
 @media (min-width: 681px) {
   body {
     background:
@@ -360,7 +360,7 @@ body {
   display: none;
 }
 
-/* Mobile “More Esheet (opened from bottom nav on narrow screens) */
+/* Mobile “More—sheet (opened from bottom nav on narrow screens) */
 .mobile-nav-sheet {
   position: fixed;
   inset: 0;
@@ -616,7 +616,7 @@ body.mobile-nav-sheet-open {
   margin-bottom: var(--s3);
 }
 
-/* Recurring option  Ecustom checkbox (avoids default huge circle on mobile) */
+/* Recurring option —custom checkbox (avoids default huge circle on mobile) */
 .ft-check-label {
   display: flex;
   align-items: flex-start;
@@ -754,7 +754,7 @@ body.dark .btn-primary { color: #041312; }
 .btn-ghost.green:hover { background: rgba(26,158,110,.08); }
 
 
-/* Comfortable density  Echips, budgets, heroes */
+/* Comfortable density —chips, budgets, heroes */
 .ft-chip span,
 .assets-chip span {
   font-size: var(--f-xs);
@@ -835,7 +835,7 @@ body.dark .cat-btn.active { color: #041312; }
   align-items: end;
 }
 
-/* Add expense  Eprimary form (replaces flat .add-row on expenses page) */
+/* Add expense —primary form (replaces flat .add-row on expenses page) */
 .exp-add-form {
   direction: ltr;
   display: flex;
@@ -1589,7 +1589,7 @@ body.dark .bar-track { background: var(--card-bg2); }
 }
 
 /* ============================================================
-   FT UI  Eshared patterns (all pages)
+   FT UI —shared patterns (all pages)
    ============================================================ */
 .ft-page-hero,
 .assets-hero {
@@ -2085,7 +2085,7 @@ body.dark .fs-btn.active { color: #041312; }
   border-radius: var(--radius-sm);
 }
 
-/* Settings  Ebackup / Sheets: full-width actions (avoid half-grid overlap) */
+/* Settings —backup / Sheets: full-width actions (avoid half-grid overlap) */
 .settings-actions {
   display: flex;
   flex-direction: column;
@@ -2577,13 +2577,13 @@ body.dark .fs-btn.active { color: #041312; }
 
 
 /* ══════════════════════════════════════════════════════════
-   PWA RESPONSIVE  EMOBILE FIRST
+   PWA RESPONSIVE —MOBILE FIRST
    ══════════════════════════════════════════════════════════ */
 
 /* ── Bottom nav bar (mobile) ── */
 
 /* ══════════════════════════════════════════════════════════
-   RESPONSIVE  EMOBILE (iPhone / Android)
+   RESPONSIVE —MOBILE (iPhone / Android)
    Key insight: sidebar stays in flow as flex column,
    but on mobile we give it fixed height at bottom and
    .main fills remaining space with overflow-y:auto.
@@ -2685,7 +2685,7 @@ body.dark .fs-btn.active { color: #041312; }
   .page        { display: none; }
   .page.active { display: block; min-height: 50px; }
 
-  /* v16  Emobile-first layout & typography */
+  /* v16 —mobile-first layout & typography */
   .page-header {
     padding: 16px 16px 0;
     padding-left: 20px;
@@ -2733,7 +2733,7 @@ body.dark .fs-btn.active { color: #041312; }
 
   .card { border-radius: 14px; }
 
-  /* v21  EUX focus: surface the Add Expense form, shrink everything else.
+  /* v21 —UX focus: surface the Add Expense form, shrink everything else.
      Reorder the Expenses page on phone so the most-common action (add) is at
      the top, then a quick glance at spending, then recent activity. Budget
      and the chart are pushed below the fold for users who scroll for context.
@@ -2760,7 +2760,7 @@ body.dark .fs-btn.active { color: #041312; }
   #page-expenses .exp-budget-card { order: 6; }
 
   /* Stat strip on phone: two compact tiles up top, transaction count full-
-     width below. No more "hero" gradient  Eit stole attention from the form. */
+     width below. No more "hero" gradient —it stole attention from the form. */
   .stat-row {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -3015,7 +3015,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 }
 
 /* ════════════════════════════════════════════════════════════
-   LOCK OVERLAY  (v9  Ereplaces the standalone lock.html screen)
+   LOCK OVERLAY  (v9 —replaces the standalone lock.html screen)
    Sits on top of the dashboard until the user enters their PIN.
    No cross-file navigation; PIN match just hides this overlay.
    ════════════════════════════════════════════════════════════ */
@@ -3086,7 +3086,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   v22  EMODERN APP-LIKE VISUAL STYLE (mobile only)
+   v22 —MODERN APP-LIKE VISUAL STYLE (mobile only)
 
    Goals: feel like a native iOS finance app rather than a web page.
    - Soft elevation instead of hard borders
@@ -3376,7 +3376,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </head>
 <body class="fs-md">
 
-<!-- Visible when the 6-digit lock is hidden but JS failed  EiOS PWA can serve a broken cached bundle. -->
+<!-- Visible when the 6-digit lock is hidden but JS failed —iOS PWA can serve a broken cached bundle. -->
 <div id="ft-boot" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:99990;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(26,26,26,.94);color:#ddd;font-size:12px;line-height:1.45;text-align:center;border-top:1px solid #333">
   <span id="ft-boot-msg">Loading Finance Tracker…</span>
   <div id="ft-boot-actions" style="display:none;margin-top:8px">
@@ -3409,7 +3409,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     if (m) m.textContent = 'Still loading? Your device may be stuck on an old offline copy.';
     if (a) a.style.display = 'block';
   }, 7000);
-  // If the bar never got ft-app-ready (dead JS) but the 7s diagnostic also did not run (background tab, etc.), hide the loading strip only  Enever hide while recovery links are visible.
+  // If the bar never got ft-app-ready (dead JS) but the 7s diagnostic also did not run (background tab, etc.), hide the loading strip only —never hide while recovery links are visible.
   setTimeout(function() {
     var b = document.getElementById('ft-boot');
     var a = document.getElementById('ft-boot-actions');
@@ -3462,18 +3462,18 @@ body.dark .ft-fab { background: #fff; color: #000; }
 <script>
 // Lock-overlay controller. Runs synchronously here so the overlay is hidden
 // before painting if the user is already unlocked (set by the auth gate in
-// <head> via window.__ftUnlocked). No location.replace  Ewhen the PIN is
+// <head> via window.__ftUnlocked). No location.replace —when the PIN is
 // correct we just remove the overlay and let the dashboard render in place.
 (function lockController(){
   // Unlock compares SHA-256(entered PIN) to this constant. The PIN itself is
-  // not stored in source  Eonly its digest (UTF-8 bytes, same as TextEncoder).
+  // not stored in source —only its digest (UTF-8 bytes, same as TextEncoder).
   // To change: run  node -e "console.log(require('crypto').createHash('sha256').update('123456','utf8').digest('hex'))"
   // and paste the 64-char hex below. (Six-digit PINs are still guessable offline.)
   var LOCK_PIN_SHA256_HEX = 'b862fb2b4ae994ddb32ba8ca08561ef0d362380bbfbdcef4ad3e0b66a585c56a';
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v75 · 2026-05-16 23:45';
+  var BUILD_VERSION    = 'v76 · 2026-05-16 23:45';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3489,7 +3489,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
   if (window.__ftUnlocked) { hide(); return; }
 
-  // Leftover from older "choose your own PIN" builds  Enot used anymore.
+  // Leftover from older "choose your own PIN" builds —not used anymore.
   try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e) {}
 
   async function sha256(s) {
@@ -3621,7 +3621,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <div class="nav-spacer"></div>
     <p class="nav-section-label" role="presentation">App</p>
     <button class="nav-item" data-tab="settings">
-      <span class="icon">⚙︁E/span> Settings
+      <span class="icon">⚙️</span> Settings
     </button>
   </nav>
 
@@ -3629,7 +3629,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <div class="month-lbl">Viewing period</div>
     <div class="month-row">
       <button class="month-arrow" id="prev-month">‹</button>
-      <span class="month-name" id="month-label"> E/span>
+      <span class="month-name" id="month-label">—</span>
       <button class="month-arrow" id="next-month">›</button>
     </div>
   </div>
@@ -3642,7 +3642,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <!-- Mobile month nav (hidden on desktop via CSS, shown on mobile) -->
   <div class="month-controls" id="mobile-month-nav" style="display:none">
     <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
-    <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center"> E/span>
+    <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center">—</span>
     <button class="month-arrow" id="next-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">›</button>
   </div>
 
@@ -3658,11 +3658,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
       </div>
     </div>
     <div id="exp-search-pop" class="exp-search-pop" aria-hidden="true" role="dialog" aria-label="Search transactions">
-      <button type="button" class="exp-search-pop__backdrop" id="exp-search-backdrop" tabindex="-1" aria-label="Close search"></button>
+      <button type="button" class="exp-search-pop__backdrop" id="exp-search-backdrop" tabindex="-1" aria-label="Close search">✕</button>
       <div class="exp-search-pop__panel" role="search">
         <div class="exp-search-pop__toolbar">
           <input type="search" id="search-input" placeholder="Search expenses and income…" autocomplete="off" enterkeyhint="search"/>
-          <button type="button" class="exp-search-pop__close" id="exp-search-close" aria-label="Close search">✁E/button>
+          <button type="button" class="exp-search-pop__close" id="exp-search-close" aria-label="Close search">✕</button>
         </div>
         <div id="search-results"></div>
       </div>
@@ -3694,7 +3694,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="card mb-5 exp-daily-card">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
-          <p class="ft-note">Daily totals for the selected month  Euse the sidebar arrows to change month.</p>
+          <p class="ft-note">Daily totals for the selected month —use the sidebar arrows to change month.</p>
           <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
       </div>
@@ -3757,7 +3757,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
       </div>
 
-      <!-- Budget overview (occasional use  Ebottom of page) -->
+      <!-- Budget overview (occasional use —bottom of page) -->
       <div class="card mb-5 exp-budget-card" id="exp-budget-card">
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
         <div class="panel-bd">
@@ -3776,7 +3776,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 <option value="Petrol">⛽ Petrol</option>
                 <option value="Car Service">🔧 Car service</option>
                 <option value="Toll">🛣 Toll</option>
-                <option value="Parking">�E�E�EParking</option>
+                <option value="Parking">�E�E�EParking</option>
                 <option value="Car Expenses">🚗 Car expenses</option>
                 <option value="Transport">🚌 Transport</option>
                 <option value="Other">📦 Other</option>
@@ -4021,7 +4021,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-recurring">
     <div class="page-header">
       <h2>Recurring</h2>
-      <p class="sub">Bills and income that repeat every month  Eapplied when you open the app.</p>
+      <p class="sub">Bills and income that repeat every month —applied when you open the app.</p>
     </div>
     <div class="page-body">
       <div class="card mb-5">
@@ -4062,7 +4062,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   <option value="Petrol">⛽ Petrol</option>
                   <option value="Car Service">🔧 Car service</option>
                   <option value="Toll">🛣 Toll</option>
-                  <option value="Parking">�E�E�EParking</option>
+                  <option value="Parking">�E�E�EParking</option>
                   <option value="Car Expenses">🚗 Car expenses</option>
                   <option value="Transport">🚌 Transport</option>
                   <option value="Other">📦 Other</option>
@@ -4113,7 +4113,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
             <div class="ft-chip">
               <span>Best savings</span>
-              <strong id="tr-best"> E/strong>
+              <strong id="tr-best">—</strong>
             </div>
           </div>
         </div>
@@ -4122,7 +4122,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div id="nw-snapshot-hint" class="ft-inline-hint" style="display:none" role="status"></div>
 
       <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Monthly overview  Elast 6 months</span></div>
+        <div class="panel-hd"><span class="panel-title">Monthly overview —last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
           <div id="trend-chart"></div>
         </div>
@@ -4169,7 +4169,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                     <div class="src-name">UOB Bank</div>
                   </div>
                 </div>
-                <button class="btn btn-primary" id="iw-next1" disabled>Next ↁE/button>
+                <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
               </div>
 
               <!-- Step 2 -->
@@ -4179,7 +4179,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                     <summary class="sync-help-summary">How to get TNG data</summary>
                     <ol style="margin:0 12px 12px;padding-left:var(--s5);font-size:var(--f-sm);color:var(--ink2);line-height:1.75">
                       <li>Open TNG app ↁE<strong>Profile</strong> ↁE<strong>Transaction History</strong></li>
-                      <li>Tap the ✉︁Eemail icon  ETNG will email you a PDF statement</li>
+                      <li>Tap the ✉︁Eemail icon —TNG will email you a PDF statement</li>
                       <li>Open the PDF, select all text, copy and paste below</li>
                     </ol>
                   </details>
@@ -4217,8 +4217,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 </div>
 
                 <div class="btn-row">
-                  <button class="btn-ghost" id="iw-back2">ↁEBack</button>
-                  <button class="btn btn-primary" id="iw-parse">Parse transactions ↁE/button>
+                  <button class="btn-ghost" id="iw-back2">← Back</button>
+                  <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
                 </div>
               </div>
 
@@ -4240,7 +4240,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   </table>
                 </div>
                 <div class="btn-row">
-                  <button class="btn-ghost" id="iw-back3">ↁEStart over</button>
+                  <button class="btn-ghost" id="iw-back3">← Start over</button>
                   <button class="btn btn-green" id="iw-import">✁EImport selected</button>
                 </div>
               </div>
@@ -4343,7 +4343,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd">
               <span class="panel-title">Google Sheets sync</span>
               <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs);min-width:0;flex-shrink:1">
-                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">◁E/span>
+                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">○</span>
                 <span id="sync-msg" style="color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not configured</span>
               </span>
             </div>
@@ -4373,7 +4373,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
                 5. Click Deploy ↁEGoogle will ask you to authorise ↁEclick Allow<br/>
                 6. Deploy, authorise, then use <strong>Test connection</strong> below (the web app URL is fixed in this app).<br/><br/>
-                <strong>⚠�E�EIf "Failed to fetch" appears:</strong><br/>
+                <strong>⚠�E�EIf "Failed to fetch" appears:</strong><br/>
                 • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
                 • Re-deploy: Deploy ↁEManage deployments ↁEEdit ↁENew version ↁEDeploy<br/>
                 • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
@@ -4427,9 +4427,9 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
           <div class="ft-page-hero__chips">
             <div class="ft-chip"><span>Litres</span><strong id="pt-litres">0 L</strong></div>
-            <div class="ft-chip"><span>Avg RM/L</span><strong id="pt-ppl"> E/strong></div>
-            <div class="ft-chip"><span>Cost / km</span><strong id="pt-cpk"> E/strong></div>
-            <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff"> E/strong></div>
+            <div class="ft-chip"><span>Avg RM/L</span><strong id="pt-ppl">—</strong></div>
+            <div class="ft-chip"><span>Cost / km</span><strong id="pt-cpk">—</strong></div>
+            <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff">—</strong></div>
           </div>
         </div>
       </section>
@@ -4535,7 +4535,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="modal modal--edit" role="dialog" aria-modal="true" aria-labelledby="edit-title">
     <div class="modal-hd">
       <div class="modal-title" id="edit-title">Edit entry</div>
-      <button type="button" class="modal-close" id="edit-close" aria-label="Close">✁E/button>
+      <button type="button" class="modal-close" id="edit-close" aria-label="Close">✕</button>
     </div>
     <div class="modal-bd edit-modal-bd">
       <div class="edit-field">
@@ -4578,21 +4578,18 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <div class="modal-title" id="cd-title">Category</div>
         <div style="font-size:var(--f-sm);color:var(--ink3);margin-top:2px" id="cd-sub"></div>
       </div>
-      <button class="modal-close" id="cd-close">✁E/button>
+      <button class="modal-close" id="cd-close">✕</button>
     </div>
     <div class="cat-stats">
       <div class="cat-stat">
         <div class="cs-lbl">Total</div>
-        <div class="cs-val" id="cd-total"> E/div>
-      </div>
+        <div class="cs-val" id="cd-total">—</div>
       <div class="cat-stat">
         <div class="cs-lbl">Entries</div>
-        <div class="cs-val" id="cd-count"> E/div>
-      </div>
+        <div class="cs-val" id="cd-count">—</div>
       <div class="cat-stat">
         <div class="cs-lbl">Average</div>
-        <div class="cs-val" id="cd-avg"> E/div>
-      </div>
+        <div class="cs-val" id="cd-avg">—</div>
     </div>
     <div class="cat-list" id="cd-list"></div>
   </div>
@@ -4623,11 +4620,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v75 · 2026-05-16</div>
-<script src="app.js?v=75"></script>
-<script src="sync.js?v=75"></script>
-<script src="features.js?v=75"></script>
-<script src="extras.js?v=75"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v76 · 2026-05-16</div>
+<script src="app.js?v=76"></script>
+<script src="sync.js?v=76"></script>
+<script src="features.js?v=76"></script>
+<script src="extras.js?v=76"></script>
 <script src="import-inline.js?v=57"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
@@ -4702,7 +4699,7 @@ if (nMM) nMM.addEventListener('click', function() { document.getElementById('nex
   var status = document.getElementById('ft-force-refresh-status');
   if (!btn) return;
   btn.addEventListener('click', async function() {
-    if (!confirm('Unregister the service worker, clear cached files, and reload?\n\nYour data is safe  Eonly cached app files are cleared.')) return;
+    if (!confirm('Unregister the service worker, clear cached files, and reload?\n\nYour data is safe —only cached app files are cleared.')) return;
     if (status) status.textContent = 'Clearing…';
     try {
       if ('serviceWorker' in navigator) {
@@ -4715,7 +4712,7 @@ if (nMM) nMM.addEventListener('click', function() { document.getElementById('nex
       }
       if (status) status.textContent = 'Done. Reloading…';
     } catch (e) {
-      if (status) status.textContent = 'Error: ' + (e && e.message || e) + '  Ereloading anyway';
+      if (status) status.textContent = 'Error: ' + (e && e.message || e) + ' —reloading anyway';
     }
     setTimeout(function(){
       // Cache-bust the URL so the reload bypasses any leftover HTTP cache.
