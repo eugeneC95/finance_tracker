@@ -1236,6 +1236,10 @@ function render() {
   if (pagePetrol && pagePetrol.classList.contains('active') && typeof renderPetrolLog === 'function') {
     renderPetrolLog();
   }
+  const pageTrends = document.getElementById('page-trends');
+  if (pageTrends && pageTrends.classList.contains('active') && typeof renderTrends === 'function') {
+    renderTrends();
+  }
 }
 
 // ── Transaction list ───────────────────────────────────────
@@ -1856,6 +1860,7 @@ function activateNavTab(tab) {
   closeMobileNavMore();
   if (tab === 'petrol' && typeof renderPetrolLog === 'function') setTimeout(renderPetrolLog, 10);
   if (tab === 'report' && typeof renderReport === 'function') setTimeout(renderReport, 10);
+  if (tab === 'trends' && typeof renderTrends === 'function') setTimeout(renderTrends, 50);
   if (tab === 'assets') {
     renderBankList();
     renderUnitTrustPanel();

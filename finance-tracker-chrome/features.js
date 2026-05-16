@@ -444,14 +444,29 @@ function snapshotNetWorth() {
 // ╔══════════════════════════════════════════════════════════╗
 //   TRENDS PAGE
 // ╚══════════════════════════════════════════════════════════╝
+function txInCalendarMonth(dateStr, ym) {
+  if (!dateStr || !ym) return false;
+  if (typeof parseTxDate === 'function') {
+    var d = parseTxDate(dateStr);
+    if (d) {
+      var got =
+        d.getFullYear() +
+        '-' +
+        String(d.getMonth() + 1).padStart(2, '0');
+      return got === ym;
+    }
+  }
+  return String(dateStr).indexOf(ym) === 0;
+}
+
 function renderTrends() {
   var months = [];
   for (var i=5; i>=0; i--) {
     var d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
     var ym  = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     var lbl = d.toLocaleString('default',{month:'short',year:'2-digit'});
-    var mE  = expenses.filter(function(e){ return e.date.startsWith(ym); }).reduce(function(a,e){ return a+e.amount; },0);
-    var mI  = incomes.filter(function(e){  return e.date.startsWith(ym); }).reduce(function(a,e){ return a+e.amount; },0);
+    var mE  = expenses.filter(function(e){ return txInCalendarMonth(e.date, ym); }).reduce(function(a,e){ return a+e.amount; },0);
+    var mI  = incomes.filter(function(e){  return txInCalendarMonth(e.date, ym); }).reduce(function(a,e){ return a+e.amount; },0);
     months.push({ ym:ym, lbl:lbl, exp:mE, inc:mI, isCurrent:i===0 });
   }
 
@@ -515,8 +530,13 @@ function renderTrends() {
   trendEl.appendChild(legend);
   trendEl.appendChild(cols);
 
-  renderNetWorthChart();
   renderDayBreakdown();
+  renderNetWorthChart();
+  requestAnimationFrame(function() {
+    if (document.getElementById('page-trends') && document.getElementById('page-trends').classList.contains('active')) {
+      renderNetWorthChart();
+    }
+  });
 }
 
 function renderNetWorthChart() {
