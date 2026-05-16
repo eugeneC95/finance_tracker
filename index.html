@@ -965,7 +965,39 @@ body.dark .cat-btn.active { color: #041312; }
   user-select: none;
   transition: background 0.15s var(--ease-out);
 }
+.tx-list .tx-swipe-wrap:last-child { border-bottom: none; }
 .tx-item:last-child { border-bottom: none; }
+.tx-swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.tx-item__surface {
+  position: relative;
+  z-index: 1;
+  background: var(--card-bg);
+  transition: transform 0.2s var(--ease-out);
+  width: 100%;
+  border-bottom: none;
+}
+.tx-item__surface.is-open { transform: translateX(-144px); }
+.tx-swipe-actions {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: stretch;
+  z-index: 0;
+}
+.tx-swipe-act {
+  width: 72px;
+  border: none;
+  font-size: var(--f-xs);
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.tx-swipe-act--edit { background: #2563eb; }
+.tx-swipe-act--del { background: var(--red); }
 .tx-item.dragging  { opacity: .4; }
 .tx-item.drag-over { background: var(--card-bg2); border-radius: var(--radius-sm); padding-left: var(--s3); padding-right: var(--s3); margin: 0 calc(-1 * var(--s3)); }
 
@@ -2324,6 +2356,8 @@ body.dark .fs-btn.active { color: #041312; }
   white-space: nowrap;
 }
 .trend-month-col.current .trend-month-lbl { color: var(--ink); font-weight: 700; }
+.trend-month-col.selected { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+.ft-savings-goal__head { font-size: var(--f-md); margin-bottom: var(--s3); }
 .trend-legend {
   display: flex;
   gap: var(--s5);
@@ -3292,6 +3326,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
     font-size: 13px !important;
     border-radius: 8px !important;
   }
+  .tx-swipe-wrap .tx-item .tx-actions { display: none !important; }
   .drag-handle {
     font-size: 11px !important;
     opacity: 0.55;
@@ -3490,7 +3525,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v79 · 2026-05-16 00:09';
+  var BUILD_VERSION    = 'v80 · 2026-05-16 00:18';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3775,6 +3810,28 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
       </div>
 
+      <div class="card mb-5 exp-savings-card" id="exp-savings-card">
+        <div class="panel-hd"><span class="panel-title">Savings goal</span></div>
+        <div class="panel-bd">
+          <div id="savings-goal-panel"></div>
+          <form class="ft-form ft-form--compact" onsubmit="return false">
+            <div class="ft-form-grid ft-form-grid--3">
+              <div>
+                <label class="lbl" for="sg-target">Target amount (RM)</label>
+                <input type="number" id="sg-target" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 5000"/>
+              </div>
+              <div>
+                <label class="lbl" for="sg-date">Target date</label>
+                <input type="date" id="sg-date"/>
+              </div>
+              <div class="ft-form-actions" style="margin-top:0;display:flex;gap:8px;flex-wrap:wrap">
+                <button type="button" class="btn btn-primary" id="sg-save-btn">Save goal</button>
+                <button type="button" class="btn-ghost" id="sg-clear-btn">Clear</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
       <!-- Budget overview (occasional use —bottom of page) -->
       <div class="card mb-5 exp-budget-card" id="exp-budget-card">
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
@@ -4143,9 +4200,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <div class="panel-hd"><span class="panel-title">Monthly overview —last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
           <div id="trend-chart"></div>
+          <p class="ft-note" style="margin-top:10px">Tap a month to see income by category.</p>
         </div>
       </div>
 
+      <div class="card mb-5" id="trend-inc-breakdown" hidden>
+        <div class="panel-hd" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+          <span class="panel-title">Income breakdown</span>
+          <button type="button" class="btn-ghost" id="trend-open-expenses" style="margin-left:auto;font-size:var(--f-sm)">Open month in Expenses</button>
+        </div>
+        <div class="panel-bd bar-chart" id="trend-inc-breakdown-bd"></div>
+      </div>
       <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Spending by day of week</span></div>
         <div class="panel-bd">
@@ -4648,13 +4713,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v79 · 2026-05-16 00:09</div>
-<script src="build-id.js?v=79"></script>
-<script src="app.js?v=79"></script>
-<script src="sync.js?v=79"></script>
-<script src="features.js?v=79"></script>
-<script src="extras.js?v=79"></script>
-<script src="import-inline.js?v=79"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v80 · 2026-05-16 00:18</div>
+<script src="build-id.js?v=80"></script>
+<script src="app.js?v=80"></script>
+<script src="sync.js?v=80"></script>
+<script src="features.js?v=80"></script>
+<script src="extras.js?v=80"></script>
+<script src="import-inline.js?v=80"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

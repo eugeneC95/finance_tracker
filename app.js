@@ -1207,6 +1207,79 @@ function closeCatDetail() {
   document.getElementById('cat-detail-overlay').classList.remove('open');
 }
 
+// ── Mobile swipe actions (edit / delete) ───────────────────
+let openTxSwipe = null;
+
+function closeOpenTxSwipe() {
+  if (!openTxSwipe) return;
+  const surface = openTxSwipe.querySelector('.tx-item__surface');
+  if (surface) {
+    surface.classList.remove('is-open');
+    surface.style.transform = '';
+  }
+  openTxSwipe = null;
+}
+
+function wireTxSwipe(wrap, surface, isIncome, entryId) {
+  const OPEN_X = -144;
+  const THRESH = 48;
+  let startX = 0, startY = 0, tracking = false, dx = 0;
+
+  function setOpen(on) {
+    surface.classList.toggle('is-open', on);
+    if (on) {
+      if (openTxSwipe && openTxSwipe !== wrap) closeOpenTxSwipe();
+      openTxSwipe = wrap;
+    } else if (openTxSwipe === wrap) openTxSwipe = null;
+    surface.style.transform = on ? 'translateX(' + OPEN_X + 'px)' : '';
+  }
+
+  surface.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+    dx = 0;
+  }, { passive: true });
+
+  surface.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    const t = e.touches[0];
+    dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 12) return;
+    if (Math.abs(dx) > 10) e.preventDefault();
+    const base = surface.classList.contains('is-open') ? OPEN_X : 0;
+    let x = base + dx;
+    if (x > 0) x = 0;
+    if (x < OPEN_X) x = OPEN_X;
+    surface.style.transform = 'translateX(' + x + 'px)';
+  }, { passive: false });
+
+  surface.addEventListener('touchend', () => {
+    if (!tracking) return;
+    tracking = false;
+    const wasOpen = surface.classList.contains('is-open');
+    if (wasOpen) setOpen(!(dx > THRESH));
+    else setOpen(dx < -THRESH);
+    if (!surface.classList.contains('is-open')) surface.style.transform = '';
+  });
+
+  surface.addEventListener('click', e => {
+    if (!surface.classList.contains('is-open')) return;
+    if (e.target.closest('.tx-action-btn')) return;
+    const r = surface.getBoundingClientRect();
+    if (e.clientX > r.right - 40) return;
+    setOpen(false);
+  });
+}
+
+document.addEventListener('touchstart', e => {
+  if (!openTxSwipe) return;
+  if (e.target.closest('.tx-swipe-wrap')) return;
+  closeOpenTxSwipe();
+}, { passive: true });
+
 // ── Drag & drop ────────────────────────────────────────────
 let dragSrc = null;
 function makeDraggable(el, list, arr, save) {
@@ -1314,6 +1387,7 @@ function render() {
   if (typeof renderExpMonthSummary === 'function') renderExpMonthSummary();
   if (typeof renderBudgets    === 'function') renderBudgets();
   if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
+  if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
   if (typeof renderRecurring  === 'function') renderRecurring();
   refreshActiveTabPanels();
 }
@@ -1337,14 +1411,16 @@ function renderTxList(id, items, catMap, isIncome) {
     return;
   }
 
+  const useSwipe = typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches;
+
   items.forEach(entry => {
     const cat      = catMap[entry.cat] || catMap['Other'];
     const pd     = parseTxDate(entry.date);
     const dlbl   = pd ? pd.toLocaleDateString('en-MY',{month:'short',day:'numeric'}) : '';
-    const showDrag = settings.showDrag !== false;
+    const showDrag = settings.showDrag !== false && !useSwipe;
 
     const item = document.createElement('div');
-    item.className = 'tx-item';
+    item.className = 'tx-item' + (useSwipe ? ' tx-item__surface' : '');
     item.dataset.id = entry.id;
 
     if (showDrag) {
@@ -1410,10 +1486,47 @@ function renderTxList(id, items, catMap, isIncome) {
 
     actions.appendChild(editBtn);
     actions.appendChild(delBtn);
-    item.appendChild(actions);
 
-    el.appendChild(item);
-    if (showDrag) makeDraggable(item, el, arr, save);
+    if (useSwipe) {
+      const wrap = document.createElement('div');
+      wrap.className = 'tx-swipe-wrap';
+
+      const behind = document.createElement('div');
+      behind.className = 'tx-swipe-actions';
+
+      const sEdit = document.createElement('button');
+      sEdit.type = 'button';
+      sEdit.className = 'tx-swipe-act tx-swipe-act--edit';
+      sEdit.textContent = 'Edit';
+      sEdit.addEventListener('click', e => {
+        e.stopPropagation();
+        closeOpenTxSwipe();
+        openEditModal(isIncome ? 'inc' : 'exp', entry.id);
+      });
+
+      const sDel = document.createElement('button');
+      sDel.type = 'button';
+      sDel.className = 'tx-swipe-act tx-swipe-act--del';
+      sDel.textContent = 'Delete';
+      sDel.addEventListener('click', e => {
+        e.stopPropagation();
+        closeOpenTxSwipe();
+        if (confirm('Delete this entry?')) {
+          if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
+        }
+      });
+
+      behind.appendChild(sEdit);
+      behind.appendChild(sDel);
+      wrap.appendChild(behind);
+      wrap.appendChild(item);
+      el.appendChild(wrap);
+      wireTxSwipe(wrap, item, isIncome, entry.id);
+    } else {
+      item.appendChild(actions);
+      el.appendChild(item);
+      if (showDrag) makeDraggable(item, el, arr, save);
+    }
   });
 }
 
@@ -1745,6 +1858,7 @@ function exportData() {
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
+    savingsGoal:  (typeof savingsGoal  !== 'undefined') ? savingsGoal  : null,
     catRules:     (typeof catRules     !== 'undefined') ? catRules     : {},
     lastExpense:  lastExpenseTpl || null,
     lastIncome:   lastIncomeTpl || null,
@@ -1817,6 +1931,7 @@ function importBackup(file) {
         if (d.recurring    && typeof recurring    !== 'undefined') recurring    = d.recurring;
         if (d.networthHist && typeof networthHist !== 'undefined') networthHist = d.networthHist;
         if (d.budgets      && typeof budgets      !== 'undefined') budgets      = d.budgets;
+        if (d.savingsGoal !== undefined && typeof savingsGoal !== 'undefined') savingsGoal = d.savingsGoal;
         if (d.catRules     && typeof catRules     !== 'undefined') catRules     = d.catRules;
         if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = d.petrolLog;
       } else {
@@ -1831,6 +1946,9 @@ function importBackup(file) {
         }
         if (d.budgets && typeof budgets !== 'undefined') {
           budgets = Object.assign({}, budgets, d.budgets);
+        }
+        if (d.savingsGoal !== undefined && typeof savingsGoal !== 'undefined') {
+          savingsGoal = d.savingsGoal;
         }
         if (d.catRules && typeof catRules !== 'undefined') {
           catRules = Object.assign({}, catRules, d.catRules);
@@ -1849,6 +1967,7 @@ function importBackup(file) {
       if (typeof saveRec    === 'function') saveRec();
       if (typeof saveNWH    === 'function') saveNWH();
       if (typeof saveBud    === 'function') saveBud();
+      if (typeof saveSavGoal === 'function') saveSavGoal();
       if (typeof saveCatRules === 'function') saveCatRules();
       if (typeof savePetrol === 'function') savePetrol();
       render();

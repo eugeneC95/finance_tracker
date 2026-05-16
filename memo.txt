@@ -101,6 +101,9 @@ Done (2026-05-16 batch):
   [x] Repeat last income + petrol (FAB quick-add)
   [x] Month summary chips on Expenses (budget headroom + net)
   [x] Import review: row checkboxes, select all/none, stable row ids
+  [x] Swipe edit/delete on mobile transaction rows
+  [x] Trends tap month → income breakdown by category
+  [x] Savings goal card on Expenses (target RM by date)
 
 Stability / tooling (todo):
   [ ] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
@@ -110,12 +113,12 @@ Stability / tooling (todo):
 Daily logging (todo):
   [x] Repeat last for income + petrol (FAB + storage templates)
   [x] Month summary chip on Expenses hero (“left in budgets” / net)
-  [ ] Swipe edit/delete on transaction rows (mobile)
+  [x] Swipe edit/delete on transaction rows (mobile)
 
 Budgets & trends (todo):
-  [ ] Trends month column → income breakdown
+  [x] Trends month column → income breakdown
   [ ] Gentle net worth reminder if stale (14+ days)
-  [ ] Simple savings goal (target RM by date)
+  [x] Simple savings goal (target RM by date)
 
 Imports & Sheets (todo):
   [ ] One more bank CSV (Maybank / CIMB)

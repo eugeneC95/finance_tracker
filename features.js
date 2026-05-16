@@ -8,6 +8,7 @@ const KEY_NWH      = 'networth_history_v1';
 const KEY_BUD      = 'budgets_v1';
 const KEY_LAST_CAT = 'lastcat_v1';
 const KEY_CAT_RULES = 'cat_rules_v1';
+const KEY_SAVGOAL  = 'savings_goal_v1';
 
 // ╔══════════════════════════════════════════════════════════╗
 //   STATE (shared with app.js via globals)
@@ -16,16 +17,19 @@ var recurring    = [];   // [{id,name,amount,type,cat,day,active,lastApplied}]
 var networthHist = [];   // [{date,total}]
 var budgets      = {};   // {catName: amount}
 var catRules     = {};   // normalized merchant key -> category name
+var savingsGoal  = null; // { target, byDate, startDate }
+var selectedTrendYm = null;
 
 // ╔══════════════════════════════════════════════════════════╗
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
-  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES], function(r) {
+  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES, KEY_SAVGOAL], function(r) {
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
     catRules     = r[KEY_CAT_RULES] || {};
+    savingsGoal  = r[KEY_SAVGOAL] || null;
 
     // Restore last used category
     var lastCat = r[KEY_LAST_CAT];
@@ -38,6 +42,7 @@ function loadFeatures() {
     var changed = applyRecurring();
     renderRecurring();
     renderBudgets();
+    renderSavingsGoal();
     if (changed) render();
   });
 }
@@ -45,6 +50,7 @@ function loadFeatures() {
 function saveRec()  { chromeStorage.local.set({[KEY_REC]:  recurring}); }
 function saveNWH()  { chromeStorage.local.set({[KEY_NWH]:  networthHist}); }
 function saveBud()  { chromeStorage.local.set({[KEY_BUD]:  budgets}); }
+function saveSavGoal() { chromeStorage.local.set({ [KEY_SAVGOAL]: savingsGoal }); }
 function saveCatRules() { chromeStorage.local.set({ [KEY_CAT_RULES]: catRules }); }
 
 function normMerchantKey(name) {
@@ -349,6 +355,74 @@ function addBudget() {
   if (amtEl) amtEl.value = '';
   renderBudgets();
   showToast('Budget set for ' + cat);
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+//   SAVINGS GOAL
+// ╚══════════════════════════════════════════════════════════╝
+function savingsProgressSince(startDate) {
+  if (!startDate) return 0;
+  var inc = 0, exp = 0;
+  incomes.forEach(function(i) {
+    if (i.date >= startDate) inc += i.amount;
+  });
+  expenses.forEach(function(e) {
+    if (e.date >= startDate) exp += e.amount;
+  });
+  return Math.max(0, inc - exp);
+}
+
+function renderSavingsGoal() {
+  var panel = document.getElementById('savings-goal-panel');
+  if (!panel) return;
+  var tgtIn = document.getElementById('sg-target');
+  var dateIn = document.getElementById('sg-date');
+  if (!savingsGoal || !savingsGoal.target) {
+    panel.innerHTML = '<p class="ft-note">Set a target amount and date to track how much you have saved (income minus expenses since the goal started).</p>';
+    if (tgtIn) tgtIn.value = '';
+    if (dateIn) dateIn.value = '';
+    return;
+  }
+  if (dateIn && savingsGoal.byDate) dateIn.value = savingsGoal.byDate;
+  var saved = savingsProgressSince(savingsGoal.startDate);
+  var target = savingsGoal.target;
+  var pct = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0;
+  var byD = typeof parseTxDate === 'function' ? parseTxDate(savingsGoal.byDate) : null;
+  var daysLeft = byD ? Math.ceil((byD.getTime() - Date.now()) / 86400000) : null;
+  var color = saved >= target ? '#1A9E6E' : pct >= 75 ? '#BA7517' : '#7F77DD';
+  var dl = daysLeft == null ? '' : (daysLeft < 0 ? ' · past due' : ' · ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left');
+  panel.innerHTML =
+    '<div class="ft-savings-goal">' +
+    '<div class="ft-savings-goal__head"><strong>' + fmt(saved) + '</strong> of ' + fmt(target) + ' (' + pct + '%)' + esc(dl) + '</div>' +
+    '<div class="ft-budget-track"><div class="ft-budget-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+    '<div class="ft-note" style="margin-top:8px">Since ' + esc(savingsGoal.startDate) + ' · target by ' + esc(savingsGoal.byDate) + '</div>' +
+    '</div>';
+}
+
+function saveSavingsGoalFromForm() {
+  var tgtEl = document.getElementById('sg-target');
+  var dateEl = document.getElementById('sg-date');
+  var target = parseFloat(tgtEl ? tgtEl.value : '');
+  var byDate = dateEl ? dateEl.value : '';
+  if (isNaN(target) || target <= 0) { if (tgtEl) shake(tgtEl); return; }
+  if (!byDate) { if (dateEl) shake(dateEl); return; }
+  var prevStart = savingsGoal && savingsGoal.startDate;
+  savingsGoal = {
+    target: target,
+    byDate: byDate,
+    startDate: prevStart || (typeof todayStr === 'function' ? todayStr() : byDate),
+  };
+  saveSavGoal();
+  if (tgtEl) tgtEl.value = '';
+  renderSavingsGoal();
+  showToast('Savings goal saved');
+}
+
+function clearSavingsGoal() {
+  savingsGoal = null;
+  saveSavGoal();
+  renderSavingsGoal();
+  showToast('Savings goal cleared');
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -683,9 +757,9 @@ function renderTrends() {
     var eH = Math.round((m.exp/maxVal)*140);
     var iH = Math.round((m.inc/maxVal)*140);
     var col = document.createElement('div');
-    col.className = 'trend-month-col' + (m.isCurrent?' current':'');
+    col.className = 'trend-month-col' + (m.isCurrent?' current':'') + (selectedTrendYm===m.ym?' selected':'');
     col.dataset.ym = m.ym;
-    col.title = m.lbl + ': Exp ' + fmt(m.exp) + ', Inc ' + fmt(m.inc);
+    col.title = m.lbl + ': Exp ' + fmt(m.exp) + ', Inc ' + fmt(m.inc) + ' — tap for income breakdown';
 
     var bars = document.createElement('div'); bars.className='trend-bars';
     var eBar = document.createElement('div'); eBar.className='trend-bar';
@@ -698,17 +772,16 @@ function renderTrends() {
     lbl.style.cssText = 'font-size:var(--f-xs);text-align:center;margin-top:4px';
     lbl.innerHTML =
       '<div style="font-weight:'+(m.isCurrent?700:400)+';color:'+(m.isCurrent?'var(--ink)':'var(--ink3)')+'">'+m.lbl+'</div>'+
-      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):'\u2014')+'</div>';
+      '<div style="color:var(--red);margin-top:1px">'+(m.exp>0?fmt(m.exp):'\u2014')+'</div>'+
+      '<div style="color:var(--green);margin-top:1px">'+(m.inc>0?fmt(m.inc):'\u2014')+'</div>';
 
     col.appendChild(bars); col.appendChild(lbl);
     col.addEventListener('click', function() {
-      var parts = col.dataset.ym.split('-');
-      viewMonth = new Date(parseInt(parts[0]), parseInt(parts[1])-1, 1);
-      render();
-      document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-      document.querySelector('[data-tab="expenses"]').classList.add('active');
-      document.getElementById('page-expenses').classList.add('active');
+      selectedTrendYm = col.dataset.ym;
+      renderTrendIncBreakdown();
+      document.querySelectorAll('.trend-month-col').forEach(function(c) {
+        c.classList.toggle('selected', c.dataset.ym === selectedTrendYm);
+      });
     });
     cols.appendChild(col);
   });
@@ -717,6 +790,7 @@ function renderTrends() {
   trendEl.appendChild(legend);
   trendEl.appendChild(cols);
 
+  renderTrendIncBreakdown();
   renderDayBreakdown();
   renderNwSnapshotHint();
   renderNetWorthChart();
@@ -725,6 +799,81 @@ function renderTrends() {
       renderNetWorthChart();
     }
   });
+}
+
+function renderTrendIncBreakdown() {
+  var card = document.getElementById('trend-inc-breakdown');
+  var body = document.getElementById('trend-inc-breakdown-bd');
+  if (!card || !body) return;
+  if (!selectedTrendYm) {
+    card.hidden = true;
+    body.innerHTML = '';
+    return;
+  }
+  card.hidden = false;
+  var parts = selectedTrendYm.split('-');
+  var monthLbl = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1)
+    .toLocaleString('default', { month: 'long', year: 'numeric' });
+  var rows = incomes.filter(function(i) { return txInCalendarMonth(i.date, selectedTrendYm); });
+  var totals = {};
+  rows.forEach(function(i) {
+    totals[i.cat] = (totals[i.cat] || 0) + i.amount;
+  });
+  var sorted = Object.keys(totals).map(function(cat) {
+    return { cat: cat, amount: totals[cat] };
+  }).sort(function(a, b) { return b.amount - a.amount; });
+  var total = sorted.reduce(function(a, r) { return a + r.amount; }, 0);
+  if (!sorted.length) {
+    body.innerHTML = '<p class="ft-note">No income recorded for ' + esc(monthLbl) + '.</p>';
+    return;
+  }
+  var max = sorted[0].amount || 1;
+  body.innerHTML = '';
+  sorted.forEach(function(r) {
+    var info = INC_CATS[r.cat] || { icon: '\uD83D\uDCE6' };
+    var pct = Math.round((r.amount / max) * 100);
+    var row = document.createElement('div');
+    row.className = 'bar-row';
+    row.style.cursor = 'default';
+    var lbl = document.createElement('div');
+    lbl.className = 'bar-label';
+    lbl.style.cssText = 'width:auto;min-width:88px';
+    lbl.textContent = info.icon + ' ' + r.cat;
+    var track = document.createElement('div');
+    track.className = 'bar-track';
+    var fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    fill.style.cssText = 'width:' + pct + '%;background:#1A9E6E';
+    track.appendChild(fill);
+    var val = document.createElement('div');
+    val.className = 'bar-val';
+    val.textContent = fmt(r.amount);
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    body.appendChild(row);
+  });
+  var foot = document.createElement('p');
+  foot.className = 'ft-note';
+  foot.style.marginTop = '10px';
+  foot.textContent = 'Total income: ' + fmt(total);
+  body.appendChild(foot);
+}
+
+function openTrendMonthInExpenses() {
+  if (!selectedTrendYm) return;
+  var parts = selectedTrendYm.split('-');
+  viewMonth = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+  if (typeof activateNavTab === 'function') activateNavTab('expenses');
+  else {
+    document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    var tab = document.querySelector('[data-tab="expenses"]');
+    if (tab) tab.classList.add('active');
+    var page = document.getElementById('page-expenses');
+    if (page) page.classList.add('active');
+  }
+  render();
 }
 
 function renderNetWorthChart() {
@@ -829,6 +978,13 @@ var addBudBtn = document.getElementById('add-bud-btn');
 if (addBudBtn) addBudBtn.addEventListener('click', addBudget);
 var budAmtEl = document.getElementById('bud-amount');
 if (budAmtEl) budAmtEl.addEventListener('keydown', function(e){ if(e.key==='Enter') addBudget(); });
+
+var sgSaveBtn = document.getElementById('sg-save-btn');
+if (sgSaveBtn) sgSaveBtn.addEventListener('click', saveSavingsGoalFromForm);
+var sgClearBtn = document.getElementById('sg-clear-btn');
+if (sgClearBtn) sgClearBtn.addEventListener('click', clearSavingsGoal);
+var trendExpBtn = document.getElementById('trend-open-expenses');
+if (trendExpBtn) trendExpBtn.addEventListener('click', openTrendMonthInExpenses);
 
 // Recurring
 var addRecBtn = document.getElementById('add-rec-btn');
