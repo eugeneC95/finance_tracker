@@ -66,9 +66,10 @@ const EXP_CATS = {
   'Hobbies':       { icon:'🎮', color:'#E91E63' },
   // Family
   'Education':     { icon:'📚', color:'#2196F3' },
-  'Pet care':      { icon:'🐾', color:'#795548' },
+  
   // Other
   'Other':         { icon:'📦', color:'#B4B2A9' },
+  'Pet care':      { icon:'🐾', color:'#795548' },
 };
 
 /** Display order for “Add expense” category chips: frequent / similar items first. */
