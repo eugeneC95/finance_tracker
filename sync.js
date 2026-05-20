@@ -304,6 +304,15 @@ function syncLoad(opts) {
   opts = opts || {};
   if (syncLoadInFlight && !opts.force) return;
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
+  function syncConflictMsg_(cloudExpCount) {
+    return (
+      'Sync conflict: device has ' +
+      prevExpCount +
+      ' expenses, cloud has ' +
+      cloudExpCount +
+      '. Kept local data. Check Google Sheets version history if rows are missing.'
+    );
+  }
   applyHardcodedSyncUrl_();
   if (!syncUrl) {
     if (!opts.silent) showToast('Built-in sync URL missing — rebuild the app');
@@ -366,13 +375,15 @@ function syncLoad(opts) {
       if (opts.skipConfirm && !opts.autoStart) {
         var ce = (p.expenses || []).length;
         if (prevExpCount > 0 && ce === 0) {
-          setSyncStatus('error', 'Auto-sync skipped — cloud had no expenses');
-          showToast('Sheet returned 0 expenses; kept your local data.');
+          var msg0 = syncConflictMsg_(ce);
+          setSyncStatus('error', msg0);
+          showToast(msg0);
           return;
         }
         if (prevExpCount >= 5 && ce > 0 && ce < Math.floor(prevExpCount * 0.35)) {
-          setSyncStatus('error', 'Auto-sync skipped — cloud much smaller than device');
-          showToast('Sheet has far fewer expenses than this device — kept local data. Use Sheet version history if rows are missing.');
+          var msgSmall = syncConflictMsg_(ce);
+          setSyncStatus('error', msgSmall);
+          showToast(msgSmall);
           return;
         }
       }

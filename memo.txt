@@ -126,7 +126,7 @@ Budgets & trends (todo):
 Imports & Sheets (todo):
   [x] One more bank CSV (Maybank / CIMB)
   [x] Import review screen (checkboxes, select all/none, category fix)
-  [ ] Clearer sync conflict copy (device vs cloud counts)
+  [x] Clearer sync conflict copy (device vs cloud counts)
   [ ] Monthly backup export reminder
 
 Polish (todo):
