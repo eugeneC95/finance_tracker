@@ -2422,6 +2422,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="ft-page-hero__label">Spent this month</div>
             <div class="ft-page-hero__value red" id="c-total">RM 0.00</div>
             <div id="mom-exp" class="ft-chip__sub"></div>
+            <div id="exp-petrol-metrics" class="ft-chip__sub" hidden></div>
           </div>
           <div class="ft-page-hero__chips">
             <div class="ft-chip">
@@ -2546,7 +2547,7 @@ body.dark .fs-btn.active { color: #000; }
                 <option value="Petrol">⛽ Petrol</option>
                 <option value="Car Service">🔧 Car service</option>
                 <option value="Toll">🛣 Toll</option>
-                <option value="Parking">�E�E�EParking</option>
+                <option value="Parking">🅿️ Parking</option>
                 <option value="Car Expenses">🚗 Car expenses</option>
                 <option value="Transport">🚌 Transport</option>
                 <option value="Other">📦 Other</option>
@@ -2833,7 +2834,7 @@ body.dark .fs-btn.active { color: #000; }
                   <option value="Petrol">⛽ Petrol</option>
                   <option value="Car Service">🔧 Car service</option>
                   <option value="Toll">🛣 Toll</option>
-                  <option value="Parking">�E�E�EParking</option>
+                  <option value="Parking">🅿️ Parking</option>
                   <option value="Car Expenses">🚗 Car expenses</option>
                   <option value="Transport">🚌 Transport</option>
                   <option value="Other">📦 Other</option>
@@ -3058,6 +3059,15 @@ body.dark .fs-btn.active { color: #000; }
             </div>
             <div class="setting-row">
               <div>
+                <div class="s-lbl">Dark mode schedule</div>
+              </div>
+              <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
+                <option value="off">Off</option>
+                <option value="night">Night (7pm-7am)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div>
                 <div class="s-lbl">Font size</div>
               </div>
               <div class="fs-btns">
@@ -3160,7 +3170,7 @@ body.dark .fs-btn.active { color: #000; }
                 4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
                 5. Click Deploy ↁEGoogle will ask you to authorise ↁEclick Allow<br/>
                 6. Deploy, authorise, then use <strong>Test connection</strong> below (the web app URL is fixed in this app).<br/><br/>
-                <strong>⚠�E�EIf "Failed to fetch" appears:</strong><br/>
+                <strong>⚠️ If "Failed to fetch" appears:</strong><br/>
                 • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
                 • Re-deploy: Deploy ↁEManage deployments ↁEEdit ↁENew version ↁEDeploy<br/>
                 • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
@@ -3175,7 +3185,7 @@ body.dark .fs-btn.active { color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v82 · 2026-05-20 15:03</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v83 · 2026-05-20 15:18</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -3302,6 +3312,7 @@ body.dark .fs-btn.active { color: #000; }
     <div class="page-body">
       <div class="ft-toolbar">
         <button type="button" class="btn btn-primary" id="print-report-btn">Print or save PDF</button>
+        <button type="button" class="btn-ghost" id="share-report-btn">Share summary</button>
       </div>
       <div id="report-content"></div>
     </div>
@@ -3395,11 +3406,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=82"></script>
-<script src="app.js?v=82"></script>
-<script src="sync.js?v=82"></script>
-<script src="features.js?v=82"></script>
-<script src="extras.js?v=82"></script>
-<script src="import-inline.js?v=82"></script>
+<script src="build-id.js?v=83"></script>
+<script src="app.js?v=83"></script>
+<script src="sync.js?v=83"></script>
+<script src="features.js?v=83"></script>
+<script src="extras.js?v=83"></script>
+<script src="import-inline.js?v=83"></script>
 </body>
 </html>

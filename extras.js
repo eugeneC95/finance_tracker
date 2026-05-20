@@ -547,6 +547,21 @@ function renderReport() {
   }
 }
 
+function buildReportShareText() {
+  var me = mExp();
+  var mi = mInc();
+  var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var net = totalInc - totalExp;
+  return (
+    'Finance Tracker · ' + ymLabel + '\n' +
+    'Income: ' + fmt(totalInc) + '\n' +
+    'Expenses: ' + fmt(totalExp) + '\n' +
+    'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net))
+  );
+}
+
 // ╔══════════════════════════════════════════════════════════╗
 //   WIRING
 // ╚══════════════════════════════════════════════════════════╝
@@ -567,5 +582,22 @@ if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 // Report
 var printBtn = document.getElementById('print-report-btn');
 if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
+var shareBtn = document.getElementById('share-report-btn');
+if (shareBtn) shareBtn.addEventListener('click', function() {
+  var text = buildReportShareText();
+  if (navigator.share) {
+    navigator.share({ title: 'Monthly report', text: text }).catch(function() {});
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('Report summary copied');
+    }).catch(function() {
+      showToast('Share not supported on this device');
+    });
+    return;
+  }
+  showToast('Share not supported on this device');
+});
 
 loadExtras();

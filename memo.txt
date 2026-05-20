@@ -109,9 +109,9 @@ Done (2026-05-16 batch):
   [x] Swipe actions on search, recurring, and petrol lists
 
 Stability / tooling (todo):
-  [ ] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
-  [ ] Pre-release smoke: More sheet, Trends, add expense, sync line
-  [ ] Scan/fix remaining corrupted UI strings (em dash / closing tags)
+  [x] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
+  [x] Pre-release smoke: More sheet, Trends, add expense, sync line
+  [x] Scan/fix remaining corrupted UI strings (em dash / closing tags)
 
 Daily logging (todo):
   [x] Repeat last for income + petrol (FAB + storage templates)
@@ -130,9 +130,9 @@ Imports & Sheets (todo):
   [x] Monthly backup export reminder
 
 Polish (todo):
-  [ ] Dark mode schedule
-  [ ] Share/print monthly report improvements
-  [ ] Petrol L/100 + RM/km on Expenses hero when month has fills
+  [x] Dark mode schedule
+  [x] Share/print monthly report improvements
+  [x] Petrol L/100 + RM/km on Expenses hero when month has fills
 
 Open
 ----

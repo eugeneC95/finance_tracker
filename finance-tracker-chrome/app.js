@@ -118,7 +118,7 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 let expenses = [], incomes = [], banks = [];
 let utHoldings = [];
 let utNavPoints = [];
-let settings = { dark:false, fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true };
+let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true };
 let lastExpenseTpl = null;
 let lastIncomeTpl = null;
 let viewMonth = new Date(); viewMonth.setDate(1);
@@ -922,9 +922,19 @@ function buildCatButtons() {
 // ── Settings ───────────────────────────────────────────────
 function applySettings() {
   const b = document.body;
-  b.classList.toggle('dark', !!settings.dark);
+  let darkOn = !!settings.dark;
+  if (settings.darkSchedule === 'night') {
+    const h = new Date().getHours();
+    darkOn = (h >= 19 || h < 7);
+  }
+  b.classList.toggle('dark', darkOn);
   const darkEl = document.getElementById('set-dark');
-  if (darkEl) darkEl.checked = !!settings.dark;
+  if (darkEl) {
+    darkEl.checked = darkOn;
+    darkEl.disabled = settings.darkSchedule === 'night';
+  }
+  const darkSchedEl = document.getElementById('set-dark-schedule');
+  if (darkSchedEl) darkSchedEl.value = settings.darkSchedule || 'off';
   b.classList.remove('fs-sm','fs-md','fs-lg');
   b.classList.add(settings.fontSize || 'fs-md');
   document.querySelectorAll('.fs-btn').forEach(x =>
@@ -1362,6 +1372,40 @@ function render() {
   document.getElementById('c-total').textContent = fmt(totalExp);
   document.getElementById('c-today').textContent = fmt(todayExp);
   document.getElementById('c-count').textContent = me.length;
+  const expPtEl = document.getElementById('exp-petrol-metrics');
+  if (expPtEl) {
+    const ym = viewYM();
+    const mPetrol = (typeof petrolLog !== 'undefined' && Array.isArray(petrolLog))
+      ? petrolLog.filter(p => p && p.date && String(p.date).startsWith(ym))
+      : [];
+    const ptSpend = mPetrol.reduce((a, p) => a + (Number(p.total) || 0), 0);
+    const ptLitres = mPetrol.reduce((a, p) => a + (Number(p.litres) || 0), 0);
+    const withOdo = mPetrol
+      .filter(p => p && Number(p.odo) > 0)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)) || Number(a.odo) - Number(b.odo));
+    let avgL100 = 0;
+    let cpk = 0;
+    if (withOdo.length >= 2 && ptLitres > 0) {
+      let totalKm = 0;
+      let fuelUsed = 0;
+      for (let i = 1; i < withOdo.length; i++) {
+        const km = Number(withOdo[i].odo) - Number(withOdo[i - 1].odo);
+        if (km > 0) {
+          totalKm += km;
+          fuelUsed += Number(withOdo[i].litres) || 0;
+        }
+      }
+      if (totalKm > 0 && fuelUsed > 0) {
+        avgL100 = (fuelUsed / totalKm) * 100;
+        const avgPpl = ptSpend / ptLitres;
+        cpk = (fuelUsed / totalKm) * avgPpl;
+      }
+    }
+    expPtEl.textContent = (avgL100 > 0 && cpk > 0)
+      ? ('Petrol: ' + avgL100.toFixed(1) + ' L/100 km · RM ' + cpk.toFixed(2) + '/km')
+      : '';
+    expPtEl.hidden = !expPtEl.textContent;
+  }
 
   // Filter pills
   const usedCats = [...new Set(me.map(e=>e.cat))];
@@ -2003,6 +2047,12 @@ function bindInput(id, fn) {
 }
 bindChange('set-dark', e => {
   settings.dark = e.target.checked; saveSets(); applySettings();
+});
+bindChange('set-dark-schedule', e => {
+  settings.darkSchedule = e.target.value || 'off';
+  saveSets();
+  applySettings();
+  showToast(settings.darkSchedule === 'night' ? 'Dark mode follows 7pm-7am' : 'Dark mode schedule off');
 });
 document.querySelectorAll('.fs-btn').forEach(b => b.addEventListener('click', () => {
   settings.fontSize = b.dataset.fs; saveSets(); applySettings();
