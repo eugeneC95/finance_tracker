@@ -1878,6 +1878,9 @@ function exportData() {
   a.download = 'finance-tracker-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
+  settings.backupLastExportAt = payload.exported;
+  settings.backupRemindedYm = viewMonth.getFullYear() + '-' + String(viewMonth.getMonth() + 1).padStart(2, '0');
+  saveSets();
   showToast('Backup exported');
 }
 
@@ -2178,6 +2181,9 @@ const TAB_OPEN_HOOKS = {
     renderBankList();
     renderUnitTrustPanel();
   },
+  settings: () => {
+    remindMonthlyBackupIfNeeded();
+  },
 };
 const TAB_OPEN_DELAY_MS = { trends: 50, petrol: 10, report: 10 };
 
@@ -2187,6 +2193,20 @@ function runTabOpenHooks(tab) {
   const delay = TAB_OPEN_DELAY_MS[tab] || 0;
   if (delay) setTimeout(fn, delay);
   else fn();
+}
+
+function remindMonthlyBackupIfNeeded() {
+  const ym = viewMonth.getFullYear() + '-' + String(viewMonth.getMonth() + 1).padStart(2, '0');
+  if (settings.backupRemindedYm === ym) return;
+  const last = settings.backupLastExportAt ? String(settings.backupLastExportAt).slice(0, 7) : '';
+  if (last === ym) {
+    settings.backupRemindedYm = ym;
+    saveSets();
+    return;
+  }
+  settings.backupRemindedYm = ym;
+  saveSets();
+  showToast('Reminder: export backup for ' + ym + ' in Settings');
 }
 
 function refreshActiveTabPanels() {
