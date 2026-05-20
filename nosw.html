@@ -12,7 +12,7 @@
 </style>
 </head>
 <body>
-<p id="msg">Clearing offline cache and service worker…</p>
+<p id="msg">Fetching the latest app files…</p>
 <script>
 (function(){
   function go() {
@@ -25,7 +25,7 @@
   }
   function fail(e) {
     var m = document.getElementById('msg');
-    if (m) m.innerHTML = 'Could not clear automatically. Try removing the app from your Home Screen, then delete Safari website data for this site.<br/><br/><a href="./index.html">Open app anyway</a>';
+    if (m) m.innerHTML = 'Could not refresh automatically. Try removing the app from your Home Screen, then delete Safari website data for this site.<br/><br/><a href="./index.html">Open app anyway</a>';
   }
   try {
     var p = Promise.resolve();
