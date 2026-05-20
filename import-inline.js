@@ -42,9 +42,21 @@ function iwAutocat(desc) {
   for(const r of IW_CAT_RULES){ if(r.keys.some(k=>low.includes(k))) return r.cat; }
   return 'Other';
 }
+function iwAutocatMeta(desc) {
+  const low = String(desc || '').toLowerCase();
+  let best = null;
+  for (const r of IW_CAT_RULES) {
+    const hit = r.keys.find(k => low.includes(k));
+    if (hit) {
+      if (!best || hit.length > best.hit.length) best = { cat: r.cat, hit };
+    }
+  }
+  if (!best) return { cat: 'Other', confidence: 'low' };
+  return { cat: best.cat, confidence: best.hit.length >= 6 ? 'high' : 'med' };
+}
 
 // ── State ──────────────────────────────────────────────────
-let iwSource=null, iwRows=[];
+let iwSource=null, iwRows=[], iwDryRun={ add:0, overwrite:0, dupes:0 };
 
 // ── Helpers ────────────────────────────────────────────────
 function iwShow(id){ document.getElementById(id).style.display=''; }
@@ -80,8 +92,8 @@ function iwParseTNG(text) {
     const afterDate=full.slice(dm[0].length).trim();
     const fi=afterDate.search(/[-+]?RM\s*[\d,]|[-+]\d+\.\d{2}/i);
     let desc=(fi>0?afterDate.slice(0,fi):afterDate.slice(0,60)).replace(/\s{2,}/g,' ').replace(/Successful|Failed|Pending/gi,'').trim();
-    const cat=iwAutocat(desc), type=txAmt<0?(INC_SET.has(cat)?'inc':'exp'):'inc';
-    rows.push({date:dateStr,desc,amount:Math.abs(txAmt),type,cat,skip:false});
+    const meta=iwAutocatMeta(desc), cat=meta.cat, type=txAmt<0?(INC_SET.has(cat)?'inc':'exp'):'inc';
+    rows.push({date:dateStr,desc,amount:Math.abs(txAmt),type,cat,skip:false,confidence:meta.confidence});
   }
   return rows;
 }
@@ -117,8 +129,8 @@ function iwParseBankCSV(text) {
     else if(cri>=0&&cols[cri]&&parseFloat(cols[cri].replace(/[^0-9.]/g,''))>0){amount=parseFloat(cols[cri].replace(/[^0-9.]/g,''));type='inc';}
     else if(ai>=0){const raw=(cols[ai]||'').replace(/[^0-9.\-]/g,'');amount=Math.abs(parseFloat(raw));type=parseFloat(raw)<0?'exp':'inc';}
     if(!amount||isNaN(amount)) continue;
-    const cat=iwAutocat(desc); if(type==='exp'&&INC_SET.has(cat))type='inc';
-    rows.push({date:dateStr,desc,amount,type,cat,skip:false});
+    const meta=iwAutocatMeta(desc), cat=meta.cat; if(type==='exp'&&INC_SET.has(cat))type='inc';
+    rows.push({date:dateStr,desc,amount,type,cat,skip:false,confidence:meta.confidence});
   }
   return rows;
 }
@@ -154,7 +166,7 @@ function iwBuildTable() {
     tr.innerHTML=`
       <td><input type="checkbox" class="iw-row-cb" data-idx="${idx}" ${checked?'checked':''} ${row.skip?'disabled':''} aria-label="Import row"></td>
       <td style="white-space:nowrap">${row.date}</td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${row.desc}">${row.desc}</td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${row.desc}">${row.desc}<div style="font-size:11px;color:var(--ink3)">${row.confidence==='high'?'High':row.confidence==='med'?'Medium':'Low'} confidence</div></td>
       <td style="text-align:right;font-weight:700;color:${row.type==='exp'?'var(--red)':'var(--green)'};white-space:nowrap">${row.type==='exp'?'':'+'}${row.amount.toFixed(2)}</td>
       <td><div class="type-btns">
         <button class="type-btn exp${row.type==='exp'&&!row.skip?' on':''}" data-idx="${idx}" data-type="exp">Exp</button>
@@ -204,7 +216,9 @@ function iwUpdateSummary() {
     <div class="iw-sum-card"><div class="isl">Importing</div><div class="isv">${active.length}</div></div>
     <div class="iw-sum-card"><div class="isl">Expenses</div><div class="isv red">RM ${exps.toFixed(2)}</div></div>
     <div class="iw-sum-card"><div class="isl">Income</div><div class="isv green">RM ${incs.toFixed(2)}</div></div>
-    <div class="iw-sum-card"><div class="isl">Skipped</div><div class="isv">${iwRows.filter(r=>r.skip).length}</div></div>`;
+    <div class="iw-sum-card"><div class="isl">Skipped</div><div class="isv">${iwRows.filter(r=>r.skip).length}</div></div>
+    <div class="iw-sum-card"><div class="isl">Will add</div><div class="isv">${iwDryRun.add||0}</div></div>
+    <div class="iw-sum-card"><div class="isl">Possible dupes</div><div class="isv">${(iwDryRun.dupes||0)+(iwDryRun.overwrite||0)}</div></div>`;
 }
 
 // ── Step navigation ────────────────────────────────────────
@@ -294,8 +308,30 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
     if (dupes > 0) showToast(`⚠️ ${dupes} duplicate${dupes>1?'s':''} detected and pre-skipped`);
   }
   iwAssignRowIds();
-  iwBuildTable();
-  iwGoStep(3);
+  var st = importWalletStorage();
+  if (st && st.local) {
+    st.local.get(['expenses_v2','incomes_v1'], function(result) {
+      const exps = result['expenses_v2'] || [];
+      const incs = result['incomes_v1'] || [];
+      var dupes = 0;
+      iwRows.forEach(function(r) {
+        var pool = r.type === 'inc' ? incs : exps;
+        var hit = pool.some(function(p) {
+          return String(p.date).slice(0,10) === String(r.date).slice(0,10) &&
+            Math.abs(Number(p.amount || 0) - Number(r.amount || 0)) < 0.01 &&
+            String(p.name || '').toLowerCase().trim() === String(r.desc || '').toLowerCase().trim();
+        });
+        if (hit) dupes++;
+      });
+      iwDryRun = { add: Math.max(0, iwRows.length - dupes), overwrite: 0, dupes: dupes };
+      iwBuildTable();
+      iwGoStep(3);
+    });
+  } else {
+    iwDryRun = { add: iwRows.length, overwrite: 0, dupes: 0 };
+    iwBuildTable();
+    iwGoStep(3);
+  }
 });
 
 // ── Import button ──────────────────────────────────────────

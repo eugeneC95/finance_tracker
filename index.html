@@ -50,7 +50,19 @@
 (function(){
   var BRIDGE_KEY = 'ft_unlock_bridge';
   var BRIDGE_MS  = 45000;
+  var LOCK_TIMEOUT_KEY = 'ft_lock_timeout_min';
   window.__ftUnlocked    = false;
+  function isStillUnlocked() {
+    var unlocked = sessionStorage.getItem('ft-unlocked') === '1';
+    if (!unlocked) return false;
+    var mins = parseInt(localStorage.getItem(LOCK_TIMEOUT_KEY) || '0', 10);
+    if (isNaN(mins) || mins < 0) mins = 0;
+    if (mins === 0) return false;
+    var at = parseInt(sessionStorage.getItem('ft-unlocked-at') || '0', 10);
+    if (!at || isNaN(at)) return false;
+    if ((Date.now() - at) > mins * 60000) return false;
+    return true;
+  }
   try {
     if (/[?&]reset=1\b/.test(window.location.search)) {
       try { localStorage.removeItem('ft_lock_pw_hash_v1'); } catch (e0) {}
@@ -74,13 +86,14 @@
         return;
       }
     }
-    if (sessionStorage.getItem('ft-unlocked') === '1') { window.__ftUnlocked = true; return; }
+    if (isStillUnlocked()) { window.__ftUnlocked = true; return; }
     var raw = localStorage.getItem(BRIDGE_KEY);
     if (raw) {
       try { localStorage.removeItem(BRIDGE_KEY); } catch (e2) {}
       var ts2 = parseInt(raw, 10);
       if (!isNaN(ts2) && (Date.now() - ts2) < BRIDGE_MS) {
         try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e3) {}
+        try { sessionStorage.setItem('ft-unlocked-at', String(Date.now())); } catch (e4) {}
         window.__ftUnlocked = true;
         return;
       }
@@ -3528,7 +3541,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v84 · 2026-05-20 15:32';
+  var BUILD_VERSION    = 'v85 · 2026-05-20 15:39';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3581,6 +3594,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   function unlock(){
     checking = false;
     try { sessionStorage.setItem('ft-unlocked', '1'); } catch (e) {}
+    try { sessionStorage.setItem('ft-unlocked-at', String(Date.now())); } catch (e1) {}
     try { localStorage.setItem(BRIDGE_KEY, String(Date.now())); } catch (e2) {}
     window.__ftUnlocked = true;
     hide();
@@ -3744,6 +3758,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
         </div>
       </section>
+      <div id="today-widget" class="card mb-5" hidden></div>
 
       <div id="exp-month-summary" class="exp-month-summary-wrap" hidden aria-label="Month summary"></div>
       <div id="exp-budget-chips" class="exp-budget-chips-wrap" hidden aria-label="Budget alerts"></div>
@@ -4217,6 +4232,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <div class="panel-bd bar-chart" id="trend-inc-breakdown-bd"></div>
       </div>
       <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Insights</span></div>
+        <div class="panel-bd">
+          <div id="insights-panel"></div>
+        </div>
+      </div>
+      <div class="card mb-5">
         <div class="panel-hd"><span class="panel-title">Spending by day of week</span></div>
         <div class="panel-bd">
           <div class="bar-chart" id="day-breakdown"></div>
@@ -4407,6 +4428,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
             <div class="setting-row">
               <div>
+                <div class="s-lbl">Lock timeout</div>
+                <div style="font-size:var(--f-xs);color:var(--ink3);margin-top:2px">Re-enter PIN after inactivity</div>
+              </div>
+              <select id="set-lock-timeout" class="cur-input" style="max-width:170px">
+                <option value="0">Immediate</option>
+                <option value="5">5 minutes</option>
+                <option value="15">15 minutes</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div>
                 <div class="s-lbl">Drag handles</div>
               </div>
               <label class="toggle">
@@ -4502,7 +4534,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v84 · 2026-05-20 15:32</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v85 · 2026-05-20 15:39</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy, offline use &amp; updates</summary>
@@ -4740,13 +4772,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v84 · 2026-05-20 15:32</div>
-<script src="build-id.js?v=84"></script>
-<script src="app.js?v=84"></script>
-<script src="sync.js?v=84"></script>
-<script src="features.js?v=84"></script>
-<script src="extras.js?v=84"></script>
-<script src="import-inline.js?v=84"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v85 · 2026-05-20 15:39</div>
+<script src="build-id.js?v=85"></script>
+<script src="app.js?v=85"></script>
+<script src="sync.js?v=85"></script>
+<script src="features.js?v=85"></script>
+<script src="extras.js?v=85"></script>
+<script src="import-inline.js?v=85"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -4852,6 +4884,7 @@ if (nMM) nMM.addEventListener('click', function() { document.getElementById('nex
   btn.addEventListener('click', function() {
     if (!confirm('Lock the app for this session? After reload you will need to enter the PIN again.\n\nYour data stays intact.')) return;
     try { sessionStorage.removeItem('ft-unlocked'); } catch (e) {}
+    try { sessionStorage.removeItem('ft-unlocked-at'); } catch (e1) {}
     try { localStorage.removeItem('ft_unlock_bridge'); } catch (e) {}
     window.location.reload();
   });

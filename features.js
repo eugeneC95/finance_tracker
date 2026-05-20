@@ -206,6 +206,26 @@ function renderExpMonthSummary() {
       '<span>' + esc(c.label) + '</span><strong>' + esc(c.value) + '</strong></div>'
     );
   }).join('');
+  renderMonthChecklist(totalExp, totalInc);
+}
+
+function renderMonthChecklist(totalExp, totalInc) {
+  var box = document.getElementById('today-widget');
+  if (!box) return;
+  var ym = typeof viewYM === 'function' ? viewYM() : '';
+  var last = ym ? new Date(ym + '-01T12:00:00') : new Date();
+  last = new Date(last.getFullYear(), last.getMonth() + 1, 0);
+  var now = new Date();
+  var nearEnd = now.getFullYear() === last.getFullYear() && now.getMonth() === last.getMonth() && (last.getDate() - now.getDate()) <= 5;
+  var net = totalInc - totalExp;
+  box.hidden = false;
+  box.innerHTML =
+    '<div class="panel-hd"><span class="panel-title">Today + month-end checklist</span></div>' +
+    '<div class="panel-bd">' +
+    '<div class="ft-note" style="margin-bottom:8px">Today: ' + fmt(expenses.filter(function(e){ return e.date === todayStr(); }).reduce(function(a, e){ return a + e.amount; }, 0)) +
+    ' spent · ' + fmt(incomes.filter(function(i){ return i.date === todayStr(); }).reduce(function(a, i){ return a + i.amount; }, 0)) + ' income · Net ' + fmt(net) + '</div>' +
+    '<div class="ft-note">Checklist: ' + (nearEnd ? 'End of month near — export backup, snapshot net worth, then share monthly report.' : 'Keep month tidy — export backup weekly and snapshot net worth after major changes.') + '</div>' +
+    '</div>';
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -429,6 +449,7 @@ function clearSavingsGoal() {
 //   SEARCH
 // ╚══════════════════════════════════════════════════════════╝
 var searchQuery = '';
+var searchFilters = { type: 'all', cat: 'all', dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
 
 function searchTxStr(v) {
   return String(v == null ? '' : v).toLowerCase();
@@ -446,6 +467,22 @@ function renderSearch() {
 
   var allExp = expenses.filter(function(e){ return searchTxStr(e.name).includes(q) || searchTxStr(e.cat).includes(q); });
   var allInc = incomes.filter(function(i){ return searchTxStr(i.name).includes(q) || searchTxStr(i.cat).includes(q); });
+  if (searchFilters.type === 'exp') allInc = [];
+  if (searchFilters.type === 'inc') allExp = [];
+  var min = parseFloat(searchFilters.amountMin);
+  var max = parseFloat(searchFilters.amountMax);
+  var hasMin = !isNaN(min) && min > 0;
+  var hasMax = !isNaN(max) && max > 0;
+  function passCommon(e) {
+    if (searchFilters.cat !== 'all' && e.cat !== searchFilters.cat) return false;
+    if (searchFilters.dateFrom && String(e.date || '') < searchFilters.dateFrom) return false;
+    if (searchFilters.dateTo && String(e.date || '') > searchFilters.dateTo) return false;
+    if (hasMin && Number(e.amount) < min) return false;
+    if (hasMax && Number(e.amount) > max) return false;
+    return true;
+  }
+  allExp = allExp.filter(passCommon);
+  allInc = allInc.filter(passCommon);
   var all = allExp.map(function(e){ return Object.assign({},e,{_type:'exp'}); })
     .concat(allInc.map(function(i){ return Object.assign({},i,{_type:'inc'}); }))
     .sort(function(a,b){ return b.date.localeCompare(a.date) || b.id-a.id; });
@@ -467,6 +504,27 @@ function renderSearch() {
     '<div class="iw-sc" style="flex:1;min-width:100px"><div class="il">Expenses</div><div class="iv red">' + fmt(totalExp2) + '</div></div>' +
     '<div class="iw-sc" style="flex:1;min-width:100px"><div class="il">Income</div><div class="iv green">' + fmt(totalInc2) + '</div></div>';
   el.appendChild(summary);
+  var filterBar = document.createElement('div');
+  filterBar.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px';
+  var catOpts = ['all'].concat(Object.keys(EXP_CATS || {}), Object.keys(INC_CATS || {}).filter(function(c){ return !EXP_CATS[c]; }));
+  filterBar.innerHTML =
+    '<select id="srch-type"><option value="all">All types</option><option value="exp">Expense only</option><option value="inc">Income only</option></select>' +
+    '<select id="srch-cat">' + catOpts.map(function(c){ return '<option value="' + esc(c) + '">' + (c === 'all' ? 'All categories' : c) + '</option>'; }).join('') + '</select>' +
+    '<input id="srch-date-from" type="date" placeholder="From"/>' +
+    '<input id="srch-date-to" type="date" placeholder="To"/>' +
+    '<input id="srch-min" type="number" min="0" step="0.01" placeholder="Min amount"/>' +
+    '<input id="srch-max" type="number" min="0" step="0.01" placeholder="Max amount"/>';
+  el.appendChild(filterBar);
+  ['type', 'cat', 'dateFrom', 'dateTo', 'amountMin', 'amountMax'].forEach(function(k) {
+    var map = { type: 'srch-type', cat: 'srch-cat', dateFrom: 'srch-date-from', dateTo: 'srch-date-to', amountMin: 'srch-min', amountMax: 'srch-max' };
+    var node = document.getElementById(map[k]);
+    if (!node) return;
+    node.value = searchFilters[k] || '';
+    node.addEventListener('change', function() {
+      searchFilters[k] = node.value || '';
+      renderSearch();
+    });
+  });
 
   var list = document.createElement('div');
   list.className = 'tx-list';
@@ -596,6 +654,33 @@ function renderRecurring() {
   var el = document.getElementById('rec-list');
   if (!el) return;
   el.innerHTML = '';
+  var now = new Date();
+  var preview = [];
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var d = new Date(now.getFullYear(), now.getMonth(), 1);
+    for (var i = 0; i < 2; i++) {
+      var y = d.getFullYear();
+      var m = d.getMonth();
+      var lastDay = new Date(y, m + 1, 0).getDate();
+      var fire = r.day === 'last' ? lastDay : Math.min(Number(r.day) || 1, lastDay);
+      var when = new Date(y, m, fire);
+      if (when >= now && (when - now) <= 30 * 86400000) {
+        preview.push({ date: when, amount: Number(r.amount) || 0, type: r.type, name: r.name || '' });
+      }
+      d = new Date(y, m + 1, 1);
+    }
+  });
+  if (preview.length) {
+    preview.sort(function(a, b) { return a.date - b.date; });
+    var exp = preview.filter(function(x) { return x.type === 'exp'; }).reduce(function(a, x) { return a + x.amount; }, 0);
+    var inc = preview.filter(function(x) { return x.type === 'inc'; }).reduce(function(a, x) { return a + x.amount; }, 0);
+    var pv = document.createElement('div');
+    pv.className = 'ft-inline-hint';
+    pv.style.marginBottom = '10px';
+    pv.innerHTML = 'Next 30 days: ' + preview.length + ' recurring item(s) · Income ' + fmt(inc) + ' · Expense ' + fmt(exp) + ' · Net ' + fmt(inc - exp);
+    el.appendChild(pv);
+  }
 
   if (!recurring.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔁</div>No recurring entries yet.</div>';
@@ -826,6 +911,7 @@ function renderTrends() {
 
   renderTrendIncBreakdown();
   renderDayBreakdown();
+  renderInsightsPanel(months);
   renderNwSnapshotHint();
   renderNetWorthChart();
   requestAnimationFrame(function() {
@@ -833,6 +919,31 @@ function renderTrends() {
       renderNetWorthChart();
     }
   });
+}
+
+function renderInsightsPanel(months) {
+  var el = document.getElementById('insights-panel');
+  if (!el) return;
+  var me = typeof mExp === 'function' ? mExp() : [];
+  var byCat = {};
+  me.forEach(function(e) { byCat[e.cat] = (byCat[e.cat] || 0) + Number(e.amount || 0); });
+  var top = Object.keys(byCat).map(function(cat) { return { cat: cat, amount: byCat[cat] }; })
+    .sort(function(a, b) { return b.amount - a.amount; }).slice(0, 3);
+  var latest = months && months.length ? months[months.length - 1] : null;
+  var prev = months && months.length > 1 ? months[months.length - 2] : null;
+  var mom = (latest && prev && prev.exp > 0) ? Math.round(((latest.exp - prev.exp) / prev.exp) * 100) : null;
+  var risk = [];
+  Object.keys(budgets || {}).forEach(function(cat) {
+    var lim = Number(budgets[cat]) || 0;
+    if (!lim) return;
+    var spent = byCat[cat] || 0;
+    if (spent >= lim) risk.push(cat + ' over (' + Math.round((spent / lim) * 100) + '%)');
+    else if (spent >= lim * 0.9) risk.push(cat + ' near limit (' + Math.round((spent / lim) * 100) + '%)');
+  });
+  el.innerHTML =
+    '<div class="ft-note" style="margin-bottom:8px">Top spend: ' + (top.length ? top.map(function(t){ return esc(t.cat) + ' ' + fmt(t.amount); }).join(' · ') : 'No spending this month') + '</div>' +
+    '<div class="ft-note" style="margin-bottom:8px">MoM spend delta: ' + (mom == null ? 'Not enough data yet' : ((mom >= 0 ? '+' : '') + mom + '%')) + '</div>' +
+    '<div class="ft-note">Budget risk: ' + (risk.length ? esc(risk.join(' · ')) : 'No budget risks in current month') + '</div>';
 }
 
 function renderTrendIncBreakdown() {

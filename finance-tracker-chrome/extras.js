@@ -275,6 +275,16 @@ function addPetrolEntry() {
     if (pEl) shake(pEl);
     return;
   }
+  var last = petrolLastOdoEntry();
+  if (odo && last && last.odo && odo > last.odo && litres > 0) {
+    var km = odo - last.odo;
+    if (km > 0) {
+      var l100 = (litres / km) * 100;
+      if ((l100 > 20 || l100 < 2) && !confirm('Unusual petrol efficiency (' + l100.toFixed(1) + ' L/100km). Save anyway?')) {
+        return;
+      }
+    }
+  }
 
   var total = parseFloat((litres * ppl).toFixed(2));
   petrolLog.unshift({ id: Date.now(), station: station, litres: litres, ppl: ppl, odo: odo, date: date, total: total });

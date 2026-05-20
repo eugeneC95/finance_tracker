@@ -118,7 +118,7 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 let expenses = [], incomes = [], banks = [];
 let utHoldings = [];
 let utNavPoints = [];
-let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true };
+let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true, lockTimeoutMin:5 };
 let lastExpenseTpl = null;
 let lastIncomeTpl = null;
 let viewMonth = new Date(); viewMonth.setDate(1);
@@ -958,6 +958,9 @@ function applySettings() {
   if (compEl) compEl.checked = !!settings.compact;
   const nwAutoEl = document.getElementById('set-nw-auto');
   if (nwAutoEl) nwAutoEl.checked = settings.nwAutoSnapshot !== false;
+  const lockEl = document.getElementById('set-lock-timeout');
+  if (lockEl) lockEl.value = String(settings.lockTimeoutMin == null ? 5 : settings.lockTimeoutMin);
+  try { localStorage.setItem('ft_lock_timeout_min', String(settings.lockTimeoutMin == null ? 5 : settings.lockTimeoutMin)); } catch (e) {}
   b.classList.toggle('compact', !!settings.compact);
   let cs = document.getElementById('compact-style');
   if (!cs) { cs = document.createElement('style'); cs.id = 'compact-style'; document.head.appendChild(cs); }
@@ -993,6 +996,7 @@ function addExpense() {
     const msg = 'Similar entry: ' + dup.name + ' ' + fmt(dup.amount) + ' on ' + String(dup.date).slice(0, 10) + '\nAdd anyway?';
     if (!confirm(msg)) return;
   }
+  if (amount >= 3000 && !confirm('Large expense detected (' + fmt(amount) + '). Save anyway?')) return;
   if (typeof learnCatRule === 'function') learnCatRule(name, selectedCat);
   expenses.push({ id: Date.now(), name, amount, cat: selectedCat, date });
   lastExpenseTpl = { name, amount, cat: selectedCat };
@@ -1054,6 +1058,7 @@ function addIncome() {
   if (!name)                        { shake(nEl); ok = false; }
   if (isNaN(amount) || amount <= 0) { shake(aEl); ok = false; }
   if (!ok) return;
+  if (amount >= 10000 && !confirm('Large income detected (' + fmt(amount) + '). Save anyway?')) return;
   incomes.push({ id: Date.now(), name, amount, cat, date });
   lastIncomeTpl = { name, amount, cat };
   chromeStorage.local.set({ [KEY_LAST_INC]: lastIncomeTpl });
@@ -2157,6 +2162,14 @@ bindChange('set-drag', e => {
 });
 bindChange('set-compact', e => {
   settings.compact = e.target.checked; saveSets(); applySettings();
+});
+bindChange('set-lock-timeout', e => {
+  var mins = parseInt(e.target.value || '5', 10);
+  if (isNaN(mins) || mins < 0) mins = 5;
+  settings.lockTimeoutMin = mins;
+  saveSets();
+  applySettings();
+  showToast('Lock timeout updated');
 });
 const setNwAuto = document.getElementById('set-nw-auto');
 if (setNwAuto) {
