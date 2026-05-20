@@ -692,6 +692,48 @@ function updateSyncUI() {
 
   if (disp) disp.textContent = syncUrl || '';
 
+  var counts = syncState.counts || syncDataCounts();
+  var expEl = document.getElementById('settings-count-exp');
+  var incEl = document.getElementById('settings-count-inc');
+  var bankEl = document.getElementById('settings-count-bank');
+  if (expEl) expEl.textContent = counts.expenses;
+  if (incEl) incEl.textContent = counts.incomes;
+  if (bankEl) bankEl.textContent = counts.banks;
+
+  var buildChip = document.getElementById('settings-build-chip');
+  if (buildChip && window.FT_BUILD) buildChip.textContent = 'v' + FT_BUILD.ver;
+
+  var hero = document.getElementById('settings-hero-status');
+  if (hero) {
+    if (syncState.status === 'error' && syncState.message) {
+      hero.textContent = syncState.message;
+    } else if (syncState.lastSaved) {
+      hero.textContent = 'Last saved to Sheet ' + fmtRelativeTime(syncState.lastSaved);
+    } else if (syncState.lastLoaded) {
+      hero.textContent = 'Last loaded from Sheet ' + fmtRelativeTime(syncState.lastLoaded);
+    } else if (syncUrl) {
+      hero.textContent = 'Connected — edits auto-save after a short pause';
+    } else {
+      hero.textContent = 'Your data stays on this device until you sync.';
+    }
+  }
+
+  var pill = document.getElementById('settings-sync-pill');
+  if (pill) {
+    var pillText = {
+      idle: syncUrl ? '● Ready to sync' : '○ Sync not set up',
+      saving: '↑ Saving…',
+      loading: '↓ Loading…',
+      ok: '✓ Sync OK',
+      error: '✗ Sync error'
+    };
+    pill.textContent = pillText[syncState.status] || '○ Sync';
+    pill.className = 'settings-sync-pill';
+    if (syncState.status === 'ok') pill.classList.add('settings-sync-pill--ok');
+    else if (syncState.status === 'error') pill.classList.add('settings-sync-pill--err');
+    else if (syncState.status === 'saving' || syncState.status === 'loading') pill.classList.add('settings-sync-pill--warn');
+  }
+
   if (!dot || !msg) return;
 
   var icons  = { idle:'○', saving:'↑', loading:'↓', ok:'✓', error:'✗' };

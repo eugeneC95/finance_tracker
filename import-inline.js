@@ -222,9 +222,21 @@ function iwUpdateSummary() {
 }
 
 // ── Step navigation ────────────────────────────────────────
+function iwUpdateStepper(n) {
+  var steps = document.querySelectorAll('#iw-steps .iw-step');
+  if (!steps.length) return;
+  steps.forEach(function(el) {
+    var s = parseInt(el.getAttribute('data-step'), 10);
+    el.classList.remove('iw-step--on', 'iw-step--done');
+    if (s < n) el.classList.add('iw-step--done');
+    else if (s === n) el.classList.add('iw-step--on');
+  });
+}
+
 function iwGoStep(n) {
   iwHide('iw1'); iwHide('iw2'); iwHide('iw3'); iwHide('iw4');
   iwShow('iw'+n);
+  iwUpdateStepper(n);
 }
 
 function iwReset() {

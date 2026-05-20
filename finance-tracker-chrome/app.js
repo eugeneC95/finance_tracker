@@ -2337,6 +2337,7 @@ const TAB_OPEN_HOOKS = {
   },
   settings: () => {
     remindMonthlyBackupIfNeeded();
+    if (typeof updateSyncUI === 'function') updateSyncUI();
   },
 };
 const TAB_OPEN_DELAY_MS = { trends: 50, petrol: 10, report: 10 };

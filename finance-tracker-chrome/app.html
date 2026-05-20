@@ -1722,6 +1722,153 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
   min-width: 0;
 }
 
+/* Settings revamp — single-column stack, hero, quick actions */
+#page-settings .settings-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.settings-section__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink3);
+  margin: 0 0 8px 4px;
+}
+.settings-hero {
+  background: linear-gradient(145deg, #0f766e 0%, #0d5c56 55%, #134e4a 100%) !important;
+  color: #fff;
+  border-color: transparent !important;
+  margin-bottom: 0;
+}
+body.dark .settings-hero {
+  background: linear-gradient(145deg, #2dd4bf 0%, #0f766e 45%, #134e4a 100%) !important;
+}
+.settings-hero .ft-page-hero__label,
+.settings-hero .ft-chip span { color: rgba(255,255,255,.7) !important; }
+.settings-hero .ft-chip strong { color: #fff !important; }
+.settings-hero .ft-chip {
+  background: rgba(255,255,255,.14) !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+.settings-hero__status {
+  font-size: var(--f-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  opacity: .95;
+}
+.settings-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin-bottom: 10px;
+}
+.settings-sync-pill--ok { background: rgba(255,255,255,.22); }
+.settings-sync-pill--warn { background: rgba(186,117,23,.45); }
+.settings-sync-pill--err { background: rgba(220,38,38,.45); }
+.settings-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.settings-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 14px 14px;
+  min-height: 74px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform .12s, border-color .12s;
+}
+.settings-quick-btn:active { transform: scale(.98); }
+.settings-quick-btn span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink3);
+  line-height: 1.35;
+}
+.settings-quick-btn--primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-dk);
+}
+.settings-quick-btn--primary span { color: rgba(255,255,255,.78); }
+body.dark .settings-quick-btn--primary { color: #041312; }
+body.dark .settings-quick-btn--primary span { color: rgba(4,19,18,.65); }
+.settings-group__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink3);
+  margin: 0;
+  padding: 10px 0 2px;
+}
+.settings-group + .settings-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+#page-settings .settings-card .setting-row {
+  padding: 13px 0;
+}
+#page-settings .settings-card .panel-bd {
+  padding-top: 6px;
+  padding-bottom: 14px;
+}
+.iw-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.iw-step {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink3);
+  background: var(--card-bg2);
+  line-height: 1.25;
+}
+.iw-step--on {
+  background: var(--primary);
+  color: #fff;
+}
+.iw-step--done {
+  background: rgba(21, 128, 61, 0.12);
+  color: var(--green);
+}
+body.dark .iw-step--done { background: rgba(45, 212, 191, 0.14); color: #6ee7b7; }
+#page-settings .src-card.active {
+  border-color: var(--primary);
+  background: rgba(15, 118, 110, 0.06);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+body.dark #page-settings .src-card.active {
+  background: rgba(45, 212, 191, 0.08);
+}
+
 @media (max-width: 680px) {
   .settings-grid { grid-template-columns: 1fr; }
   #page-settings .page-header,
@@ -2996,16 +3143,162 @@ body.dark .fs-btn.active { color: #000; }
   <div class="page" id="page-settings">
     <div class="page-header">
       <h2>Settings</h2>
-      <p class="sub">Appearance, backup, import from bank/TNG, and Google Sheets sync.</p>
+      <p class="sub">Personalize the app, back up your data, and sync with Google Sheets.</p>
     </div>
     <div class="page-body">
-      <div class="settings-grid">
+      <div class="settings-stack">
 
-        <div class="settings-span-2">
-          <div class="card mb-5">
-            <div class="panel-hd"><span class="panel-title">Import transactions</span></div>
+        <section class="card ft-page-hero settings-hero" aria-label="Data &amp; sync summary">
+          <div id="settings-sync-pill" class="settings-sync-pill">○ Sync</div>
+          <div class="settings-hero__status" id="settings-hero-status">Your data stays on this device until you sync.</div>
+          <div class="ft-page-hero__chips settings-hero__chips">
+            <div class="ft-chip"><span>Expenses</span><strong id="settings-count-exp">0</strong></div>
+            <div class="ft-chip"><span>Income</span><strong id="settings-count-inc">0</strong></div>
+            <div class="ft-chip"><span>Banks</span><strong id="settings-count-bank">0</strong></div>
+            <div class="ft-chip"><span>Build</span><strong id="settings-build-chip" style="font-size:12px">—</strong></div>
+          </div>
+        </section>
+
+        <div class="settings-quick-grid" aria-label="Quick data actions">
+          <button type="button" class="settings-quick-btn settings-quick-btn--primary" id="sync-save-btn">
+            Save to Sheet
+            <span>Push latest data to Google Sheets</span>
+          </button>
+          <button type="button" class="settings-quick-btn" id="sync-load-btn">
+            Load from Sheet
+            <span>Replace device data from cloud</span>
+          </button>
+          <button type="button" class="settings-quick-btn" id="export-btn">
+            Export backup
+            <span>Download JSON to this device</span>
+          </button>
+          <button type="button" class="settings-quick-btn" id="import-btn">
+            Import backup
+            <span>Restore from JSON file</span>
+          </button>
+          <input type="file" id="import-file" accept=".json" style="display:none"/>
+        </div>
+
+        <section aria-labelledby="settings-personalize-title">
+          <h3 class="settings-section__title" id="settings-personalize-title">Personalization</h3>
+          <div class="card settings-card">
             <div class="panel-bd">
+              <p class="settings-group__label">Look &amp; feel</p>
+              <div class="setting-row">
+                <div><div class="s-lbl">Dark mode</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-dark"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Dark mode schedule</div><div class="s-sub">Auto 7pm–7am</div></div>
+                <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
+                  <option value="off">Off</option>
+                  <option value="night">Night (7pm-7am)</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Font size</div></div>
+                <div class="fs-btns">
+                  <button type="button" class="fs-btn" data-fs="fs-sm">S</button>
+                  <button type="button" class="fs-btn active" data-fs="fs-md">M</button>
+                  <button type="button" class="fs-btn" data-fs="fs-lg">L</button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Compact view</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-compact"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <p class="settings-group__label">App behavior</p>
+              <div class="setting-row">
+                <div><div class="s-lbl">Currency symbol</div></div>
+                <input type="text" id="set-currency" class="cur-input" maxlength="6" placeholder="RM"/>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Lock timeout</div><div class="s-sub">Re-enter PIN after inactivity</div></div>
+                <select id="set-lock-timeout" class="cur-input" style="max-width:170px">
+                  <option value="0">Immediate</option>
+                  <option value="5">5 minutes</option>
+                  <option value="15">15 minutes</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Drag handles</div><div class="s-sub">Reorder transactions</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-drag" checked/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Auto-snapshot net worth</div><div class="s-sub">When bank balances change</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-nw-auto" checked/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-sync-title">
+          <h3 class="settings-section__title" id="settings-sync-title">Google Sheets sync</h3>
+          <div class="card">
+            <div class="panel-hd">
+              <span class="panel-title">Connection</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs);min-width:0;flex-shrink:1">
+                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">○</span>
+                <span id="sync-msg" style="color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not configured</span>
+              </span>
+            </div>
+            <div class="panel-bd">
+              <div id="sync-detail" class="sync-detail" style="margin-bottom:12px;font-size:var(--f-xs);color:var(--ink3);line-height:1.5"></div>
+              <label class="lbl">Apps Script web app (built into this app)</label>
+              <div id="sync-url-display" style="font-size:var(--f-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;word-break:break-all;color:var(--ink2);padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line);margin-top:6px"></div>
+              <div style="margin-top:14px">
+                <button type="button" class="btn-ghost" id="sync-ping-btn" style="width:100%">🔌 Test connection</button>
+              </div>
+              <details class="sync-help-details" style="margin-top:14px">
+                <summary class="sync-help-summary">Setup &amp; troubleshooting</summary>
+                <div class="about-card" style="font-size:var(--f-xs);line-height:1.9">
+                <strong>Setup (one time, ~5 minutes):</strong><br/>
+                1. Go to <strong>script.google.com</strong> → New project<br/>
+                2. Delete all existing code, paste everything from <strong>google-apps-script.js</strong> (in the zip)<br/>
+                &nbsp;&nbsp;· Creates tabs including <strong>UTHoldings</strong> and <strong>UTNav</strong> for unit trust sync on first save<br/>
+                3. Click Save → <strong>Deploy → New deployment</strong><br/>
+                4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
+                5. Click Deploy → Google will ask you to authorise → click Allow<br/>
+                6. Deploy, authorise, then use <strong>Test connection</strong> above (the web app URL is fixed in this app).<br/><br/>
+                <strong>⚠️ If "Failed to fetch" appears:</strong><br/>
+                · Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
+                · Re-deploy: Deploy → Manage deployments → Edit → New version → Deploy<br/>
+                · Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
+                </div>
+              </details>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-import-title">
+          <h3 class="settings-section__title" id="settings-import-title">Import from bank / TNG</h3>
+          <div class="card">
+            <div class="panel-bd">
+              <nav class="iw-steps" id="iw-steps" aria-label="Import progress">
+                <span class="iw-step iw-step--on" data-step="1">1 Source</span>
+                <span class="iw-step" data-step="2">2 Paste</span>
+                <span class="iw-step" data-step="3">3 Review</span>
+                <span class="iw-step" data-step="4">4 Done</span>
+              </nav>
+              <!-- Step 1 -->
               <div id="iw1">
+                <p class="ft-note" style="margin-bottom:12px">Choose where your statement came from, then tap Next.</p>
                 <div class="src-grid">
                   <div class="src-card" id="iw-tng-card">
                     <div class="src-icon">💳</div>
@@ -3020,9 +3313,11 @@ body.dark .fs-btn.active { color: #000; }
                     <div class="src-name">Maybank / CIMB</div>
                   </div>
                 </div>
-                <button class="btn btn-primary" id="iw-next1" disabled>Next →</button>
+                <button class="btn btn-primary" id="iw-next1" disabled style="width:100%">Next →</button>
               </div>
-              <div id="iw2" style="display:none;max-width:680px">
+
+              <!-- Step 2 -->
+              <div id="iw2" style="display:none">
                 <div id="iw-tng-input" style="display:none">
                   <details class="sync-help-details mb-4" id="iw-help-uob" style="display:none">
                     <summary class="sync-help-summary">How to get TNG data</summary>
@@ -3048,6 +3343,7 @@ body.dark .fs-btn.active { color: #000; }
                     </div>
                   </div>
                 </div>
+
                 <div id="iw-csv-input" style="display:none">
                   <details class="sync-help-details mb-4">
                     <summary class="sync-help-summary">How to export from UOB</summary>
@@ -3071,11 +3367,14 @@ body.dark .fs-btn.active { color: #000; }
                     </div>
                   </div>
                 </div>
+
                 <div class="btn-row">
                   <button class="btn-ghost" id="iw-back2">← Back</button>
                   <button class="btn btn-primary" id="iw-parse">Parse transactions →</button>
                 </div>
               </div>
+
+              <!-- Step 3 -->
               <div id="iw3" style="display:none">
                 <div class="iw-summary" id="iw-summary"></div>
                 <div class="iw-toolbar">
@@ -3102,6 +3401,8 @@ body.dark .fs-btn.active { color: #000; }
                   <button class="btn btn-green" id="iw-import">Import selected</button>
                 </div>
               </div>
+
+              <!-- Step 4 -->
               <div id="iw4" style="display:none;text-align:center;padding:var(--s10) 0">
                 <div style="font-size:52px;margin-bottom:var(--s4)">🎉</div>
                 <div style="font-size:var(--f-2xl);font-weight:700;margin-bottom:var(--s3)" id="iw-done-h">Import complete!</div>
@@ -3110,161 +3411,14 @@ body.dark .fs-btn.active { color: #000; }
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="card">
-          <div class="panel-hd"><span class="panel-title">Appearance</span></div>
-          <div class="panel-bd">
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Dark mode</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="set-dark"/>
-                <div class="toggle-track"></div>
-                <div class="toggle-knob"></div>
-              </label>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Dark mode schedule</div>
-              </div>
-              <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
-                <option value="off">Off</option>
-                <option value="night">Night (7pm-7am)</option>
-              </select>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Font size</div>
-              </div>
-              <div class="fs-btns">
-                <button class="fs-btn" data-fs="fs-sm">S</button>
-                <button class="fs-btn active" data-fs="fs-md">M</button>
-                <button class="fs-btn" data-fs="fs-lg">L</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="panel-hd"><span class="panel-title">Preferences</span></div>
-          <div class="panel-bd">
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Currency symbol</div>
-              </div>
-              <input type="text" id="set-currency" class="cur-input" maxlength="6" placeholder="RM"/>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Lock timeout</div>
-                <div style="font-size:var(--f-xs);color:var(--ink3);margin-top:2px">Re-enter PIN after inactivity</div>
-              </div>
-              <select id="set-lock-timeout" class="cur-input" style="max-width:170px">
-                <option value="0">Immediate</option>
-                <option value="5">5 minutes</option>
-                <option value="15">15 minutes</option>
-              </select>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Drag handles</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="set-drag" checked/>
-                <div class="toggle-track"></div>
-                <div class="toggle-knob"></div>
-              </label>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Auto-snapshot net worth</div>
-                <div style="font-size:var(--f-xs);color:var(--ink3);margin-top:2px">Record total when bank balances change</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="set-nw-auto" checked/>
-                <div class="toggle-track"></div>
-                <div class="toggle-knob"></div>
-              </label>
-            </div>
-            <div class="setting-row">
-              <div>
-                <div class="s-lbl">Compact view</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="set-compact"/>
-                <div class="toggle-track"></div>
-                <div class="toggle-knob"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-span-2">
+        <section aria-labelledby="settings-about-title">
+          <h3 class="settings-section__title" id="settings-about-title">About</h3>
           <div class="card">
-            <div class="panel-hd"><span class="panel-title">Backup &amp; restore</span></div>
-            <div class="panel-bd">
-              <div class="settings-actions">
-                <button type="button" class="btn-ghost" id="export-btn">⬇ Export backup</button>
-                <button type="button" class="btn-ghost green" id="import-btn">⬆ Import backup</button>
-                <input type="file" id="import-file" accept=".json" style="display:none"/>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-span-2">
-          <div class="card mb-5">
-            <div class="panel-hd">
-              <span class="panel-title">Google Sheets sync</span>
-              <span style="display:flex;align-items:center;gap:6px;font-size:var(--f-xs);min-width:0;flex-shrink:1">
-                <span id="sync-dot" style="font-size:16px;font-weight:700;flex-shrink:0">○</span>
-                <span id="sync-msg" style="color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not configured</span>
-              </span>
-            </div>
-            <div class="panel-bd">
-              <div id="sync-detail" class="sync-detail"></div>
-
-              <div style="margin-bottom:12px">
-                <label class="lbl">Apps Script web app (built into this app)</label>
-                <div id="sync-url-display" style="font-size:var(--f-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;word-break:break-all;color:var(--ink2);padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line)"></div>
-              </div>
-
-              <div class="settings-actions" style="margin-bottom:14px">
-                <button type="button" class="btn btn-primary" id="sync-save-btn">⬆ Save to Sheet now</button>
-                <button type="button" class="btn-ghost" id="sync-ping-btn">🔌 Test connection</button>
-                <button type="button" class="btn-ghost" id="sync-load-btn">⬇ Load from Sheet</button>
-              </div>
-              <p style="font-size:var(--f-xs);color:var(--ink3);line-height:1.5;margin:0 0 14px">The script updates the spreadsheet named <strong>Finance Tracker</strong> in your Google Drive. Unit trust data goes to tabs <strong>UTHoldings</strong> and <strong>UTNav</strong> (scroll the tab bar if you do not see them). If those tabs never appear or <strong>UTNav</strong> stays header-only, paste the latest <code style="font-size:11px">google-apps-script.js</code> into Apps Script and deploy a <strong>new version</strong>.</p>
-
-              <details class="sync-help-details">
-                <summary class="sync-help-summary">Full setup &amp; troubleshooting</summary>
-                <div class="about-card" style="font-size:var(--f-xs);line-height:1.9">
-                <strong>Setup (one time, ~5 minutes):</strong><br/>
-                1. Go to <strong>script.google.com</strong> ↁENew project<br/>
-                2. Delete all existing code, paste everything from <strong>google-apps-script.js</strong> (in the zip)<br/>
-                &nbsp;&nbsp;· Creates tabs including <strong>UTHoldings</strong> and <strong>UTNav</strong> for unit trust sync on first save<br/>
-                3. Click Save ↁE<strong>Deploy ↁENew deployment</strong><br/>
-                4. Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br/>
-                5. Click Deploy ↁEGoogle will ask you to authorise ↁEclick Allow<br/>
-                6. Deploy, authorise, then use <strong>Test connection</strong> below (the web app URL is fixed in this app).<br/><br/>
-                <strong>⚠️ If "Failed to fetch" appears:</strong><br/>
-                • Make sure the URL ends in <strong>/exec</strong> (not /dev)<br/>
-                • Re-deploy: Deploy ↁEManage deployments ↁEEdit ↁENew version ↁEDeploy<br/>
-                • Make sure "Who has access" is set to <strong>Anyone</strong> (not Anyone with link)
-                </div>
-              </details>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-span-2">
-          <div class="card">
-            <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v89 · 2026-05-20 16:14</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v90 · 2026-05-20 18:02</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -3274,7 +3428,7 @@ body.dark .fs-btn.active { color: #000; }
               </details>
             </div>
           </div>
-        </div>
+        </section>
 
       </div>
     </div>
@@ -3485,11 +3639,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=89"></script>
-<script src="app.js?v=89"></script>
-<script src="sync.js?v=89"></script>
-<script src="features.js?v=89"></script>
-<script src="extras.js?v=89"></script>
-<script src="import-inline.js?v=89"></script>
+<script src="build-id.js?v=90"></script>
+<script src="app.js?v=90"></script>
+<script src="sync.js?v=90"></script>
+<script src="features.js?v=90"></script>
+<script src="extras.js?v=90"></script>
+<script src="import-inline.js?v=90"></script>
 </body>
 </html>
