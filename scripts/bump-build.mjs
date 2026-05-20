@@ -48,6 +48,10 @@ function bumpHtml(file) {
   s = s.replace(/(<motion id="ft-build"[^>]*>)[^<]+(<\/motion>)/, `$1${stamp}$2`);
   s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/motion>)/, `$1${stamp}$2`);
   s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/div>)/, `$1${stamp}$2`);
+  s = s.replace(
+    /(<span id="ft-build-stamp"[^>]*>)[^<]+(<\/span>)/,
+    `$1${stamp}$2`
+  );
   s = s.replace(/build-id\.js\?v=\d+/g, `build-id.js?v=${ver}`);
   s = s.replace(/(src="[^"]+\.js)\?v=\d+"/g, `$1?v=${ver}"`);
   if (!s.includes('build-id.js')) {
