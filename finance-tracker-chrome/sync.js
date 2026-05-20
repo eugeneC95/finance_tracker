@@ -288,9 +288,21 @@ function syncSave(silent) {
 // opts.silent       — suppress success toasts (errors still show unless silent)
 // opts.autoStart    — Sheet is source of truth: skip "empty / tiny cloud" safety skips
 var syncLoadInFlight = false;
+
+/** Phone / narrow viewport or iOS home-screen PWA. */
+function isMobileFtClient_() {
+  try {
+    if (window.matchMedia && window.matchMedia('(max-width: 680px)').matches) return true;
+  } catch (e) {}
+  try {
+    if (window.navigator && window.navigator.standalone === true) return true;
+  } catch (e2) {}
+  return false;
+}
+
 function syncLoad(opts) {
   opts = opts || {};
-  if (syncLoadInFlight) return;
+  if (syncLoadInFlight && !opts.force) return;
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
   applyHardcodedSyncUrl_();
   if (!syncUrl) {
@@ -470,12 +482,31 @@ function syncLoad(opts) {
 // Pulls the latest Google Sheets snapshot so the iPhone PWA (which is
 // killed/rehydrated aggressively by iOS) shows fresh data on every launch.
 var _autoLoadFired = false;
+
+/** Replace device data from Sheet (mobile: after PIN unlock). */
+function syncMobileHardLoadAfterUnlock_() {
+  if (!isMobileFtClient_() || !window.__ftUnlocked) return;
+  applyHardcodedSyncUrl_();
+  if (!syncUrl) {
+    loadSyncSettings(function() {
+      if (!syncUrl || !window.__ftUnlocked) return;
+      _autoLoadFired = true;
+      syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+    });
+    return;
+  }
+  _autoLoadFired = true;
+  syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+}
+
 function syncAutoLoad() {
   if (_autoLoadFired) return;
   // Do NOT set _autoLoadFired until syncUrl is known — ft-app-ready can fire
   // before loadSyncSettings finishes; burning the flag early skipped cloud
   // pull forever (Sheet data incl. unit trust never applied on the website).
   if (!syncUrl) return;
+  // Mobile with lock screen: wait for PIN — hard load runs on ft-unlocked.
+  if (isMobileFtClient_() && !window.__ftUnlocked) return;
   _autoLoadFired = true;
   // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
@@ -484,6 +515,12 @@ function syncAutoLoad() {
 }
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
+
+// Mobile PWA: full Sheet pull every time the user unlocks (fresh session / cold open).
+window.addEventListener('ft-unlocked', function() {
+  if (!isMobileFtClient_()) return;
+  setTimeout(syncMobileHardLoadAfterUnlock_, 100);
+});
 
 // When the tab / PWA regains focus, pull the Sheet again so local state matches the spreadsheet.
 function scheduleDebouncedSheetPull_() {
