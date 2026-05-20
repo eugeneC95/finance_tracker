@@ -1670,6 +1670,67 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s5); align-items: start; }
 .settings-span-2 { grid-column: 1 / -1; }
 
+#page-settings .page-header,
+#page-settings .page-body {
+  padding-left: var(--s8);
+  padding-right: var(--s8);
+}
+#page-settings .settings-grid {
+  min-width: 0;
+  width: 100%;
+}
+#page-settings .settings-grid > * {
+  min-width: 0;
+}
+#page-settings .panel-bd .card,
+#page-settings .iw-table-wrap {
+  max-width: 100%;
+}
+#page-settings .iw-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#page-settings .iw-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(104px, 100%), 1fr));
+  gap: var(--s3);
+}
+.iw-sum-card {
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--s3);
+  min-width: 0;
+}
+.iw-sum-card .isl {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .35px;
+  margin-bottom: 2px;
+}
+.iw-sum-card .isv { font-size: var(--f-md); font-weight: 700; }
+.iw-sum-card .isv.green { color: var(--green); }
+.iw-sum-card .isv.red { color: var(--red); }
+#page-settings select.cur-input {
+  width: auto !important;
+  min-width: 120px;
+  max-width: min(170px, 100%);
+}
+#page-settings .setting-row > div:first-child {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  .settings-grid { grid-template-columns: 1fr; }
+  #page-settings .page-header,
+  #page-settings .page-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
 .page-header__top {
   display: flex;
   align-items: center;
@@ -3198,12 +3259,12 @@ body.dark .fs-btn.active { color: #000; }
           </div>
         </div>
 
-        <div>
+        <div class="settings-span-2">
           <div class="card">
             <div class="panel-hd"><span class="panel-title">About</span></div>
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v88 · 2026-05-20 16:06</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v89 · 2026-05-20 16:14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -3424,11 +3485,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=88"></script>
-<script src="app.js?v=88"></script>
-<script src="sync.js?v=88"></script>
-<script src="features.js?v=88"></script>
-<script src="extras.js?v=88"></script>
-<script src="import-inline.js?v=88"></script>
+<script src="build-id.js?v=89"></script>
+<script src="app.js?v=89"></script>
+<script src="sync.js?v=89"></script>
+<script src="features.js?v=89"></script>
+<script src="extras.js?v=89"></script>
+<script src="import-inline.js?v=89"></script>
 </body>
 </html>
