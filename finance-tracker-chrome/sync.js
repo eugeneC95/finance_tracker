@@ -423,11 +423,48 @@ function syncLoad(opts) {
         });
       }
 
+      /** Recurring rows must not use expense sanitize (adds bogus date / strips semantics). */
+      function sanitizeRecurring(arr) {
+        if (!Array.isArray(arr)) return [];
+        return arr.filter(function(e) {
+          return e && typeof e === 'object';
+        }).map(function(e, idx) {
+          var o = Object.assign({}, e);
+          delete o.date;
+          var rawId = o.id;
+          if (rawId === undefined || rawId === null || rawId === '') rawId = o.ID;
+          if (rawId === undefined || rawId === null || rawId === '') rawId = o.Id;
+          o.id = Number(rawId);
+          if (!o.id || isNaN(o.id)) o.id = Date.now() + idx;
+          o.name = o.name != null ? String(o.name) : '';
+          o.amount = parseFloat(o.amount) || 0;
+          o.type = o.type === 'inc' ? 'inc' : 'exp';
+          o.cat = o.cat != null ? String(o.cat) : 'Other';
+          var dRaw = o.day;
+          if (dRaw === 'last' || dRaw === 'Last' || dRaw === 'LAST') o.day = 'last';
+          else {
+            var dn = parseInt(dRaw, 10);
+            o.day = !isNaN(dn) && dn >= 1 ? Math.min(dn, 31) : 1;
+          }
+          o.active = !(o.active === false || o.active === 'false' || o.active === 0 || o.active === '0');
+          if (o.lastApplied != null && String(o.lastApplied).trim() !== '') {
+            var ls = String(o.lastApplied).trim();
+            if (/^\d{4}-\d{2}$/.test(ls)) o.lastApplied = ls;
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(ls)) o.lastApplied = ls.slice(0, 7);
+            else {
+              var la = dateToYMD(sheetDateField_({ date: ls }));
+              o.lastApplied = (la && la !== BAD_SHEET_DATE && /^\d{4}-\d{2}-\d{2}$/.test(la)) ? la.slice(0, 7) : null;
+            }
+          } else o.lastApplied = null;
+          return o;
+        });
+      }
+
       expenses = sanitize(p.expenses);
       incomes  = sanitize(p.incomes);
       banks    = sanitize(p.banks);
 
-      if (typeof recurring !== 'undefined') recurring = sanitize(p.recurring);
+      if (typeof recurring !== 'undefined') recurring = sanitizeRecurring(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
       if (typeof catRules !== 'undefined') catRules = p.catRules || {};
       if (typeof petrolLog !== 'undefined') petrolLog = sanitize(p.petrolLog);
@@ -482,6 +519,9 @@ function syncLoad(opts) {
       persistSyncState();
 
       render();
+
+      // Reconcile recurring after cloud replace (fixes lost lastApplied + race with loadFeatures).
+      if (typeof applyRecurring === 'function' && applyRecurring()) render();
 
       var rowCount = expenses.length + incomes.length + banks.length;
       var countsAfterLoad = syncCountSummaryText({

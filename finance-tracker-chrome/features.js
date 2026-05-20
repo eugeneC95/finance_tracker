@@ -591,6 +591,48 @@ function ordinal(n) {
   return n + (s[(v-20)%10] || s[v] || s[0]);
 }
 
+/** Normalize lastApplied from sheet (YYYY-MM or YYYY-MM-DD) to YYYY-MM for comparison. */
+function recurringAppliedYm_(la) {
+  if (la == null || la === '') return '';
+  var t = String(la).trim();
+  if (/^\d{4}-\d{2}$/.test(t)) return t;
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 7);
+  return '';
+}
+
+function recurringFireMeta_(r, y, m) {
+  var dayVal = r.day || 1;
+  var fireDay;
+  if (dayVal === 'last') {
+    fireDay = new Date(y, m+1, 0).getDate();
+  } else {
+    fireDay = Number(dayVal);
+    var lastDay = new Date(y, m+1, 0).getDate();
+    fireDay = Math.min(fireDay, lastDay);
+  }
+  var dateStr = y+'-'+String(m+1).padStart(2,'0')+'-'+String(fireDay).padStart(2,'0');
+  return { fireDay: fireDay, dateStr: dateStr };
+}
+
+/** If lastApplied was lost on sync but the auto line already exists, do not duplicate. */
+function recurringHasAutoMirror_(r, dateStr) {
+  var list = r.type === 'inc' ? incomes : expenses;
+  var amt = Number(r.amount) || 0;
+  var nm = String(r.name || '');
+  var cat = String(r.cat || '');
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    if (!e || !e.auto) continue;
+    var d = String(e.date || '').slice(0, 10);
+    if (d !== dateStr) continue;
+    if (String(e.name || '') !== nm) continue;
+    if (String(e.cat || '') !== cat) continue;
+    if (Math.abs((Number(e.amount) || 0) - amt) > 0.009) continue;
+    return true;
+  }
+  return false;
+}
+
 function applyRecurring() {
   var now     = new Date();
   var y       = now.getFullYear();
@@ -601,22 +643,18 @@ function applyRecurring() {
 
   recurring.forEach(function(r) {
     if (!r.active) return;
-    if (r.lastApplied === ym) return;
+    if (recurringAppliedYm_(r.lastApplied) === ym) return;
 
-    var dayVal  = r.day || 1;
-    var fireDay;
-    if (dayVal === 'last') {
-      fireDay = new Date(y, m+1, 0).getDate();
-    } else {
-      fireDay = Number(dayVal);
-      var lastDay = new Date(y, m+1, 0).getDate();
-      fireDay = Math.min(fireDay, lastDay);
+    var fd = recurringFireMeta_(r, y, m);
+    if (todayD < fd.fireDay) return;
+
+    if (recurringHasAutoMirror_(r, fd.dateStr)) {
+      r.lastApplied = ym;
+      changed = true;
+      return;
     }
 
-    if (todayD < fireDay) return;
-
-    var dateStr = ym+'-'+String(fireDay).padStart(2,'0');
-    var entry   = { id: Date.now()+Math.random(), name:r.name, amount:r.amount, cat:r.cat, date:dateStr, auto:true };
+    var entry   = { id: Date.now()+Math.random(), name:r.name, amount:r.amount, cat:r.cat, date:fd.dateStr, auto:true };
     if (r.type === 'exp') expenses.push(entry);
     else incomes.push(entry);
     r.lastApplied = ym;
