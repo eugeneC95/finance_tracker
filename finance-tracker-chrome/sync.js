@@ -510,7 +510,8 @@ function syncAutoLoad() {
   _autoLoadFired = true;
   // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
-    syncLoad({ skipConfirm: true, silent: true, autoStart: true });
+    // Extension: always pull latest Sheet snapshot on open.
+    syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
   }, 120);
 }
 
@@ -527,7 +528,8 @@ function scheduleDebouncedSheetPull_() {
   clearTimeout(scheduleDebouncedSheetPull_._t);
   scheduleDebouncedSheetPull_._t = setTimeout(function() {
     if (!syncUrl || syncLoadInFlight) return;
-    syncLoad({ skipConfirm: true, silent: true, autoStart: true });
+    // Extension: treat cloud as source of truth on return.
+    syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
   }, 500);
 }
 document.addEventListener('visibilitychange', function() {
