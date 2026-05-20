@@ -63,6 +63,20 @@ function buildPayload() {
   };
 }
 
+function syncCountSummaryText(data) {
+  var expN = Array.isArray(data && data.expenses) ? data.expenses.length : 0;
+  var incN = Array.isArray(data && data.incomes) ? data.incomes.length : 0;
+  var bankN = Array.isArray(data && data.banks) ? data.banks.length : 0;
+  var utHN = Array.isArray(data && data.unitTrustHoldings) ? data.unitTrustHoldings.length : 0;
+  var utNN = Array.isArray(data && data.unitTrustNav) ? data.unitTrustNav.length : 0;
+  return (
+    expN + ' exp, ' +
+    incN + ' inc, ' +
+    bankN + ' bank' +
+    (utHN || utNN ? (', ' + utHN + ' funds, ' + utNN + ' nav') : '')
+  );
+}
+
 // ── Core fetch ─────────────────────────────────────────────
 // GET for ping / load / save (query) / save_chunk. For "save" with a POST body
 // we only use that path when explicitly needed — the PWA avoids POST here
@@ -235,7 +249,8 @@ function syncSave(silent) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var json    = JSON.stringify(buildPayload());
+  var payload = buildPayload();
+  var json    = JSON.stringify(payload);
   var encoded = encodeURIComponent(json);
   var promise;
 
@@ -253,12 +268,13 @@ function syncSave(silent) {
         persistSyncState();
         if (!silent) {
           var av = Number(data.apiVersion);
+          var counts = syncCountSummaryText(payload);
           if (isNaN(av) || av < 3) {
             showToast('Saved — redeploy Apps Script (google-apps-script.js v3) for unit trust tabs UTHoldings & UTNav.');
           } else if (av < 4) {
             showToast('Saved — redeploy Apps Script for UTHoldings totalCost (full amount paid incl. fees).');
           } else {
-            showToast('Saved to Google Sheets');
+            showToast('Saved: ' + counts);
           }
         }
       } else {
@@ -468,12 +484,19 @@ function syncLoad(opts) {
       render();
 
       var rowCount = expenses.length + incomes.length + banks.length;
+      var countsAfterLoad = syncCountSummaryText({
+        expenses: expenses,
+        incomes: incomes,
+        banks: banks,
+        unitTrustHoldings: (typeof utHoldings !== 'undefined') ? utHoldings : [],
+        unitTrustNav: (typeof utNavPoints !== 'undefined') ? utNavPoints : [],
+      });
       if (rowCount === 0) {
         if (!opts.silent) {
-          showToast('Loaded — no expense/income/bank rows in this backend (check Sheet name "Finance Tracker" and Expenses/Income/Banks tabs).');
+          showToast('Loaded: ' + countsAfterLoad + ' (cloud has no expense/income/bank rows)');
         }
       } else if (!opts.silent) {
-        showToast(opts.skipConfirm ? 'Synced ' + rowCount + ' rows from cloud' : 'Data loaded from Google Sheets');
+        showToast('Loaded: ' + countsAfterLoad);
       }
       } finally {
         syncLoadInFlight = false;
