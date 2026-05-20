@@ -138,3 +138,22 @@ Open
 ----
 - After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck). Bump: `node scripts/bump-build.mjs <n>`.
 - If save still fails on the website: check `localStorage` key `ft.lastSyncError`; redeploy `google-apps-script.js` so `save_chunk` is live. **Sync URL** is no longer user-editable — change **`APPS_SCRIPT_WEB_APP_URL`** in both `sync.js` files and ship a new build.
+
+ROADMAP (next suggestions)
+--------------------------
+Quick wins (1-3 sessions):
+  [ ] Undo action toast for deletes (expense/income/petrol/bank) with 5-8s restore window
+  [ ] Search filters in the top search sheet (type/category/date range/amount min-max)
+  [ ] End-of-month checklist card (export backup + snapshot net worth + share/print report)
+  [ ] Import dry-run summary chips (will add / overwrite / possible duplicates)
+  [ ] Data quality checks (large outlier prompts for petrol efficiency / unusual amounts)
+
+Medium (this month):
+  [ ] Recurring preview (next 30 days upcoming items + expected cashflow)
+  [ ] Insights panel (top spend categories, MoM deltas, budget risk highlights)
+  [ ] Auto-category confidence badges for imported rows before final import
+  [ ] Lock timeout options (immediate / 5m / 15m re-lock)
+
+Larger / optional:
+  [ ] Home "today" widget (today spend/income/net + quick add)
+  [ ] Optional biometric unlock fallback on supported platforms
