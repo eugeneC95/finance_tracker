@@ -393,12 +393,22 @@ function upsertUtNav(fundId, dateStr, navVal) {
 }
 
 function deleteUtHolding(id) {
-  utHoldings = utHoldings.filter(h => h.id !== id);
+  const hIdx = utHoldings.findIndex(h => h.id === id);
+  if (hIdx < 0) return;
+  const removedHold = utHoldings[hIdx];
+  const removedNav = utNavPoints.filter(p => p.fundId === id);
+  utHoldings.splice(hIdx, 1);
   utNavPoints = utNavPoints.filter(p => p.fundId !== id);
   saveUtHoldings();
   saveUtNav();
   render();
-  showToast('Fund removed');
+  registerUndoDelete('Fund', () => {
+    utHoldings.splice(Math.min(hIdx, utHoldings.length), 0, removedHold);
+    utNavPoints = utNavPoints.concat(removedNav);
+    saveUtHoldings();
+    saveUtNav();
+    render();
+  });
 }
 
 function utDownsampleSeries(series, maxPts) {
@@ -1019,7 +1029,19 @@ function maybeSnapshotNetWorth() {
   if (settings.nwAutoSnapshot === false) return;
   if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
 }
-function deleteExpense(id) { expenses = expenses.filter(e => e.id !== id); saveExp(); render(); }
+function deleteExpense(id) {
+  const idx = expenses.findIndex(e => e.id === id);
+  if (idx < 0) return;
+  const removed = expenses[idx];
+  expenses.splice(idx, 1);
+  saveExp();
+  render();
+  registerUndoDelete('Expense', () => {
+    expenses.splice(Math.min(idx, expenses.length), 0, removed);
+    saveExp();
+    render();
+  });
+}
 
 // ── Add income ─────────────────────────────────────────────
 function addIncome() {
@@ -1060,7 +1082,19 @@ function repeatLastIncome() {
   return true;
 }
 
-function deleteIncome(id) { incomes = incomes.filter(i => i.id !== id); saveInc(); render(); }
+function deleteIncome(id) {
+  const idx = incomes.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const removed = incomes[idx];
+  incomes.splice(idx, 1);
+  saveInc();
+  render();
+  registerUndoDelete('Income', () => {
+    incomes.splice(Math.min(idx, incomes.length), 0, removed);
+    saveInc();
+    render();
+  });
+}
 
 // ── Add banks ──────────────────────────────────────────────
 function addBank() {
@@ -1081,10 +1115,19 @@ function addBank() {
   render();
 }
 function deleteBank(id) {
-  banks = banks.filter(b => b.id !== id);
+  const idx = banks.findIndex(b => b.id === id);
+  if (idx < 0) return;
+  const removed = banks[idx];
+  banks.splice(idx, 1);
   saveBanks();
   maybeSnapshotNetWorth();
   render();
+  registerUndoDelete('Bank account', () => {
+    banks.splice(Math.min(idx, banks.length), 0, removed);
+    saveBanks();
+    maybeSnapshotNetWorth();
+    render();
+  });
 }
 
 // ── Edit modal ─────────────────────────────────────────────
@@ -1889,12 +1932,61 @@ function renderBankList() {
 
 // ── Toast ──────────────────────────────────────────────────
 let toastTimer;
-function showToast(msg) {
+let toastActionCleanup = null;
+let undoDeleteState = null;
+function showToast(msg, opts) {
+  opts = opts || {};
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  if (!el) return;
+  el.textContent = '';
+  const txt = document.createElement('span');
+  txt.textContent = msg;
+  el.appendChild(txt);
+  if (toastActionCleanup) {
+    try { toastActionCleanup(); } catch (e) {}
+    toastActionCleanup = null;
+  }
+  if (opts.actionLabel && typeof opts.onAction === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = opts.actionLabel;
+    btn.style.cssText = 'margin-left:10px;border:0;background:transparent;color:#9fd4ff;font-weight:700;cursor:pointer';
+    const click = () => {
+      try { opts.onAction(); } catch (e) {}
+      el.classList.remove('show');
+    };
+    btn.addEventListener('click', click);
+    toastActionCleanup = () => btn.removeEventListener('click', click);
+    el.appendChild(btn);
+  }
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => {
+    if (toastActionCleanup) {
+      try { toastActionCleanup(); } catch (e) {}
+      toastActionCleanup = null;
+    }
+    el.classList.remove('show');
+  }, opts.duration || 2600);
+}
+
+function registerUndoDelete(label, restoreFn) {
+  if (undoDeleteState && undoDeleteState.t) clearTimeout(undoDeleteState.t);
+  undoDeleteState = {
+    restore: restoreFn,
+    t: setTimeout(() => { undoDeleteState = null; }, 8200),
+  };
+  showToast(label + ' deleted', {
+    actionLabel: 'Undo',
+    duration: 8000,
+    onAction: () => {
+      if (!undoDeleteState || typeof undoDeleteState.restore !== 'function') return;
+      const fn = undoDeleteState.restore;
+      undoDeleteState = null;
+      fn();
+      showToast(label + ' restored');
+    },
+  });
 }
 
 // ── Export / Import backup ─────────────────────────────────

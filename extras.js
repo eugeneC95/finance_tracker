@@ -298,9 +298,19 @@ function addPetrolEntry() {
 }
 
 function deletePetrolEntry(id) {
-  petrolLog = petrolLog.filter(function(e) { return e.id !== id; });
+  var idx = petrolLog.findIndex(function(e) { return e.id === id; });
+  if (idx < 0) return;
+  var removed = petrolLog[idx];
+  petrolLog.splice(idx, 1);
   savePetrol();
   renderPetrolLog();
+  if (typeof registerUndoDelete === 'function') {
+    registerUndoDelete('Petrol fill-up', function() {
+      petrolLog.splice(Math.min(idx, petrolLog.length), 0, removed);
+      savePetrol();
+      renderPetrolLog();
+    });
+  }
 }
 
 function renderPetrolLog() {

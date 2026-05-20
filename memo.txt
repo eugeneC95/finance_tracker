@@ -84,56 +84,6 @@ HISTORY / GOTCHAS (short)
 - iOS: avoid `body { position:fixed }` + nested scroll traps; prefer normal document scroll + bottom padding for nav.
 - PWA POST to `script.google.com` can lose body on redirect; extension avoids this; PWA uses GET/chunk strategy.
 
-ROADMAP (ideas backlog)
------------------------
-Done (2026-05-16 batch):
-  [x] Tab render registry (`TAB_OPEN_HOOKS`, `runTabOpenHooks`, `refreshActiveTabPanels`)
-  [x] Sync detail line in Settings (`#sync-detail`, counts + relative times)
-  [x] Mobile FAB quick-add menu + repeat last expense
-  [x] Budget alert chips on Expenses (>=75% of limit)
-  [x] Auto net worth snapshot on bank balance change (`settings.nwAutoSnapshot`)
-  [x] More menu sheet fix (category modal HTML + body portal)
-  [x] Single build id (`build-id.js`, `node scripts/bump-build.mjs`)
-  [x] GitHub Action `node --check` on core JS
-  [x] Category rules (learn on add, suggest on type/blur) — `cat_rules_v1`
-  [x] Duplicate expense confirm on add
-  [x] Budget chip tap filters transaction list
-  [x] Repeat last income + petrol (FAB quick-add)
-  [x] Month summary chips on Expenses (budget headroom + net)
-  [x] Import review: row checkboxes, select all/none, stable row ids
-  [x] Swipe edit/delete on mobile transaction rows
-  [x] Trends tap month → income breakdown by category
-  [x] Savings goal card on Expenses (target RM by date)
-  [x] Net worth stale hint at 14+ days (Assets + Trends)
-  [x] Maybank / CIMB CSV import source
-  [x] Swipe actions on search, recurring, and petrol lists
-
-Stability / tooling (todo):
-  [x] UTF-8 safe edits only (no PowerShell bulk replace on HTML)
-  [x] Pre-release smoke: More sheet, Trends, add expense, sync line
-  [x] Scan/fix remaining corrupted UI strings (em dash / closing tags)
-
-Daily logging (todo):
-  [x] Repeat last for income + petrol (FAB + storage templates)
-  [x] Month summary chip on Expenses hero (“left in budgets” / net)
-  [x] Swipe edit/delete on transaction rows (mobile)
-
-Budgets & trends (todo):
-  [x] Trends month column → income breakdown
-  [x] Gentle net worth reminder if stale (14+ days)
-  [x] Simple savings goal (target RM by date)
-
-Imports & Sheets (todo):
-  [x] One more bank CSV (Maybank / CIMB)
-  [x] Import review screen (checkboxes, select all/none, category fix)
-  [x] Clearer sync conflict copy (device vs cloud counts)
-  [x] Monthly backup export reminder
-
-Polish (todo):
-  [x] Dark mode schedule
-  [x] Share/print monthly report improvements
-  [x] Petrol L/100 + RM/km on Expenses hero when month has fills
-
 Open
 ----
 - After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck). Bump: `node scripts/bump-build.mjs <n>`.
@@ -142,7 +92,7 @@ Open
 ROADMAP (next suggestions)
 --------------------------
 Quick wins (1-3 sessions):
-  [ ] Undo action toast for deletes (expense/income/petrol/bank) with 5-8s restore window
+  [x] Undo action toast for deletes (expense/income/petrol/bank) with 5-8s restore window
   [ ] Search filters in the top search sheet (type/category/date range/amount min-max)
   [ ] End-of-month checklist card (export backup + snapshot net worth + share/print report)
   [ ] Import dry-run summary chips (will add / overwrite / possible duplicates)
