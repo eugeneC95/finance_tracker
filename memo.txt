@@ -106,4 +106,3 @@ Medium (this month):
 
 Larger / optional:
   [x] Home "today" widget (today spend/income/net + quick add)
-  [ ] Optional biometric unlock fallback on supported platforms
