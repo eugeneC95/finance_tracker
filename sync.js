@@ -381,15 +381,6 @@ function shouldSkipCloudReplace_(prevCount, cloudExpArr) {
   return false;
 }
 
-function syncSetViewMonthAfterLoad_() {
-  try {
-    if (typeof viewMonth === 'undefined' || !viewMonth) return;
-    var cal = new Date();
-    cal.setDate(1);
-    viewMonth.setFullYear(cal.getFullYear(), cal.getMonth(), 1);
-  } catch (e) { console.warn('syncSetViewMonthAfterLoad_', e); }
-}
-
 /** Phone / narrow viewport or iOS home-screen PWA. */
 function isMobileFtClient_() {
   try {
@@ -582,8 +573,6 @@ function syncLoad(opts) {
           utNavPoints = typeof utSanitizeNav === 'function' ? utSanitizeNav(arrN) : [];
         }
       }
-
-      syncSetViewMonthAfterLoad_();
 
       saveExp(); saveInc(); saveBanks();
       if (typeof saveRec === 'function') saveRec();
