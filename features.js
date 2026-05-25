@@ -24,7 +24,9 @@ var selectedTrendYm = null;
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
+  var gen = typeof _storageReadGen !== 'undefined' ? _storageReadGen : 0;
   chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES, KEY_SAVGOAL], function(r) {
+    if (typeof _storageReadGen !== 'undefined' && gen !== _storageReadGen) return;
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};

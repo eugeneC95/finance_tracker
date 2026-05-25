@@ -240,10 +240,15 @@ function syncSaveChunked(fullJson) {
   return runBatch();
 }
 
-function syncSave(silent) {
+function syncSave(silent, onDone) {
   applyHardcodedSyncUrl_();
   if (!syncUrl) {
     if (!silent) showToast('Built-in sync URL missing — rebuild the app');
+    if (onDone) onDone(false);
+    return;
+  }
+  if (syncSaveBlocked || syncLoadInFlight) {
+    if (onDone) onDone(false);
     return;
   }
 
@@ -263,6 +268,7 @@ function syncSave(silent) {
   promise
     .then(function(data) {
       if (data && data.ok) {
+        clearSyncDirty_();
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
         persistSyncState();
@@ -282,6 +288,7 @@ function syncSave(silent) {
         setSyncStatus('error', 'Save failed: ' + msg);
         if (!silent) showToast('Save failed — ' + msg);
       }
+      if (onDone) onDone(!!(data && data.ok));
     })
     .catch(function(err) {
       console.error('Sync save error:', err);
@@ -296,14 +303,91 @@ function syncSave(silent) {
       if (!silent) {
         showToast(looksOffline ? 'Offline — data saved locally' : msg);
       }
+      if (onDone) onDone(false);
     });
+}
+
+function flushSyncThenLoad_(opts) {
+  syncSave(true, function(ok) {
+    if (!ok) {
+      if (!opts.silent) {
+        showToast('Could not save local changes — kept on device; try again when online');
+      }
+      return;
+    }
+    syncLoad(Object.assign({}, opts, { allowDirty: true }));
+  });
 }
 
 // ── Load ───────────────────────────────────────────────────
 // opts.skipConfirm — silent pulls (no "REPLACE all data?" prompt)
 // opts.silent       — suppress success toasts (errors still show unless silent)
-// opts.autoStart    — Sheet is source of truth: skip "empty / tiny cloud" safety skips
+// opts.autoStart    — merge cloud rows by id (keeps local-only months); still blocks empty/tiny cloud
+// opts.allowDirty   — internal: load after a flush save (skips dirty gate)
 var syncLoadInFlight = false;
+var syncLocalDirty = false;
+var syncSaveBlocked = false;
+
+function markSyncDirty_() { syncLocalDirty = true; }
+function clearSyncDirty_() { syncLocalDirty = false; }
+
+function mergeRowsById_(localRows, cloudRows) {
+  var map = {};
+  (cloudRows || []).forEach(function(e) { if (e && e.id != null) map[e.id] = e; });
+  (localRows || []).forEach(function(e) {
+    if (e && e.id != null && !map[e.id]) map[e.id] = e;
+  });
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function txMonthKey_(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  var s = dateStr.trim();
+  if (s.indexOf('1900-01-') === 0) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0, 7);
+  var d = typeof parseTxDate === 'function' ? parseTxDate(s) : new Date(s);
+  if (!d || isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function countExpensesByMonth_(arr) {
+  var out = {};
+  if (!Array.isArray(arr)) return out;
+  arr.forEach(function(e) {
+    var ym = txMonthKey_(e && e.date);
+    if (!ym) return;
+    out[ym] = (out[ym] || 0) + 1;
+  });
+  return out;
+}
+
+function localHasMonthRowsMissingOnCloud_(localExp, cloudExp) {
+  var localByM = countExpensesByMonth_(localExp);
+  var cloudByM = countExpensesByMonth_(cloudExp);
+  var keys = Object.keys(localByM);
+  for (var i = 0; i < keys.length; i++) {
+    var ym = keys[i];
+    if (localByM[ym] > 0 && !(cloudByM[ym] > 0)) return true;
+  }
+  return false;
+}
+
+function shouldSkipCloudReplace_(prevCount, cloudExpArr) {
+  var ce = (cloudExpArr || []).length;
+  if (prevCount > 0 && ce === 0) return true;
+  if (prevCount >= 5 && ce > 0 && ce < Math.floor(prevCount * 0.35)) return true;
+  if (localHasMonthRowsMissingOnCloud_(expenses, cloudExpArr)) return true;
+  return false;
+}
+
+function syncSetViewMonthAfterLoad_() {
+  try {
+    if (typeof viewMonth === 'undefined' || !viewMonth) return;
+    var cal = new Date();
+    cal.setDate(1);
+    viewMonth.setFullYear(cal.getFullYear(), cal.getMonth(), 1);
+  } catch (e) { console.warn('syncSetViewMonthAfterLoad_', e); }
+}
 
 /** Phone / narrow viewport or iOS home-screen PWA. */
 function isMobileFtClient_() {
@@ -319,6 +403,10 @@ function isMobileFtClient_() {
 function syncLoad(opts) {
   opts = opts || {};
   if (syncLoadInFlight && !opts.force) return;
+  if (syncLocalDirty && opts.skipConfirm && !opts.allowDirty) {
+    flushSyncThenLoad_(opts);
+    return;
+  }
   var prevExpCount = (typeof expenses !== 'undefined' && Array.isArray(expenses)) ? expenses.length : 0;
   function syncConflictMsg_(cloudExpCount) {
     return (
@@ -345,6 +433,8 @@ function syncLoad(opts) {
 
   if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
 
+  clearTimeout(syncTimer);
+  syncSaveBlocked = true;
   syncLoadInFlight = true;
   setSyncStatus('loading', opts.skipConfirm ? 'Syncing from cloud…' : 'Loading from Google Sheets…');
 
@@ -353,6 +443,7 @@ function syncLoad(opts) {
       if (!data.ok) {
         setSyncStatus('error', 'Load failed: ' + (data.error || 'unknown'));
         if (!opts.silent) showToast('Load failed');
+        syncSaveBlocked = false;
         syncLoadInFlight = false;
         return;
       }
@@ -388,20 +479,12 @@ function syncLoad(opts) {
         return BAD_SHEET_DATE;
       }
 
-      if (opts.skipConfirm && !opts.autoStart) {
-        var ce = (p.expenses || []).length;
-        if (prevExpCount > 0 && ce === 0) {
-          var msg0 = syncConflictMsg_(ce);
-          setSyncStatus('error', msg0);
-          showToast(msg0);
-          return;
-        }
-        if (prevExpCount >= 5 && ce > 0 && ce < Math.floor(prevExpCount * 0.35)) {
-          var msgSmall = syncConflictMsg_(ce);
-          setSyncStatus('error', msgSmall);
-          showToast(msgSmall);
-          return;
-        }
+      if (opts.skipConfirm && !opts.autoStart && shouldSkipCloudReplace_(prevExpCount, p.expenses)) {
+        var ceSkip = (p.expenses || []).length;
+        var msgSkip = syncConflictMsg_(ceSkip);
+        setSyncStatus('error', msgSkip);
+        if (!opts.silent) showToast(msgSkip);
+        return;
       }
 
       // Same rules as finance-tracker-chrome/sync.js (Sheet headers may use id / ID / Id).
@@ -460,9 +543,20 @@ function syncLoad(opts) {
         });
       }
 
-      expenses = sanitize(p.expenses);
-      incomes  = sanitize(p.incomes);
-      banks    = sanitize(p.banks);
+      var prevLocalExp = Array.isArray(expenses) ? expenses.slice() : [];
+      var cloudExp = sanitize(p.expenses);
+      var cloudInc = sanitize(p.incomes);
+      var cloudBanks = sanitize(p.banks);
+      if (opts.autoStart) {
+        expenses = mergeRowsById_(expenses, cloudExp);
+        incomes  = mergeRowsById_(incomes, cloudInc);
+        banks    = mergeRowsById_(banks, cloudBanks);
+        if (localHasMonthRowsMissingOnCloud_(prevLocalExp, cloudExp)) markSyncDirty_();
+      } else {
+        expenses = cloudExp;
+        incomes  = cloudInc;
+        banks    = cloudBanks;
+      }
 
       if (typeof recurring !== 'undefined') recurring = sanitizeRecurring(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
@@ -488,23 +582,7 @@ function syncLoad(opts) {
         }
       }
 
-      try {
-        if (typeof viewMonth !== 'undefined') {
-          var best = null;
-          function consider(dateStr) {
-            if (!dateStr || typeof dateStr !== 'string') return;
-            if (dateStr.indexOf('1900-01-') === 0) return;
-            var t = /^\d{4}-\d{2}-\d{2}$/.test(dateStr.trim())
-              ? new Date(dateStr.trim() + 'T12:00:00')
-              : new Date(dateStr);
-            if (isNaN(t.getTime())) return;
-            if (!best || t > best) best = t;
-          }
-          expenses.forEach(function(e) { consider(e.date); });
-          incomes.forEach(function(i) { consider(i.date); });
-          if (best) viewMonth.setFullYear(best.getFullYear(), best.getMonth(), 1);
-        }
-      } catch (e4) { console.warn('syncLoad viewMonth', e4); }
+      syncSetViewMonthAfterLoad_();
 
       saveExp(); saveInc(); saveBanks();
       if (typeof saveRec === 'function') saveRec();
@@ -539,10 +617,12 @@ function syncLoad(opts) {
         showToast('Loaded: ' + countsAfterLoad);
       }
       } finally {
+        syncSaveBlocked = false;
         syncLoadInFlight = false;
       }
     })
     .catch(function(err) {
+      syncSaveBlocked = false;
       syncLoadInFlight = false;
       var detail = (err && err.message) ? err.message : 'check connection';
       setSyncStatus('error', 'Load failed: ' + detail);
@@ -632,6 +712,7 @@ function scheduleAutoSync() {
     var orig = cur;
     window[name] = function() {
       orig.apply(this, arguments);
+      markSyncDirty_();
       scheduleAutoSync();
     };
     window[name].__ftSyncHooked = true;
