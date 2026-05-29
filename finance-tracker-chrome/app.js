@@ -1,5 +1,7 @@
 'use strict';
 
+window.__ftForceSheetSource = true;
+
 // ── localStorage adapter (replaces chrome.storage for PWA) ─
 var chromeStorage = {
   local: {
@@ -163,18 +165,32 @@ function viewYM() {
 // ── Storage ────────────────────────────────────────────────
 function load() {
   const gen = _storageReadGen;
-  chromeStorage.local.get([KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP,KEY_LAST_INC], r => {
+  const sheetOnly = !!(typeof window !== 'undefined' && window.__ftForceSheetSource);
+  const storageKeys = sheetOnly
+    ? [KEY_SETS]
+    : [KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP,KEY_LAST_INC];
+  chromeStorage.local.get(storageKeys, r => {
     if (gen !== _storageReadGen) return;
     try {
-      expenses = r[KEY_EXP]   || [];
-      incomes  = r[KEY_INC]   || [];
-      banks    = r[KEY_BANKS] || [];
-      utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
-      utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
-      utCarryForwardNavSnapshotForToday();
+      if (sheetOnly) {
+        expenses = [];
+        incomes = [];
+        banks = [];
+        utHoldings = [];
+        utNavPoints = [];
+        lastExpenseTpl = null;
+        lastIncomeTpl = null;
+      } else {
+        expenses = r[KEY_EXP]   || [];
+        incomes  = r[KEY_INC]   || [];
+        banks    = r[KEY_BANKS] || [];
+        utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
+        utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
+        utCarryForwardNavSnapshotForToday();
+        lastExpenseTpl = r[KEY_LAST_EXP] || null;
+        lastIncomeTpl = r[KEY_LAST_INC] || null;
+      }
       if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
-      lastExpenseTpl = r[KEY_LAST_EXP] || null;
-      lastIncomeTpl = r[KEY_LAST_INC] || null;
       applySettings();
       render();
       window.__ftAppReady = true;

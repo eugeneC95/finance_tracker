@@ -24,6 +24,17 @@ var selectedTrendYm = null;
 //   LOAD
 // ╚══════════════════════════════════════════════════════════╝
 function loadFeatures() {
+  if (typeof window !== 'undefined' && window.__ftForceSheetSource) {
+    recurring = [];
+    networthHist = [];
+    budgets = {};
+    catRules = {};
+    savingsGoal = null;
+    renderRecurring();
+    renderBudgets();
+    renderSavingsGoal();
+    return;
+  }
   var gen = typeof _storageReadGen !== 'undefined' ? _storageReadGen : 0;
   chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES, KEY_SAVGOAL], function(r) {
     if (typeof _storageReadGen !== 'undefined' && gen !== _storageReadGen) return;

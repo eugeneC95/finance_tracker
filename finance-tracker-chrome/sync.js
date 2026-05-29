@@ -6,6 +6,35 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_STATE = 'sync_state_v1';
+var FT_FORCE_SHEET_SOURCE = true;
+window.__ftForceSheetSource = FT_FORCE_SHEET_SOURCE;
+
+var FT_FINANCE_STORAGE_KEYS_ = [
+  'expenses_v2', 'incomes_v1', 'banks_v1',
+  'recurring_v1', 'networth_history_v1', 'budgets_v1', 'lastcat_v1', 'cat_rules_v1', 'savings_goal_v1',
+  'petrol_v1', 'last_petrol_v1', 'last_expense_v1', 'last_income_v1',
+  'unit_trust_holdings_v1', 'unit_trust_nav_v1',
+  'sync_state_v1', 'sync_url_v1'
+];
+
+(function ftForceSheetBootstrap_() {
+  if (!FT_FORCE_SHEET_SOURCE) return;
+  var i, k, extra = [];
+  try {
+    FT_FINANCE_STORAGE_KEYS_.forEach(function(key) { localStorage.removeItem(key); });
+    localStorage.removeItem('ft.lastSyncError');
+    localStorage.removeItem('ft_ut_nav_snap_ymd');
+    for (i = 0; i < localStorage.length; i++) {
+      k = localStorage.key(i);
+      if (!k || k.indexOf('ft_') !== 0) continue;
+      if (k === 'ft_lock_pw_hash_v1' || k === 'ft_lock_timeout_min') continue;
+      extra.push(k);
+    }
+    extra.forEach(function(key) { localStorage.removeItem(key); });
+    sessionStorage.clear();
+  } catch (e) {}
+})();
+
 // Hard-coded Google Apps Script web app (…/exec only). Shown read-only on Settings; not user-editable.
 var APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec';
@@ -319,6 +348,55 @@ function flushSyncThenLoad_(opts) {
   });
 }
 
+function resetAllClientData_() {
+  clearSyncDirty_();
+  clearTimeout(syncTimer);
+  if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
+  try {
+    FT_FINANCE_STORAGE_KEYS_.forEach(function(key) { localStorage.removeItem(key); });
+    localStorage.removeItem('ft.lastSyncError');
+    localStorage.removeItem('ft_ut_nav_snap_ymd');
+    var i, k, extra = [];
+    for (i = 0; i < localStorage.length; i++) {
+      k = localStorage.key(i);
+      if (!k || k.indexOf('ft_') !== 0) continue;
+      if (k === 'ft_lock_pw_hash_v1' || k === 'ft_lock_timeout_min') continue;
+      extra.push(k);
+    }
+    extra.forEach(function(key) { localStorage.removeItem(key); });
+    sessionStorage.clear();
+  } catch (e) {}
+  if (typeof expenses !== 'undefined') expenses = [];
+  if (typeof incomes !== 'undefined') incomes = [];
+  if (typeof banks !== 'undefined') banks = [];
+  if (typeof utHoldings !== 'undefined') utHoldings = [];
+  if (typeof utNavPoints !== 'undefined') utNavPoints = [];
+  if (typeof recurring !== 'undefined') recurring = [];
+  if (typeof networthHist !== 'undefined') networthHist = [];
+  if (typeof budgets !== 'undefined') budgets = {};
+  if (typeof catRules !== 'undefined') catRules = {};
+  if (typeof savingsGoal !== 'undefined') savingsGoal = null;
+  if (typeof petrolLog !== 'undefined') petrolLog = [];
+  if (typeof lastExpenseTpl !== 'undefined') lastExpenseTpl = null;
+  if (typeof lastIncomeTpl !== 'undefined') lastIncomeTpl = null;
+  if (typeof lastPetrolTpl !== 'undefined') lastPetrolTpl = null;
+  syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
+  try { window.__ftUnlocked = false; } catch (e2) {}
+}
+
+function syncPullFromSheetAfterReset_(opts) {
+  opts = opts || {};
+  resetAllClientData_();
+  if (typeof render === 'function') render();
+  syncLoad(Object.assign({
+    skipConfirm: true,
+    silent: opts.silent !== false,
+    autoStart: true,
+    force: true,
+    allowDirty: true
+  }, opts));
+}
+
 // ── Load ───────────────────────────────────────────────────
 // opts.skipConfirm — silent pulls (no "REPLACE all data?" prompt)
 // opts.silent       — suppress success toasts (errors still show unless silent)
@@ -394,7 +472,7 @@ function isMobileFtClient_() {
 function syncLoad(opts) {
   opts = opts || {};
   if (syncLoadInFlight && !opts.force) return;
-  if (syncLocalDirty && opts.skipConfirm && !opts.allowDirty) {
+  if (!FT_FORCE_SHEET_SOURCE && syncLocalDirty && opts.skipConfirm && !opts.allowDirty) {
     flushSyncThenLoad_(opts);
     return;
   }
@@ -470,7 +548,7 @@ function syncLoad(opts) {
         return BAD_SHEET_DATE;
       }
 
-      if (opts.skipConfirm && !opts.autoStart && shouldSkipCloudReplace_(prevExpCount, p.expenses)) {
+      if (!FT_FORCE_SHEET_SOURCE && opts.skipConfirm && !opts.autoStart && shouldSkipCloudReplace_(prevExpCount, p.expenses)) {
         var ceSkip = (p.expenses || []).length;
         var msgSkip = syncConflictMsg_(ceSkip);
         setSyncStatus('error', msgSkip);
@@ -534,20 +612,9 @@ function syncLoad(opts) {
         });
       }
 
-      var prevLocalExp = Array.isArray(expenses) ? expenses.slice() : [];
-      var cloudExp = sanitize(p.expenses);
-      var cloudInc = sanitize(p.incomes);
-      var cloudBanks = sanitize(p.banks);
-      if (opts.autoStart) {
-        expenses = mergeRowsById_(expenses, cloudExp);
-        incomes  = mergeRowsById_(incomes, cloudInc);
-        banks    = mergeRowsById_(banks, cloudBanks);
-        if (localHasMonthRowsMissingOnCloud_(prevLocalExp, cloudExp)) markSyncDirty_();
-      } else {
-        expenses = cloudExp;
-        incomes  = cloudInc;
-        banks    = cloudBanks;
-      }
+      expenses = sanitize(p.expenses);
+      incomes  = sanitize(p.incomes);
+      banks    = sanitize(p.banks);
 
       if (typeof recurring !== 'undefined') recurring = sanitizeRecurring(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
@@ -634,12 +701,12 @@ function syncMobileHardLoadAfterUnlock_() {
     loadSyncSettings(function() {
       if (!syncUrl || !window.__ftUnlocked) return;
       _autoLoadFired = true;
-      syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+      syncPullFromSheetAfterReset_({ silent: true });
     });
     return;
   }
   _autoLoadFired = true;
-  syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+  syncPullFromSheetAfterReset_({ silent: true });
 }
 
 function syncAutoLoad() {
@@ -653,8 +720,7 @@ function syncAutoLoad() {
   _autoLoadFired = true;
   // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
-    // Extension: always pull latest Sheet snapshot on open.
-    syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+    syncPullFromSheetAfterReset_({ silent: true });
   }, 120);
 }
 
@@ -671,8 +737,7 @@ function scheduleDebouncedSheetPull_() {
   clearTimeout(scheduleDebouncedSheetPull_._t);
   scheduleDebouncedSheetPull_._t = setTimeout(function() {
     if (!syncUrl || syncLoadInFlight) return;
-    // Extension: treat cloud as source of truth on return.
-    syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+    syncPullFromSheetAfterReset_({ silent: true });
   }, 500);
 }
 document.addEventListener('visibilitychange', function() {

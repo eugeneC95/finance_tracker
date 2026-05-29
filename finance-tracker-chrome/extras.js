@@ -10,6 +10,13 @@ var lastPetrolTpl = null;
 const KEY_LAST_PETROL = 'last_petrol_v1';
 
 function loadExtras() {
+  if (typeof window !== 'undefined' && window.__ftForceSheetSource) {
+    petrolLog = [];
+    lastPetrolTpl = null;
+    renderPetrolLog();
+    buildCatSelects();
+    return;
+  }
   chromeStorage.local.get([KEY_PETROL, KEY_LAST_PETROL], function(r) {
     petrolLog = r[KEY_PETROL] || [];
     lastPetrolTpl = r[KEY_LAST_PETROL] || null;
