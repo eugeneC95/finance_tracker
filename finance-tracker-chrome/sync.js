@@ -466,25 +466,15 @@ var _sheetPipelineBusy = false;
 var _sheetPipelineRetries = 0;
 var SHEET_LOAD_MAX_RETRIES = 4;
 
+/** Cold open only: reset local cache once, then load Sheet. No reload while app is in use. */
 function ensureSheetSessionLoad_(opts) {
   opts = opts || {};
-  if (_sheetPipelineBusy) return;
+  if (_sheetPipelineBusy || _sheetSessionLoaded) return;
   if (isMobileFtClient_() && !window.__ftUnlocked) return;
 
   applyHardcodedSyncUrl_();
   if (!syncUrl) {
     loadSyncSettings(function() { ensureSheetSessionLoad_(opts); });
-    return;
-  }
-
-  if (_sheetSessionLoaded && _sheetSessionResetDone) {
-    syncLoad(Object.assign({
-      skipConfirm: true,
-      silent: opts.silent !== false,
-      autoStart: true,
-      force: true,
-      refreshOnly: true
-    }, opts));
     return;
   }
 
@@ -836,10 +826,19 @@ function syncLoad(opts) {
 // Pulls the latest Google Sheets snapshot so the iPhone PWA (which is
 // killed/rehydrated aggressively by iOS) shows fresh data on every launch.
 var _autoLoadFired = false;
+var _sheetBootLoadScheduled = false;
+
+function bootSheetLoadOnce_(opts) {
+  if (!FT_FORCE_SHEET_SOURCE) return;
+  if (_sheetSessionLoaded || _sheetBootLoadScheduled) return;
+  if (isMobileFtClient_() && !window.__ftUnlocked) return;
+  _sheetBootLoadScheduled = true;
+  setTimeout(function() { ensureSheetSessionLoad_(opts || { silent: true }); }, 80);
+}
 
 function syncAutoLoad() {
   if (FT_FORCE_SHEET_SOURCE) {
-    setTimeout(function() { ensureSheetSessionLoad_({ silent: true }); }, 80);
+    bootSheetLoadOnce_({ silent: true });
     return;
   }
   if (_autoLoadFired) return;
@@ -861,22 +860,15 @@ window.addEventListener('ft-unlocked', function() {
     }, 100);
     return;
   }
+  _sheetBootLoadScheduled = false;
   setTimeout(function() { ensureSheetSessionLoad_({ silent: true }); }, 100);
 });
 
-// When the tab / PWA regains focus, pull the Sheet again so local state matches the spreadsheet.
 function scheduleDebouncedSheetPull_() {
+  if (FT_FORCE_SHEET_SOURCE) return;
   clearTimeout(scheduleDebouncedSheetPull_._t);
   scheduleDebouncedSheetPull_._t = setTimeout(function() {
     if (!syncUrl || syncLoadInFlight) return;
-    if (FT_FORCE_SHEET_SOURCE) {
-      if (!_sheetSessionLoaded) {
-        ensureSheetSessionLoad_({ silent: true });
-      } else {
-        syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true, refreshOnly: true });
-      }
-      return;
-    }
     syncPullFromSheetAfterReset_({ silent: true });
   }, 500);
 }
@@ -1073,7 +1065,7 @@ function wireSyncUI() {
 loadSyncSettings(function() {
   wireSyncUI();
   if (FT_FORCE_SHEET_SOURCE) {
-    ensureSheetSessionLoad_({ silent: true });
+    bootSheetLoadOnce_({ silent: true });
   } else if (window.__ftAppReady) {
     syncAutoLoad();
   }
