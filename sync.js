@@ -94,6 +94,78 @@ function buildPayload() {
   };
 }
 
+var _sheetSessionLoaded = false;
+var _sheetSessionResetDone = false;
+var _sheetBaseline = null;
+
+function cloneJson_(v) {
+  try { return JSON.parse(JSON.stringify(v)); } catch (e) { return v; }
+}
+
+function snapshotSheetBaseline_() {
+  var p = buildPayload();
+  _sheetBaseline = {
+    expenses: cloneJson_(p.expenses),
+    incomes: cloneJson_(p.incomes),
+    banks: cloneJson_(p.banks),
+    recurring: cloneJson_(p.recurring),
+    petrolLog: cloneJson_(p.petrolLog),
+    networthHist: cloneJson_(p.networthHist),
+    unitTrustHoldings: cloneJson_(p.unitTrustHoldings),
+    unitTrustNav: cloneJson_(p.unitTrustNav),
+    budgets: cloneJson_(p.budgets),
+    catRules: cloneJson_(p.catRules),
+  };
+  _sheetSessionLoaded = true;
+}
+
+/** True when local rows are missing whole months that exist on the last Sheet snapshot. */
+function localRowsMissingBaselineMonths_(localRows, baselineRows) {
+  var localByM = countExpensesByMonth_(localRows);
+  var baseByM = countExpensesByMonth_(baselineRows);
+  var keys = Object.keys(baseByM);
+  for (var i = 0; i < keys.length; i++) {
+    var ym = keys[i];
+    if (baseByM[ym] > 0 && !(localByM[ym] > 0)) return true;
+  }
+  var lc = (localRows || []).length;
+  var bc = (baselineRows || []).length;
+  if (bc > 0 && lc === 0) return true;
+  if (bc >= 8 && lc > 0 && lc < Math.floor(bc * 0.45)) return true;
+  return false;
+}
+
+/** Merge for save: local edits win; keep other months from baseline so Sheet is not wiped. */
+function mergeRowArraysForSave_(localRows, baselineRows) {
+  var map = {};
+  (localRows || []).forEach(function(e) {
+    if (e && e.id != null) map[e.id] = e;
+  });
+  if (localRowsMissingBaselineMonths_(localRows, baselineRows)) {
+    (baselineRows || []).forEach(function(e) {
+      if (e && e.id != null && !map[e.id]) map[e.id] = e;
+    });
+  }
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function buildPayloadForSave_() {
+  var local = buildPayload();
+  if (!FT_FORCE_SHEET_SOURCE || !_sheetBaseline) return local;
+  return {
+    expenses: mergeRowArraysForSave_(local.expenses, _sheetBaseline.expenses),
+    incomes: mergeRowArraysForSave_(local.incomes, _sheetBaseline.incomes),
+    banks: mergeRowArraysForSave_(local.banks, _sheetBaseline.banks),
+    recurring: mergeRowArraysForSave_(local.recurring, _sheetBaseline.recurring),
+    petrolLog: mergeRowArraysForSave_(local.petrolLog, _sheetBaseline.petrolLog),
+    networthHist: mergeRowArraysForSave_(local.networthHist, _sheetBaseline.networthHist),
+    unitTrustHoldings: mergeRowArraysForSave_(local.unitTrustHoldings, _sheetBaseline.unitTrustHoldings),
+    unitTrustNav: mergeRowArraysForSave_(local.unitTrustNav, _sheetBaseline.unitTrustNav),
+    budgets: Object.assign({}, _sheetBaseline.budgets || {}, local.budgets || {}),
+    catRules: Object.assign({}, _sheetBaseline.catRules || {}, local.catRules || {}),
+  };
+}
+
 function syncCountSummaryText(data) {
   var expN = Array.isArray(data && data.expenses) ? data.expenses.length : 0;
   var incN = Array.isArray(data && data.incomes) ? data.incomes.length : 0;
@@ -282,10 +354,14 @@ function syncSave(silent, onDone) {
     if (onDone) onDone(false);
     return;
   }
+  if (FT_FORCE_SHEET_SOURCE && !_sheetSessionLoaded) {
+    if (onDone) onDone(false);
+    return;
+  }
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var payload = buildPayload();
+  var payload = buildPayloadForSave_();
   var json    = JSON.stringify(payload);
   var encoded = encodeURIComponent(json);
   var promise;
@@ -300,6 +376,7 @@ function syncSave(silent, onDone) {
     .then(function(data) {
       if (data && data.ok) {
         clearSyncDirty_();
+        snapshotSheetBaseline_();
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
         persistSyncState();
@@ -394,7 +471,7 @@ var _sheetPipelineBusy = false;
 var _sheetPipelineRetries = 0;
 var SHEET_LOAD_MAX_RETRIES = 4;
 
-/** Reset local finance cache, then fetch full payload from Google Sheets (with retries). */
+/** Reset local finance cache once per page, then fetch from Google Sheets (with retries). */
 function ensureSheetSessionLoad_(opts) {
   opts = opts || {};
   if (_sheetPipelineBusy) return;
@@ -406,8 +483,22 @@ function ensureSheetSessionLoad_(opts) {
     return;
   }
 
+  if (_sheetSessionLoaded && _sheetSessionResetDone) {
+    syncLoad(Object.assign({
+      skipConfirm: true,
+      silent: opts.silent !== false,
+      autoStart: true,
+      force: true,
+      refreshOnly: true
+    }, opts));
+    return;
+  }
+
   _sheetPipelineBusy = true;
-  resetFinanceDataOnly_();
+  if (!_sheetSessionResetDone) {
+    resetFinanceDataOnly_();
+    _sheetSessionResetDone = true;
+  }
   if (typeof render === 'function') render();
   setSyncStatus('loading', 'Loading from spreadsheet…');
 
@@ -659,9 +750,18 @@ function syncLoad(opts) {
         });
       }
 
-      expenses = sanitize(p.expenses);
-      incomes  = sanitize(p.incomes);
-      banks    = sanitize(p.banks);
+      var cloudExp = sanitize(p.expenses);
+      var cloudInc = sanitize(p.incomes);
+      var cloudBanks = sanitize(p.banks);
+      if (opts.refreshOnly) {
+        expenses = mergeRowsById_(expenses, cloudExp);
+        incomes  = mergeRowsById_(incomes, cloudInc);
+        banks    = mergeRowsById_(banks, cloudBanks);
+      } else {
+        expenses = cloudExp;
+        incomes  = cloudInc;
+        banks    = cloudBanks;
+      }
 
       if (typeof recurring !== 'undefined') recurring = sanitizeRecurring(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
@@ -703,6 +803,8 @@ function syncLoad(opts) {
 
       // Reconcile recurring after cloud replace (fixes lost lastApplied + race with loadFeatures).
       if (typeof applyRecurring === 'function' && applyRecurring()) render();
+
+      snapshotSheetBaseline_();
 
       var rowCount = expenses.length + incomes.length + banks.length;
       var countsAfterLoad = syncCountSummaryText({
@@ -774,6 +876,14 @@ function scheduleDebouncedSheetPull_() {
   clearTimeout(scheduleDebouncedSheetPull_._t);
   scheduleDebouncedSheetPull_._t = setTimeout(function() {
     if (!syncUrl || syncLoadInFlight) return;
+    if (FT_FORCE_SHEET_SOURCE) {
+      if (!_sheetSessionLoaded) {
+        ensureSheetSessionLoad_({ silent: true });
+      } else {
+        syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true, refreshOnly: true });
+      }
+      return;
+    }
     syncPullFromSheetAfterReset_({ silent: true });
   }, 500);
 }
@@ -789,6 +899,7 @@ var syncTimer = null;
 
 function scheduleAutoSync() {
   if (!syncUrl) return;
+  if (FT_FORCE_SHEET_SOURCE && (!_sheetSessionLoaded || syncLoadInFlight || syncSaveBlocked)) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(function() { syncSave(true); }, 2800);
 }
