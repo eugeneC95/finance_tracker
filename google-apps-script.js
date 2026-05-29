@@ -1,22 +1,17 @@
 // ============================================================
 //  Finance Tracker — Google Apps Script Backend v6 (merge-on-save)
 //
-//  SETUP INSTRUCTIONS:
-//  1. Go to https://script.google.com
-//  2. Click "New project", delete all existing code
-//  3. Paste this entire file
-//  4. Click Save (Ctrl+S), name it "Finance Tracker Sync"
-//  5. Click Deploy → New deployment
-//     - Type: Web app
-//     - Execute as: Me
-//     - Who has access: Anyone
-//  6. Click Deploy → copy the Web App URL (ends with /exec only — no ?query after it)
-//  7. In the extension / PWA: Settings → Google Sheets Sync → Test connection (web app URL is built into the client)
+//  WEB APP (already in sync.js — do not change unless you create a new deployment):
+//  https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec
 //
-//  NOTE: Every time you change this script, you must
-//  Deploy → Manage deployments → Edit → select the active deployment →
-//  Version: "New version" → Deploy. (Or create a brand-new deployment.)
-//  Without a new version, Google keeps running the old code.
+//  UPDATE LIVE SCRIPT (required after editing this file):
+//  1. script.google.com → open the project for the URL above
+//  2. Replace all code with this file → Save
+//  3. Deploy → Manage deployments → Edit (pencil) on the Web app
+//  4. Version: New version → Deploy (same /exec URL)
+//  5. Verify: node scripts/verify-apps-script.mjs  →  apiVersion 6
+//
+//  See scripts/APPS_SCRIPT_DEPLOY.md in the repo for full steps.
 // ============================================================
 
 var SHEET_NAME = 'Finance Tracker';
