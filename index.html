@@ -3660,11 +3660,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
 <!-- Visible when the 6-digit lock is hidden but JS failed —iOS PWA can serve a broken cached bundle. -->
 <div id="ft-boot" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:99990;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(26,26,26,.94);color:#ddd;font-size:12px;line-height:1.45;text-align:center;border-top:1px solid #333">
   <span id="ft-boot-msg">Loading Finance Tracker…</span>
-  <div id="ft-boot-actions" style="display:none;margin-top:8px">
-    <p style="margin:0 0 6px;font-size:11px;color:#aaa">Still loading? Your phone may be stuck on old cached app files.</p>
-    <a id="ft-boot-nosw" href="./nosw.html" style="color:#8cf;font-weight:600">Fix stuck loading</a>
-    <span style="color:#666;font-size:11px"> · clears cache only, not your data</span>
-  </div>
 </div>
 <script>
 (function bootStrip(){
@@ -3684,19 +3679,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
   });
   if (window.__ftUnlocked) showBar();
   setTimeout(function() {
-    var b = document.getElementById('ft-boot');
-    if (!b || b.style.display === 'none') return;
-    var m = document.getElementById('ft-boot-msg');
-    var a = document.getElementById('ft-boot-actions');
-    if (m) m.textContent = 'Loading is taking longer than usual…';
-    if (a) a.style.display = 'block';
-  }, 7000);
-  // If the bar never got ft-app-ready (dead JS) but the 7s diagnostic also did not run (background tab, etc.), hide the loading strip only —never hide while recovery links are visible.
-  setTimeout(function() {
-    var b = document.getElementById('ft-boot');
-    var a = document.getElementById('ft-boot-actions');
-    if (!b || b.style.display === 'none') return;
-    if (a && a.style.display !== 'none') return;
     hideBar();
   }, 25000);
 })();
@@ -3760,7 +3742,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v97 · 2026-05-29 13:52';
+  var BUILD_VERSION    = 'v98 · 2026-05-29 15:35';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4751,7 +4733,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v97 · 2026-05-29 13:52</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v98 · 2026-05-29 15:35</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -4996,13 +4978,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v97 · 2026-05-29 13:52</div>
-<script src="build-id.js?v=97"></script>
-<script src="app.js?v=97"></script>
-<script src="sync.js?v=97"></script>
-<script src="features.js?v=97"></script>
-<script src="extras.js?v=97"></script>
-<script src="import-inline.js?v=97"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v98 · 2026-05-29 15:35</div>
+<script src="build-id.js?v=98"></script>
+<script src="app.js?v=98"></script>
+<script src="sync.js?v=98"></script>
+<script src="features.js?v=98"></script>
+<script src="extras.js?v=98"></script>
+<script src="import-inline.js?v=98"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
