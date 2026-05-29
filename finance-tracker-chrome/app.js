@@ -217,9 +217,10 @@ function utDedupeNavPoints() {
 function utSanitizeHoldings(arr) {
   if (!Array.isArray(arr)) return [];
   return arr.filter(h => h && typeof h === 'object').map((h, idx) => {
-    const id = Number(h.id);
-    const units = Math.max(0, parseFloat(h.units) || 0);
-    const tcIn = parseFloat(h.totalCost);
+    const rawId = h.id != null && h.id !== '' ? h.id : (h.ID != null ? h.ID : h.Id);
+    const id = Number(rawId);
+    const units = Math.max(0, parseFloat(h.units != null ? h.units : h.Units) || 0);
+    const tcIn = parseFloat(h.totalCost != null ? h.totalCost : h.TotalCost);
     let totalCost = null;
     if (!isNaN(tcIn) && tcIn > 0) totalCost = tcIn;
     else {
@@ -228,8 +229,8 @@ function utSanitizeHoldings(arr) {
     }
     return {
       id: !isNaN(id) && id > 0 ? id : Date.now() + idx,
-      name: String(h.name || 'Fund').trim() || 'Fund',
-      fundCode: h.fundCode != null ? String(h.fundCode).trim() : '',
+      name: String(h.name != null ? h.name : h.Name || 'Fund').trim() || 'Fund',
+      fundCode: h.fundCode != null ? String(h.fundCode).trim() : (h.FundCode != null ? String(h.FundCode).trim() : ''),
       units,
       totalCost,
       purchaseDate: h.purchaseDate != null ? String(h.purchaseDate).trim().slice(0, 10) : '',

@@ -155,8 +155,12 @@ function buildPayloadForSave_() {
     recurring: mergeRowArraysForSave_(local.recurring, _sheetBaseline.recurring),
     petrolLog: mergeRowArraysForSave_(local.petrolLog, _sheetBaseline.petrolLog),
     networthHist: mergeRowArraysForSave_(local.networthHist, _sheetBaseline.networthHist),
-    unitTrustHoldings: mergeRowArraysForSave_(local.unitTrustHoldings, _sheetBaseline.unitTrustHoldings),
-    unitTrustNav: mergeRowArraysForSave_(local.unitTrustNav, _sheetBaseline.unitTrustNav),
+    unitTrustHoldings: (local.unitTrustHoldings && local.unitTrustHoldings.length)
+      ? local.unitTrustHoldings
+      : mergeRowArraysForSave_(local.unitTrustHoldings, _sheetBaseline.unitTrustHoldings),
+    unitTrustNav: (local.unitTrustNav && local.unitTrustNav.length)
+      ? local.unitTrustNav
+      : mergeRowArraysForSave_(local.unitTrustNav, _sheetBaseline.unitTrustNav),
     budgets: Object.assign({}, _sheetBaseline.budgets || {}, local.budgets || {}),
     catRules: Object.assign({}, _sheetBaseline.catRules || {}, local.catRules || {}),
   };
@@ -765,11 +769,21 @@ function syncLoad(opts) {
       if ('unitTrustHoldings' in p || 'unitTrustNav' in p) {
         var arrH = Array.isArray(p.unitTrustHoldings) ? p.unitTrustHoldings : [];
         var arrN = Array.isArray(p.unitTrustNav) ? p.unitTrustNav : [];
-        if (typeof utHoldings !== 'undefined') {
-          utHoldings = typeof utSanitizeHoldings === 'function' ? utSanitizeHoldings(arrH) : [];
+        if (typeof utSanitizeHoldings === 'function' && typeof utHoldings !== 'undefined') {
+          var cloudH = utSanitizeHoldings(arrH);
+          if (utHoldings.length && typeof mergeRowsById_ === 'function') {
+            utHoldings = utSanitizeHoldings(mergeRowsById_(utHoldings, cloudH));
+          } else {
+            utHoldings = cloudH;
+          }
         }
-        if (typeof utNavPoints !== 'undefined') {
-          utNavPoints = typeof utSanitizeNav === 'function' ? utSanitizeNav(arrN) : [];
+        if (typeof utSanitizeNav === 'function' && typeof utNavPoints !== 'undefined') {
+          var cloudN = utSanitizeNav(arrN);
+          if (typeof mergeUtNavPoints === 'function' && utNavPoints.length) {
+            utNavPoints = mergeUtNavPoints(utNavPoints, cloudN);
+          } else {
+            utNavPoints = cloudN;
+          }
         }
       }
 
