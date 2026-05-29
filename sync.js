@@ -350,11 +350,16 @@ function flushSyncThenLoad_(opts) {
   });
 }
 
-/** Wipe finance cache + session, reset in-memory state (Sheet is loaded separately). */
-function resetAllClientData_() {
+function syncFinishLoad_(opts, ok) {
+  if (opts && typeof opts.onComplete === 'function') {
+    try { opts.onComplete(!!ok); } catch (e) {}
+  }
+}
+
+/** Wipe finance cache + in-memory rows (keeps PIN session unlock). */
+function resetFinanceDataOnly_() {
   clearSyncDirty_();
   clearTimeout(syncTimer);
-  if (typeof bumpStorageReadGeneration === 'function') bumpStorageReadGeneration();
   try {
     FT_FINANCE_STORAGE_KEYS_.forEach(function(key) { localStorage.removeItem(key); });
     localStorage.removeItem('ft.lastSyncError');
@@ -367,7 +372,6 @@ function resetAllClientData_() {
       extra.push(k);
     }
     extra.forEach(function(key) { localStorage.removeItem(key); });
-    sessionStorage.clear();
   } catch (e) {}
   if (typeof expenses !== 'undefined') expenses = [];
   if (typeof incomes !== 'undefined') incomes = [];
@@ -384,20 +388,56 @@ function resetAllClientData_() {
   if (typeof lastIncomeTpl !== 'undefined') lastIncomeTpl = null;
   if (typeof lastPetrolTpl !== 'undefined') lastPetrolTpl = null;
   syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
-  try { window.__ftUnlocked = false; } catch (e2) {}
 }
 
-function syncPullFromSheetAfterReset_(opts) {
+var _sheetPipelineBusy = false;
+var _sheetPipelineRetries = 0;
+var SHEET_LOAD_MAX_RETRIES = 4;
+
+/** Reset local finance cache, then fetch full payload from Google Sheets (with retries). */
+function ensureSheetSessionLoad_(opts) {
   opts = opts || {};
-  resetAllClientData_();
+  if (_sheetPipelineBusy) return;
+  if (isMobileFtClient_() && !window.__ftUnlocked) return;
+
+  applyHardcodedSyncUrl_();
+  if (!syncUrl) {
+    loadSyncSettings(function() { ensureSheetSessionLoad_(opts); });
+    return;
+  }
+
+  _sheetPipelineBusy = true;
+  resetFinanceDataOnly_();
   if (typeof render === 'function') render();
+  setSyncStatus('loading', 'Loading from spreadsheet…');
+
   syncLoad(Object.assign({
     skipConfirm: true,
     silent: opts.silent !== false,
     autoStart: true,
     force: true,
-    allowDirty: true
+    allowDirty: true,
+    onComplete: function(ok) {
+      _sheetPipelineBusy = false;
+      if (!ok && _sheetPipelineRetries < SHEET_LOAD_MAX_RETRIES) {
+        _sheetPipelineRetries++;
+        setTimeout(function() { ensureSheetSessionLoad_(opts); }, 900);
+        return;
+      }
+      if (ok) {
+        _sheetPipelineRetries = 0;
+        if (typeof renderRecurring === 'function') renderRecurring();
+        if (typeof renderBudgets === 'function') renderBudgets();
+        if (typeof renderPetrolLog === 'function') renderPetrolLog();
+      } else if (!opts.silent) {
+        showToast('Could not load spreadsheet — try Settings → Test connection');
+      }
+    }
   }, opts));
+}
+
+function syncPullFromSheetAfterReset_(opts) {
+  ensureSheetSessionLoad_(opts);
 }
 
 // ── Load ───────────────────────────────────────────────────
@@ -493,6 +533,7 @@ function syncLoad(opts) {
   applyHardcodedSyncUrl_();
   if (!syncUrl) {
     if (!opts.silent) showToast('Built-in sync URL missing — rebuild the app');
+    syncFinishLoad_(opts, false);
     return;
   }
 
@@ -518,6 +559,7 @@ function syncLoad(opts) {
         if (!opts.silent) showToast('Load failed');
         syncSaveBlocked = false;
         syncLoadInFlight = false;
+        syncFinishLoad_(opts, false);
         return;
       }
 
@@ -557,6 +599,7 @@ function syncLoad(opts) {
         var msgSkip = syncConflictMsg_(ceSkip);
         setSyncStatus('error', msgSkip);
         if (!opts.silent) showToast(msgSkip);
+        syncFinishLoad_(opts, false);
         return;
       }
 
@@ -676,6 +719,7 @@ function syncLoad(opts) {
       } else if (!opts.silent) {
         showToast('Loaded: ' + countsAfterLoad);
       }
+      syncFinishLoad_(opts, true);
       } finally {
         syncSaveBlocked = false;
         syncLoadInFlight = false;
@@ -688,6 +732,7 @@ function syncLoad(opts) {
       setSyncStatus('error', 'Load failed: ' + detail);
       if (!opts.silent) showToast('Load failed: ' + detail);
       console.error('Sync load error:', err);
+      syncFinishLoad_(opts, false);
     });
 }
 
@@ -697,43 +742,31 @@ function syncLoad(opts) {
 // killed/rehydrated aggressively by iOS) shows fresh data on every launch.
 var _autoLoadFired = false;
 
-/** Replace device data from Sheet (mobile: after PIN unlock). */
-function syncMobileHardLoadAfterUnlock_() {
-  if (!isMobileFtClient_() || !window.__ftUnlocked) return;
-  applyHardcodedSyncUrl_();
-  if (!syncUrl) {
-    loadSyncSettings(function() {
-      if (!syncUrl || !window.__ftUnlocked) return;
-      _autoLoadFired = true;
-      syncPullFromSheetAfterReset_({ silent: true });
-    });
+function syncAutoLoad() {
+  if (FT_FORCE_SHEET_SOURCE) {
+    setTimeout(function() { ensureSheetSessionLoad_({ silent: true }); }, 80);
     return;
   }
-  _autoLoadFired = true;
-  syncPullFromSheetAfterReset_({ silent: true });
-}
-
-function syncAutoLoad() {
   if (_autoLoadFired) return;
-  // Do NOT set _autoLoadFired until syncUrl is known — ft-app-ready can fire
-  // before loadSyncSettings finishes; burning the flag early skipped cloud
-  // pull forever (Sheet data incl. unit trust never applied on the website).
   if (!syncUrl) return;
-  // Mobile with lock screen: wait for PIN — hard load runs on ft-unlocked.
   if (isMobileFtClient_() && !window.__ftUnlocked) return;
   _autoLoadFired = true;
-  // Short delay so the first paint wins a frame before the network competes.
   setTimeout(function() {
-    syncPullFromSheetAfterReset_({ silent: true });
+    syncLoad({ skipConfirm: true, silent: true, autoStart: true });
   }, 120);
 }
 
 window.addEventListener('ft-app-ready', syncAutoLoad);
 
-// Mobile PWA: full Sheet pull every time the user unlocks (fresh session / cold open).
 window.addEventListener('ft-unlocked', function() {
-  if (!isMobileFtClient_()) return;
-  setTimeout(syncMobileHardLoadAfterUnlock_, 100);
+  if (!FT_FORCE_SHEET_SOURCE) {
+    if (!isMobileFtClient_()) return;
+    setTimeout(function() {
+      syncLoad({ skipConfirm: true, silent: true, autoStart: true, force: true });
+    }, 100);
+    return;
+  }
+  setTimeout(function() { ensureSheetSessionLoad_({ silent: true }); }, 100);
 });
 
 // When the tab / PWA regains focus, pull the Sheet again so local state matches the spreadsheet.
@@ -935,7 +968,9 @@ function wireSyncUI() {
 // ── Init ───────────────────────────────────────────────────
 loadSyncSettings(function() {
   wireSyncUI();
-  // Cover the race where app.js dispatched ft-app-ready before sync.js
-  // attached its listener. syncAutoLoad guards itself against double-firing.
-  if (window.__ftAppReady) syncAutoLoad();
+  if (FT_FORCE_SHEET_SOURCE) {
+    ensureSheetSessionLoad_({ silent: true });
+  } else if (window.__ftAppReady) {
+    syncAutoLoad();
+  }
 });
