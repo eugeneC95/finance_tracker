@@ -1,5 +1,5 @@
 // ============================================================
-//  Finance Tracker — Google Apps Script Backend v2
+//  Finance Tracker — Google Apps Script Backend v6 (merge-on-save)
 //
 //  SETUP INSTRUCTIONS:
 //  1. Go to https://script.google.com
@@ -105,7 +105,7 @@ function handleSaveChunk_(e) {
           }
         }
         if (allGone) {
-          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 5 };
+          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 6 };
         }
         return { ok: true, partial: true, need: i };
       }
@@ -118,7 +118,7 @@ function handleSaveChunk_(e) {
       cache.remove(keyPrefix + i);
     }
     saveAllData(payload);
-    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 5 };
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 6 };
   } catch (err) {
     return { ok: false, error: err.toString() };
   } finally {
@@ -135,7 +135,7 @@ function doGet(e) {
       result = {
         ok: true,
         message: 'Finance Tracker connected successfully',
-        apiVersion: 5,
+        apiVersion: 6,
       };
 
     } else if (action === 'save') {
@@ -147,7 +147,7 @@ function doGet(e) {
         // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
         var payload = JSON.parse(raw);
         saveAllData(payload);
-        result = { ok: true, saved: new Date().toISOString(), apiVersion: 5 };
+        result = { ok: true, saved: new Date().toISOString(), apiVersion: 6 };
       }
 
     } else if (action === 'save_chunk') {
@@ -178,7 +178,7 @@ function doPost(e) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);
       return ContentService
-        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 5 }))
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 6 }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (err) {
@@ -189,21 +189,134 @@ function doPost(e) {
   return doGet(e);
 }
 
-// ── Save all data tabs ─────────────────────────────────────
+// ── Save all data tabs (merge with existing Sheet rows — never wipe missing months) ──
+var API_VERSION = 6;
+
+function normalizeRowId_(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  var n = Number(raw);
+  return isNaN(n) ? String(raw) : n;
+}
+
+function rowMonthKey_(row, dateCol) {
+  if (!row || !dateCol) return '';
+  var v = row[dateCol];
+  if (v === undefined || v === null || v === '') return '';
+  if (v instanceof Date) {
+    return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0');
+  }
+  var s = String(v).trim();
+  if (s.indexOf('1900-01-') === 0) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 7);
+  return '';
+}
+
+function countRowsByMonth_(rows, dateCol) {
+  var out = {};
+  (rows || []).forEach(function(r) {
+    var ym = rowMonthKey_(r, dateCol);
+    if (ym) out[ym] = (out[ym] || 0) + 1;
+  });
+  return out;
+}
+
+/** Incoming save missing whole months still on the Sheet — keep those rows. */
+function incomingLooksIncomplete_(incoming, existing, dateCol) {
+  var inc = incoming || [];
+  var ex = existing || [];
+  if (dateCol) {
+    var incM = countRowsByMonth_(inc, dateCol);
+    var exM = countRowsByMonth_(ex, dateCol);
+    var keys = Object.keys(exM);
+    for (var i = 0; i < keys.length; i++) {
+      if (exM[keys[i]] > 0 && !(incM[keys[i]] > 0)) return true;
+    }
+  }
+  if (ex.length > 0 && inc.length === 0) return true;
+  if (ex.length >= 8 && inc.length > 0 && inc.length < Math.floor(ex.length * 0.45)) return true;
+  return false;
+}
+
+function mergeIdRows_(incoming, existing, dateCol) {
+  var map = {};
+  (incoming || []).forEach(function(r) {
+    var id = normalizeRowId_(r.id);
+    if (id != null) map[String(id)] = r;
+  });
+  if (incomingLooksIncomplete_(incoming, existing, dateCol)) {
+    (existing || []).forEach(function(r) {
+      var id = normalizeRowId_(r.id);
+      if (id != null && !map[String(id)]) map[String(id)] = r;
+    });
+  }
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function mergeDateKeyedRows_(incoming, existing, dateCol) {
+  var map = {};
+  (incoming || []).forEach(function(r) {
+    var d = r[dateCol];
+    if (d !== undefined && d !== null && d !== '') map[String(d)] = r;
+  });
+  if (incomingLooksIncomplete_(incoming, existing, dateCol)) {
+    (existing || []).forEach(function(r) {
+      var d = r[dateCol];
+      if (d !== undefined && d !== null && d !== '' && !map[String(d)]) map[String(d)] = r;
+    });
+  }
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function mergeUtNavRows_(incoming, existing) {
+  var map = {};
+  (incoming || []).forEach(function(r) {
+    var k = String(r.fundId || '') + '|' + String(r.date || '');
+    if (k !== '|') map[k] = r;
+  });
+  if (incomingLooksIncomplete_(incoming, existing, 'date')) {
+    (existing || []).forEach(function(r) {
+      var k = String(r.fundId || '') + '|' + String(r.date || '');
+      if (k !== '|' && !map[k]) map[k] = r;
+    });
+  }
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function writeTabMerged_(tabName, incomingRows, cols, dateCol) {
+  var existing = readTab(tabName);
+  var merged = mergeIdRows_(incomingRows, existing, dateCol);
+  writeTab(tabName, merged, cols);
+}
+
 function saveAllData(payload) {
-  writeTab('Expenses',  payload.expenses     || [], ['id','name','amount','cat','date','note','auto']);
-  writeTab('Income',    payload.incomes      || [], ['id','name','amount','cat','date','note','auto']);
-  writeTab('Banks',     payload.banks        || [], ['id','name','acct','balance']);
-  writeTab('Recurring', payload.recurring    || [], ['id','name','amount','type','cat','day','active','lastApplied']);
-  writeTab('Budgets',   budgetsToRows(payload.budgets || {}), ['cat','amount']);
-  writeTab('Petrol',    payload.petrolLog    || [], ['id','station','litres','ppl','odo','date','total']);
-  writeTab('NetWorth',  payload.networthHist || [], ['date','total']);
-  writeTab('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','units','totalCost','purchaseDate','notes']);
-  writeTab('UTNav',     payload.unitTrustNav     || [], ['fundId','date','nav']);
+  writeTabMerged_('Expenses', payload.expenses || [], ['id','name','amount','cat','date','note','auto'], 'date');
+  writeTabMerged_('Income', payload.incomes || [], ['id','name','amount','cat','date','note','auto'], 'date');
+  writeTabMerged_('Banks', payload.banks || [], ['id','name','acct','balance'], null);
+  writeTabMerged_('Recurring', payload.recurring || [], ['id','name','amount','type','cat','day','active','lastApplied'], null);
+  writeTabMerged_('Petrol', payload.petrolLog || [], ['id','station','litres','ppl','odo','date','total'], 'date');
+  writeTabMerged_('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','units','totalCost','purchaseDate','notes'], null);
+
+  var existingNw = readTab('NetWorth');
+  var mergedNw = mergeDateKeyedRows_(payload.networthHist || [], existingNw, 'date');
+  writeTab('NetWorth', mergedNw, ['date','total']);
+
+  var existingNav = readTab('UTNav');
+  var mergedNav = mergeUtNavRows_(payload.unitTrustNav || [], existingNav);
+  writeTab('UTNav', mergedNav, ['fundId','date','nav']);
+
+  var existingBud = readTab('Budgets');
+  var mergedBudObj = rowsToBudgets(existingBud);
+  var incBud = payload.budgets || {};
+  if (Object.keys(incBud).length === 0 && existingBud.length > 0) {
+    writeTab('Budgets', existingBud, ['cat','amount']);
+  } else {
+    Object.keys(incBud).forEach(function(k) { mergedBudObj[k] = incBud[k]; });
+    writeTab('Budgets', budgetsToRows(mergedBudObj), ['cat','amount']);
+  }
 
   var meta = getOrCreateSheet('_Meta');
   meta.clearContents();
-  meta.getRange(1,1,1,2).setValues([['lastSaved', new Date().toISOString()]]);
+  meta.getRange(1, 1, 1, 2).setValues([['lastSaved', new Date().toISOString()], ['apiVersion', API_VERSION]]);
 }
 
 function writeTab(tabName, rows, cols) {

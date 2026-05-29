@@ -225,7 +225,7 @@ function humanizeSaveApiError(raw) {
     return (
       raw.trim() +
       ' — redeploy this repo’s google-apps-script.js (Deploy → New version). The web app must respond at …/exec (no ? or # after it). ' +
-      'Ping should show apiVersion 5+.'
+      'Ping should show apiVersion 6+ for merge-on-save.'
     );
   }
   return raw;
@@ -251,6 +251,7 @@ function syncPing() {
         else if (av < 3) hint = ' — redeploy script for unit trust on Sheets (UTHoldings / UTNav)';
         else if (av < 4) hint = ' — redeploy script so UTHoldings uses total paid RM (totalCost incl. fees)';
         else if (av < 5) hint = ' — redeploy script v5 (fixes save_chunk when action is a string)';
+        else if (av < 6) hint = ' — redeploy script v6 (merge-on-save keeps all months on Sheet)';
         setSyncStatus('ok', (data.message || 'Connected') + hint);
         showToast('Connected to Google Sheets');
       } else {
@@ -387,6 +388,8 @@ function syncSave(silent, onDone) {
             showToast('Saved — redeploy Apps Script (google-apps-script.js v3) for unit trust tabs UTHoldings & UTNav.');
           } else if (av < 4) {
             showToast('Saved — redeploy Apps Script for UTHoldings totalCost (full amount paid incl. fees).');
+          } else if (av < 6) {
+            showToast('Saved — redeploy Apps Script v6 (google-apps-script.js) for merge-on-save on Sheet.');
           } else {
             showToast('Saved: ' + counts);
           }
