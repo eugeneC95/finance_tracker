@@ -55,6 +55,9 @@ const EXP_CATS = {
   // Car
   'Petrol':        { icon:'⛽', color:'#E24B4A' },
   'Car Service':   { icon:'🔧', color:'#378ADD' },
+  'Car Repair Labour': { icon:'🧰', color:'#2E7DCE' },
+  'Car Parts':     { icon:'⚙️', color:'#5D7FA3' },
+  'Tyre Service':  { icon:'🛞', color:'#6D7A86' },
   'Toll':          { icon:'🛣', color:'#888780' },
   'Parking':       { icon:'🅿️', color:'#78909C' },
   'Car Expenses':  { icon:'🚗', color:'#5F5E5A' },
@@ -82,7 +85,7 @@ const EXP_CAT_GROUPS = [
   { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Renovation'] },
   { title: 'Health & self-care', cats: ['Health', 'Fitness', 'Grooming'] },
   { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax'] },
-  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Flight'] },
+  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Flight'] },
   { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
   { title: 'Education & family', cats: ['Education', 'Pet care'] },
   { title: 'Other', cats: ['Other'] },
@@ -137,6 +140,75 @@ function todayStr() {
 function fmt(n) {
   return (settings.currency||'RM')+' '+Number(n).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
+
+const BANK_CURRENCIES = {
+  MYR: { symbol: 'RM',  label: 'MYR', decimals: 2 },
+  SGD: { symbol: 'SGD', label: 'SGD', decimals: 2 },
+  USD: { symbol: 'USD', label: 'USD', decimals: 2 },
+  JPY: { symbol: 'JPY', label: 'JPY', decimals: 0 },
+};
+
+function normalizeBankCurrency(c) {
+  const u = String(c || '').trim().toUpperCase();
+  if (u === 'RM') return 'MYR';
+  return BANK_CURRENCIES[u] ? u : 'MYR';
+}
+
+function defaultFxRates() {
+  return { MYR: 1, SGD: 3.10, USD: 4.50, JPY: 0.028 };
+}
+
+function ensureFxRates() {
+  if (!settings.fxRates || typeof settings.fxRates !== 'object') settings.fxRates = defaultFxRates();
+  else settings.fxRates = Object.assign({}, defaultFxRates(), settings.fxRates);
+  settings.fxRates.MYR = 1;
+}
+
+function fxRateToBase(currencyCode) {
+  ensureFxRates();
+  const code = normalizeBankCurrency(currencyCode);
+  if (code === 'MYR') return 1;
+  const rate = parseFloat(settings.fxRates[code]);
+  return (!isNaN(rate) && rate > 0) ? rate : (defaultFxRates()[code] || 1);
+}
+
+function fmtBankAmount(amount, currencyCode) {
+  const code = normalizeBankCurrency(currencyCode);
+  const info = BANK_CURRENCIES[code] || BANK_CURRENCIES.MYR;
+  const decimals = info.decimals != null ? info.decimals : 2;
+  return info.symbol + ' ' + Number(amount).toLocaleString('en-MY', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function bankBalanceInBase(bank) {
+  return (Number(bank && bank.balance) || 0) * fxRateToBase(bank && bank.currency);
+}
+
+function totalBanksBase() {
+  return banks.reduce((a, b) => a + bankBalanceInBase(b), 0);
+}
+
+function normalizeBankRow(b) {
+  if (!b || typeof b !== 'object') return b;
+  b.currency = normalizeBankCurrency(b.currency);
+  return b;
+}
+
+function fillBankCurrencySelect(sel, selected) {
+  if (!sel) return;
+  const cur = normalizeBankCurrency(selected);
+  sel.innerHTML = '';
+  Object.keys(BANK_CURRENCIES).forEach(code => {
+    const info = BANK_CURRENCIES[code];
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = info.label + (info.symbol !== code ? ' (' + info.symbol + ')' : '');
+    if (code === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -185,7 +257,7 @@ function load() {
       } else {
         expenses = r[KEY_EXP]   || [];
         incomes  = r[KEY_INC]   || [];
-        banks    = r[KEY_BANKS] || [];
+        banks    = (r[KEY_BANKS] || []).map(normalizeBankRow);
         utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
         utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
         utCarryForwardNavSnapshotForToday();
@@ -971,6 +1043,13 @@ function applySettings() {
   );
   const curEl = document.getElementById('set-currency');
   if (curEl) curEl.value = settings.currency || 'RM';
+  ensureFxRates();
+  const fxSub = document.getElementById('set-fx-sub');
+  if (fxSub) fxSub.textContent = '1 foreign unit → ' + (settings.currency || 'RM') + ' (for net assets total)';
+  ['SGD', 'USD', 'JPY'].forEach(code => {
+    const fxEl = document.getElementById('set-fx-' + code.toLowerCase());
+    if (fxEl) fxEl.value = String(settings.fxRates[code]);
+  });
   const dragEl = document.getElementById('set-drag');
   if (dragEl) dragEl.checked = settings.showDrag !== false;
   const compEl = document.getElementById('set-compact');
@@ -1123,18 +1202,21 @@ function deleteIncome(id) {
 function addBank() {
   const nEl = document.getElementById('bk-name');
   const aEl = document.getElementById('bk-acct');
+  const cEl = document.getElementById('bk-currency');
   const bEl = document.getElementById('bk-balance');
   const name    = nEl.value.trim();
   const acct    = aEl.value.trim();
+  const currency = normalizeBankCurrency(cEl ? cEl.value : 'MYR');
   const balance = parseFloat(bEl.value);
   let ok = true;
   if (!name)                       { shake(nEl); ok = false; }
   if (isNaN(balance) || balance<0) { shake(bEl); ok = false; }
   if (!ok) return;
-  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance });
+  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance, currency });
   saveBanks();
   maybeSnapshotNetWorth();
   nEl.value = ''; aEl.value = ''; bEl.value = '';
+  if (cEl) cEl.value = 'MYR';
   render();
 }
 function deleteBank(id) {
@@ -1429,7 +1511,7 @@ function render() {
   const totalExp = me.reduce((a,e)=>a+e.amount, 0);
   const todayExp = expenses.filter(e=>e.date===today).reduce((a,e)=>a+e.amount, 0);
   const totalInc = mi.reduce((a,i)=>a+i.amount, 0);
-  const totalBanks = banks.reduce((a,b)=>a+b.balance, 0);
+  const totalBanks = totalBanksBase();
   const net = totalInc - totalExp;
 
   document.getElementById('month-label').textContent =
@@ -1530,6 +1612,7 @@ function render() {
   if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
   if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
   if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+  if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
   if (typeof renderRecurring  === 'function') renderRecurring();
   refreshActiveTabPanels();
 }
@@ -1840,13 +1923,13 @@ function renderBankList() {
     nameEl.textContent = b.name;
     const meta = document.createElement('div');
     meta.className = 'assets-acct-row__meta';
-    meta.textContent = b.acct || 'Account';
+    meta.textContent = (b.acct || 'Account') + ' · ' + normalizeBankCurrency(b.currency);
     body.appendChild(nameEl);
     body.appendChild(meta);
 
     const bal = document.createElement('div');
     bal.className = 'assets-acct-row__bal';
-    bal.textContent = fmt(b.balance);
+    bal.textContent = fmtBankAmount(b.balance, b.currency);
 
     const actions = document.createElement('div');
     actions.className = 'assets-acct-row__actions';
@@ -1875,7 +1958,7 @@ function renderBankList() {
     editBody.className = 'assets-acct-edit__body';
 
     const grid = document.createElement('div');
-    grid.className = 'assets-form-grid assets-form-grid--3';
+    grid.className = 'assets-form-grid assets-form-grid--4';
 
     const nameWrap = document.createElement('div');
     const nameLab = document.createElement('label');
@@ -1901,10 +1984,20 @@ function renderBankList() {
     acctWrap.appendChild(acctLab);
     acctWrap.appendChild(acctInp);
 
+    const curWrap = document.createElement('div');
+    const curLab = document.createElement('label');
+    curLab.className = 'lbl';
+    curLab.textContent = 'Currency';
+    const curSel = document.createElement('select');
+    curSel.className = 'be-curr';
+    fillBankCurrencySelect(curSel, b.currency);
+    curWrap.appendChild(curLab);
+    curWrap.appendChild(curSel);
+
     const balWrap = document.createElement('div');
     const balLab = document.createElement('label');
     balLab.className = 'lbl';
-    balLab.textContent = 'Balance (RM)';
+    balLab.textContent = 'Balance';
     const balInp = document.createElement('input');
     balInp.type = 'number';
     balInp.className = 'be-bal';
@@ -1916,6 +2009,7 @@ function renderBankList() {
 
     grid.appendChild(nameWrap);
     grid.appendChild(acctWrap);
+    grid.appendChild(curWrap);
     grid.appendChild(balWrap);
     editBody.appendChild(grid);
 
@@ -1932,6 +2026,7 @@ function renderBankList() {
       if (!nameVal || isNaN(balVal) || balVal < 0) { shake(nameInp); return; }
       b.name = nameVal;
       b.acct = acctVal || 'Account';
+      b.currency = normalizeBankCurrency(curSel.value);
       b.balance = balVal;
       saveBanks();
       maybeSnapshotNetWorth();
@@ -2091,7 +2186,7 @@ function importBackup(file) {
       let incRes = { overwritten: 0, added: 0 };
 
       if (ans === 'replace') {
-        expenses = d.expenses; incomes = d.incomes; banks = d.banks;
+        expenses = d.expenses; incomes = d.incomes; banks = (d.banks || []).map(normalizeBankRow);
         if (Array.isArray(d.unitTrustHoldings)) utHoldings = utSanitizeHoldings(d.unitTrustHoldings);
         else utHoldings = [];
         if (Array.isArray(d.unitTrustNav)) utNavPoints = utSanitizeNav(d.unitTrustNav);
@@ -2105,7 +2200,7 @@ function importBackup(file) {
       } else {
         expRes = mergeByDateAmount(expenses, d.expenses); expenses = expRes.merged;
         incRes = mergeByDateAmount(incomes,  d.incomes);  incomes  = incRes.merged;
-        if (Array.isArray(d.banks)) banks = mergeById(banks, d.banks);
+        if (Array.isArray(d.banks)) banks = mergeById(banks, d.banks).map(normalizeBankRow);
         if (d.recurring    && typeof recurring    !== 'undefined') recurring    = mergeById(recurring, d.recurring);
         if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = mergeById(petrolLog, d.petrolLog);
         if (d.networthHist && typeof networthHist !== 'undefined') {
@@ -2174,7 +2269,16 @@ document.querySelectorAll('.fs-btn').forEach(b => b.addEventListener('click', ()
   settings.fontSize = b.dataset.fs; saveSets(); applySettings();
 }));
 bindInput('set-currency', e => {
-  settings.currency = e.target.value || 'RM'; saveSets(); render();
+  settings.currency = e.target.value || 'RM'; saveSets(); applySettings(); render();
+});
+['SGD', 'USD', 'JPY'].forEach(code => {
+  bindInput('set-fx-' + code.toLowerCase(), e => {
+    ensureFxRates();
+    const v = parseFloat(e.target.value);
+    settings.fxRates[code] = (!isNaN(v) && v > 0) ? v : defaultFxRates()[code];
+    saveSets();
+    render();
+  });
 });
 bindChange('set-drag', e => {
   settings.showDrag = e.target.checked; saveSets(); render();
@@ -2346,6 +2450,7 @@ function openMobileNavMore() {
 
 // ── Tab open hooks (sidebar, mobile More, and data refresh) ──
 const TAB_OPEN_HOOKS = {
+  home: () => { if (typeof renderHomeDashboard === 'function') renderHomeDashboard(); },
   recurring: () => { if (typeof renderRecurring === 'function') renderRecurring(); },
   petrol: () => { if (typeof renderPetrolLog === 'function') renderPetrolLog(); },
   report: () => { if (typeof renderReport === 'function') renderReport(); },
@@ -2513,4 +2618,5 @@ if (expNameEl) {
 ['bk-name','bk-acct','bk-balance'].forEach(id =>
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addBank(); })
 );
+fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
 

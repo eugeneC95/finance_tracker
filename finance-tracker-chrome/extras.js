@@ -449,6 +449,42 @@ function renderPetrolLog() {
 
   el.innerHTML = '';
   el.appendChild(root);
+  renderPetrolEfficiencyChart();
+}
+
+function petrolEfficiencyByMonth() {
+  var byYm = {};
+  var withOdo = petrolOdoSorted();
+  for (var i = 1; i < withOdo.length; i++) {
+    var km = withOdo[i].odo - withOdo[i - 1].odo;
+    if (km <= 0) continue;
+    var ym = String(withOdo[i].date || '').slice(0, 7);
+    if (!ym) continue;
+    if (!byYm[ym]) byYm[ym] = { km: 0, litres: 0 };
+    byYm[ym].km += km;
+    byYm[ym].litres += withOdo[i].litres;
+  }
+  return Object.keys(byYm).sort().slice(-6).map(function(ym) {
+    var o = byYm[ym];
+    return { ym: ym, l100: o.km > 0 ? (o.litres / o.km) * 100 : 0 };
+  });
+}
+
+function renderPetrolEfficiencyChart() {
+  var el = document.getElementById('pt-eff-chart');
+  if (!el) return;
+  var series = petrolEfficiencyByMonth();
+  if (!series.length) {
+    el.innerHTML = '<div class="ft-note" style="padding:12px 0">Log odometer on fill-ups to see L/100 km trend.</div>';
+    return;
+  }
+  if (typeof renderMonthDailyLineChart !== 'function') return;
+  renderMonthDailyLineChart(
+    el,
+    series.map(function(s) { return s.ym; }),
+    series.map(function(s) { return s.l100; }),
+    { stroke: '#378ADD', label: 'L/100 km' }
+  );
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -519,6 +555,26 @@ function renderReport() {
   totVal.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
   totVal.textContent = (net>=0?'+':'') + fmt(net);
   totRow.appendChild(totLbl); totRow.appendChild(totVal); sec1.appendChild(totRow);
+
+  if (typeof budgets !== 'undefined' && budgets && Object.keys(budgets).length) {
+    var overRows = [];
+    var underRows = [];
+    Object.keys(budgets).forEach(function(cat) {
+      var limit = budgets[cat];
+      var spent = catTotals[cat] || 0;
+      var diff = limit - spent;
+      if (spent <= 0) return;
+      if (diff < 0) overRows.push({ cat: cat, msg: 'Over by ' + fmt(Math.abs(diff)), cls: 'red' });
+      else if (diff > 0) underRows.push({ cat: cat, msg: 'Under by ' + fmt(diff), cls: 'green' });
+    });
+    if (overRows.length || underRows.length) {
+      var secBud = section('Budget vs actual');
+      overRows.concat(underRows).forEach(function(row) {
+        var info = EXP_CATS[row.cat] || { icon: '📦' };
+        addRow(secBud, info.icon + ' ' + row.cat, row.msg, row.cls);
+      });
+    }
+  }
 
   // By category
   if (catSorted.length) {

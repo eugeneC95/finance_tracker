@@ -39,7 +39,7 @@ var FT_FINANCE_STORAGE_KEYS_ = [
 
 // Hard-coded Google Apps Script web app (…/exec only). Shown read-only on Settings; not user-editable.
 var APPS_SCRIPT_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec';
+  'https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec';
 
 var syncUrl   = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
@@ -87,6 +87,7 @@ function buildPayload() {
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
     budgets:      (typeof budgets      !== 'undefined') ? budgets      : {},
     catRules:     (typeof catRules     !== 'undefined') ? catRules     : {},
+    savingsGoal:  (typeof savingsGoal  !== 'undefined') ? savingsGoal  : null,
     petrolLog:    (typeof petrolLog    !== 'undefined') ? petrolLog    : [],
     networthHist: (typeof networthHist !== 'undefined') ? networthHist : [],
     unitTrustHoldings: (typeof utHoldings !== 'undefined') ? utHoldings : [],
@@ -97,6 +98,11 @@ function buildPayload() {
 var _sheetSessionLoaded = false;
 var _sheetSessionResetDone = false;
 var _sheetBaseline = null;
+var _syncDirtyKinds = {
+  tx: false,
+  recurring: false,
+  meta: false,
+};
 
 function cloneJson_(v) {
   try { return JSON.parse(JSON.stringify(v)); } catch (e) { return v; }
@@ -115,6 +121,7 @@ function snapshotSheetBaseline_() {
     unitTrustNav: cloneJson_(p.unitTrustNav),
     budgets: cloneJson_(p.budgets),
     catRules: cloneJson_(p.catRules),
+    savingsGoal: cloneJson_(p.savingsGoal),
   };
   _sheetSessionLoaded = true;
 }
@@ -149,13 +156,15 @@ function mergeRowArraysForSave_(localRows, baselineRows) {
   return Object.keys(map).map(function(k) { return map[k]; });
 }
 
-function buildPayloadForSave_() {
+function buildPayloadForSave_(opts) {
+  opts = opts || {};
   var local = buildPayload();
   if (!FT_FORCE_SHEET_SOURCE || !_sheetBaseline) return local;
+  var preserveTxFromBaseline = !!opts.preserveTxFromBaseline;
   return {
-    expenses: mergeRowArraysForSave_(local.expenses, _sheetBaseline.expenses),
-    incomes: mergeRowArraysForSave_(local.incomes, _sheetBaseline.incomes),
-    banks: mergeRowArraysForSave_(local.banks, _sheetBaseline.banks),
+    expenses: preserveTxFromBaseline ? cloneJson_(_sheetBaseline.expenses || []) : mergeRowArraysForSave_(local.expenses, _sheetBaseline.expenses),
+    incomes: preserveTxFromBaseline ? cloneJson_(_sheetBaseline.incomes || []) : mergeRowArraysForSave_(local.incomes, _sheetBaseline.incomes),
+    banks: preserveTxFromBaseline ? cloneJson_(_sheetBaseline.banks || []) : mergeRowArraysForSave_(local.banks, _sheetBaseline.banks),
     recurring: mergeRowArraysForSave_(local.recurring, _sheetBaseline.recurring),
     petrolLog: mergeRowArraysForSave_(local.petrolLog, _sheetBaseline.petrolLog),
     networthHist: mergeRowArraysForSave_(local.networthHist, _sheetBaseline.networthHist),
@@ -167,6 +176,9 @@ function buildPayloadForSave_() {
       : mergeRowArraysForSave_(local.unitTrustNav, _sheetBaseline.unitTrustNav),
     budgets: Object.assign({}, _sheetBaseline.budgets || {}, local.budgets || {}),
     catRules: Object.assign({}, _sheetBaseline.catRules || {}, local.catRules || {}),
+    savingsGoal: (local.savingsGoal && local.savingsGoal.target)
+      ? local.savingsGoal
+      : (_sheetBaseline.savingsGoal || null),
   };
 }
 
@@ -366,7 +378,11 @@ function syncSave(silent, onDone) {
 
   setSyncStatus('saving', 'Saving to Google Sheets…');
 
-  var payload = buildPayloadForSave_();
+  var preserveTxFromBaseline = FT_FORCE_SHEET_SOURCE &&
+    _sheetBaseline &&
+    !_syncDirtyKinds.tx &&
+    (_syncDirtyKinds.recurring || _syncDirtyKinds.meta);
+  var payload = buildPayloadForSave_({ preserveTxFromBaseline: preserveTxFromBaseline });
   var json    = JSON.stringify(payload);
   var encoded = encodeURIComponent(json);
   var promise;
@@ -381,6 +397,11 @@ function syncSave(silent, onDone) {
     .then(function(data) {
       if (data && data.ok) {
         clearSyncDirty_();
+        syncPendingSave = false;
+        if (data.apiVersion != null) syncApiVersion = Number(data.apiVersion);
+        _syncDirtyKinds.tx = false;
+        _syncDirtyKinds.recurring = false;
+        _syncDirtyKinds.meta = false;
         snapshotSheetBaseline_();
         syncState.lastSaved = new Date().toISOString();
         setSyncStatus('ok', 'Saved ' + fmtTime(syncState.lastSaved));
@@ -394,6 +415,8 @@ function syncSave(silent, onDone) {
             showToast('Saved — redeploy Apps Script for UTHoldings totalCost (full amount paid incl. fees).');
           } else if (av < 6) {
             showToast('Saved — redeploy Apps Script v6 (google-apps-script.js) for merge-on-save on Sheet.');
+          } else if (av < 7) {
+            showToast('Saved — redeploy Apps Script v7 for catRules & savings goal on Sheet.');
           } else {
             showToast('Saved: ' + counts);
           }
@@ -534,6 +557,8 @@ function syncPullFromSheetAfterReset_(opts) {
 var syncLoadInFlight = false;
 var syncLocalDirty = false;
 var syncSaveBlocked = false;
+var syncPendingSave = false;
+var syncApiVersion = null;
 
 function markSyncDirty_() { syncLocalDirty = true; }
 function clearSyncDirty_() { syncLocalDirty = false; }
@@ -761,6 +786,16 @@ function syncLoad(opts) {
       if (typeof recurring !== 'undefined') recurring = sanitizeRecurring(p.recurring);
       if (typeof budgets !== 'undefined') budgets = p.budgets || {};
       if (typeof catRules !== 'undefined') catRules = p.catRules || {};
+      if (typeof savingsGoal !== 'undefined') {
+        var sg = p.savingsGoal;
+        if (sg && sg.target) {
+          savingsGoal = {
+            target: parseFloat(sg.target) || 0,
+            byDate: sg.byDate != null ? String(sg.byDate) : '',
+            startDate: sg.startDate != null ? String(sg.startDate) : '',
+          };
+        } else savingsGoal = null;
+      }
       if (typeof petrolLog !== 'undefined') petrolLog = sanitize(p.petrolLog);
       if (typeof networthHist !== 'undefined') {
         networthHist = (p.networthHist || []).filter(function(e) { return e && e.date; }).map(function(e) {
@@ -795,6 +830,8 @@ function syncLoad(opts) {
       saveExp(); saveInc(); saveBanks();
       if (typeof saveRec === 'function') saveRec();
       if (typeof saveBud === 'function') saveBud();
+      if (typeof saveSavGoal === 'function') saveSavGoal();
+      if (typeof saveCatRules === 'function') saveCatRules();
       if (typeof savePetrol === 'function') savePetrol();
       if (typeof saveNWH === 'function') saveNWH();
       if (typeof saveUtHoldings === 'function') saveUtHoldings();
@@ -907,7 +944,11 @@ var syncTimer = null;
 
 function scheduleAutoSync() {
   if (!syncUrl) return;
-  if (FT_FORCE_SHEET_SOURCE && (!_sheetSessionLoaded || syncLoadInFlight || syncSaveBlocked)) return;
+  if (FT_FORCE_SHEET_SOURCE && (!_sheetSessionLoaded || syncLoadInFlight || syncSaveBlocked)) {
+    if (syncLocalDirty) syncPendingSave = true;
+    return;
+  }
+  syncPendingSave = false;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(function() { syncSave(true); }, 2800);
 }
@@ -922,6 +963,13 @@ function scheduleAutoSync() {
     var orig = cur;
     window[name] = function() {
       orig.apply(this, arguments);
+      if (name === 'saveExp' || name === 'saveInc' || name === 'saveBanks' || name === 'saveUtHoldings' || name === 'saveUtNav') {
+        _syncDirtyKinds.tx = true;
+      } else if (name === 'saveRec') {
+        _syncDirtyKinds.recurring = true;
+      } else {
+        _syncDirtyKinds.meta = true;
+      }
       markSyncDirty_();
       scheduleAutoSync();
     };
@@ -939,6 +987,8 @@ function scheduleAutoSync() {
     wrapSave('saveBud');
     wrapSave('savePetrol');
     wrapSave('saveNWH');
+    wrapSave('saveSavGoal');
+    wrapSave('saveCatRules');
   }
   // Runs after remaining <script> tags (features.js, extras.js) in this document.
   setTimeout(hookDeferredSaves, 0);
@@ -946,10 +996,12 @@ function scheduleAutoSync() {
 
 // ── UI ─────────────────────────────────────────────────────
 function syncDataCounts() {
+  var rulesN = (typeof catRules !== 'undefined' && catRules) ? Object.keys(catRules).length : 0;
   return {
     expenses: (expenses || []).length,
     incomes: (incomes || []).length,
     banks: (banks || []).length,
+    catRules: rulesN,
   };
 }
 
@@ -990,13 +1042,17 @@ function updateSyncUI() {
   if (expEl) expEl.textContent = counts.expenses;
   if (incEl) incEl.textContent = counts.incomes;
   if (bankEl) bankEl.textContent = counts.banks;
+  var rulesEl = document.getElementById('settings-count-rules');
+  if (rulesEl) rulesEl.textContent = counts.catRules != null ? counts.catRules : '0';
 
   var buildChip = document.getElementById('settings-build-chip');
   if (buildChip && window.FT_BUILD) buildChip.textContent = 'v' + FT_BUILD.ver;
 
   var hero = document.getElementById('settings-hero-status');
   if (hero) {
-    if (syncState.status === 'error' && syncState.message) {
+    if (syncPendingSave && syncLocalDirty) {
+      hero.textContent = 'Changes queued — will sync when Sheet load finishes';
+    } else if (syncState.status === 'error' && syncState.message) {
       hero.textContent = syncState.message;
     } else if (syncState.lastSaved) {
       hero.textContent = 'Last saved to Sheet ' + fmtRelativeTime(syncState.lastSaved);
@@ -1051,6 +1107,13 @@ function updateSyncUI() {
     var c = syncState.counts;
     if (c) {
       parts.push(c.expenses + ' expenses · ' + c.incomes + ' income · ' + c.banks + ' banks');
+      if (c.catRules != null) parts.push(c.catRules + ' learned categories');
+    }
+    if (syncApiVersion != null && !isNaN(syncApiVersion)) {
+      parts.push('Sheet API v' + syncApiVersion);
+    }
+    if (syncPendingSave && syncLocalDirty) {
+      parts.push('Pending sync (waiting for Sheet)');
     }
     if (syncState.lastSaved) {
       parts.push('Last saved ' + fmtRelativeTime(syncState.lastSaved) + ' (' + fmtTime(syncState.lastSaved) + ')');

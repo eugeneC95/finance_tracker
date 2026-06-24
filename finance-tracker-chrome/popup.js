@@ -52,6 +52,61 @@ function fmt(n) {
   return cur + ' ' + Number(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const BANK_CURRENCIES = {
+  MYR: { symbol: 'RM',  label: 'MYR', decimals: 2 },
+  SGD: { symbol: 'SGD', label: 'SGD', decimals: 2 },
+  USD: { symbol: 'USD', label: 'USD', decimals: 2 },
+  JPY: { symbol: 'JPY', label: 'JPY', decimals: 0 },
+};
+
+function normalizeBankCurrency(c) {
+  const u = String(c || '').trim().toUpperCase();
+  if (u === 'RM') return 'MYR';
+  return BANK_CURRENCIES[u] ? u : 'MYR';
+}
+
+function defaultFxRates() {
+  return { MYR: 1, SGD: 3.10, USD: 4.50, JPY: 0.028 };
+}
+
+function ensureFxRates() {
+  if (!settings.fxRates || typeof settings.fxRates !== 'object') settings.fxRates = defaultFxRates();
+  else settings.fxRates = Object.assign({}, defaultFxRates(), settings.fxRates);
+  settings.fxRates.MYR = 1;
+}
+
+function fxRateToBase(currencyCode) {
+  ensureFxRates();
+  const code = normalizeBankCurrency(currencyCode);
+  if (code === 'MYR') return 1;
+  const rate = parseFloat(settings.fxRates[code]);
+  return (!isNaN(rate) && rate > 0) ? rate : (defaultFxRates()[code] || 1);
+}
+
+function fmtBankAmount(amount, currencyCode) {
+  const code = normalizeBankCurrency(currencyCode);
+  const info = BANK_CURRENCIES[code] || BANK_CURRENCIES.MYR;
+  const decimals = info.decimals != null ? info.decimals : 2;
+  return info.symbol + ' ' + Number(amount).toLocaleString('en-MY', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function bankBalanceInBase(bank) {
+  return (Number(bank && bank.balance) || 0) * fxRateToBase(bank && bank.currency);
+}
+
+function totalBanksBase() {
+  return banks.reduce((a, b) => a + bankBalanceInBase(b), 0);
+}
+
+function normalizeBankRow(b) {
+  if (!b || typeof b !== 'object') return b;
+  b.currency = normalizeBankCurrency(b.currency);
+  return b;
+}
+
 function parseTxDate(dateStr) {
   if (dateStr === undefined || dateStr === null || dateStr === '') return null;
   const s = String(dateStr).trim();
@@ -87,7 +142,7 @@ function load() {
   chrome.storage.local.get([KEY_EXP, KEY_INC, KEY_BANKS, KEY_SETTINGS], r => {
     expenses = r[KEY_EXP]      || [];
     incomes  = r[KEY_INC]      || [];
-    banks    = r[KEY_BANKS]    || [];
+    banks    = (r[KEY_BANKS] || []).map(normalizeBankRow);
     if (r[KEY_SETTINGS]) settings = { ...settings, ...r[KEY_SETTINGS] };
     applySettings();
     render();
@@ -175,15 +230,17 @@ function deleteIncome(id) {
 function addBank() {
   const nEl = document.getElementById('bk-name');
   const aEl = document.getElementById('bk-acct');
+  const cEl = document.getElementById('bk-currency');
   const bEl = document.getElementById('bk-balance');
   const name    = nEl.value.trim();
   const acct    = aEl.value.trim();
+  const currency = normalizeBankCurrency(cEl ? cEl.value : 'MYR');
   const balance = parseFloat(bEl.value);
   let ok = true;
   if (!name)                          { shake(nEl); ok = false; }
   if (isNaN(balance) || balance < 0)  { shake(bEl); ok = false; }
   if (!ok) return;
-  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance });
+  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance, currency });
   saveBanks();
   nEl.value = ''; aEl.value = ''; bEl.value = '';
   render();
@@ -251,7 +308,7 @@ function render() {
   const totalExp   = me.reduce((a, e) => a + e.amount, 0);
   const todayExp   = expenses.filter(e => e.date === today).reduce((a, e) => a + e.amount, 0);
   const totalInc   = mi.reduce((a, i) => a + i.amount, 0);
-  const totalBanks = banks.reduce((a, b) => a + b.balance, 0);
+  const totalBanks = totalBanksBase();
   const net        = totalInc - totalExp;
 
   document.getElementById('month-label').textContent =
@@ -380,9 +437,9 @@ function renderAssets(totalBanks, totalInc, totalExp) {
         <div class="bank-ico">🏦</div>
         <div class="bank-info">
           <div class="bank-name">${escHtml(b.name)}</div>
-          <div class="bank-sub">${escHtml(b.acct)}</div>
+          <div class="bank-sub">${escHtml(b.acct)} · ${escHtml(normalizeBankCurrency(b.currency))}</div>
         </div>
-        <div class="bank-bal">${fmt(b.balance)}</div>
+        <div class="bank-bal">${fmtBankAmount(b.balance, b.currency)}</div>
         <button class="bank-del" data-id="${b.id}">×</button>`;
       bankListEl.appendChild(item);
     });

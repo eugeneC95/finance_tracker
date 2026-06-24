@@ -1,6 +1,6 @@
 Finance Tracker — living handoff (read/save to resume work)
 ===========================================================
-Last updated: 2026-05-20 (v85: roadmap batch - filters, insights, lock timeout, import dry-run)
+Last updated: 2026-06-24 (v100: roadmap polish — Home, Sheet catRules/savingsGoal, sync UI, petrol chart)
 
 <<<MEMO_AUTO_SUMMARY>>>
 Generated: 2026-05-14T16:32:54.765Z
@@ -65,7 +65,7 @@ RECENT PRODUCT (verified in repo; omit rumours)
 
 IMPORTANT IDS / HOOKS
 ---------------------
-- Pages: `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Expenses** includes **`#exp-daily-chart`** (daily spend line for visible month). **Assets** unit trusts: `#ut-root`, `#ut-summary-mv`, `#ut-chart`; storage `unit_trust_holdings_v1`, `unit_trust_nav_v1`. **Settings** Google sync: read-only **`#sync-url-display`**, `#sync-ping-btn`, `#sync-save-btn`, `#sync-load-btn`.
+- Pages: `page-home`, `page-expenses`, `page-income`, `page-assets`, `page-recurring`, `page-trends`, `page-settings`, `page-petrol`, `page-report`. **Home** (`#page-home`): `#home-today-net`, `#home-chips`, `#home-recurring`, `#home-budget-alerts`, `#home-checklist`. **Recurring**: `#rec-calendar`. **Petrol**: `#pt-eff-chart`.
 - Boot / readiness: `#ft-boot`, `#ft-boot-msg`, `ft-app-ready` (dispatched when app finished init).
 - Tab switch: `activateNavTab('expenses'|...)` in `app.js` (toggles `.active` on `#page-<tab>` and nav buttons).
 - Categories: `EXP_CAT_GROUPS` + `renderExpCatGrid` (and related) in `app.js`.
@@ -89,8 +89,33 @@ Open
 - After backend deploy, confirm Pages shows new `BUILD_VERSION` and SW picked up new `CACHE` (hard refresh / `nosw.html` if stuck). Bump: `node scripts/bump-build.mjs <n>`.
 - If save still fails on the website: check `localStorage` key `ft.lastSyncError`; redeploy `google-apps-script.js` so `save_chunk` is live. **Sync URL** is no longer user-editable — change **`APPS_SCRIPT_WEB_APP_URL`** in both `sync.js` files and ship a new build.
 
-ROADMAP (next suggestions)
---------------------------
+ROADMAP (11 suggestions — Jun 2026)
+------------------------------------
+P0 Data integrity & sync
+  [x] 1. Persist catRules + savingsGoal to Google Sheets (Apps Script v7: CatRules + SavingsGoal tabs)
+  [x] 2. Clearer sync status (learned-category count, API version, pending-queue message)
+  [~] 3. PWA ↔ extension parity — bump-build aligns versions; shared JS still duplicated (copy script TBD)
+
+P1 Product polish (shipped this batch)
+  [x] 4. Petrol efficiency chart (L/100 km, last 6 months, #pt-eff-chart)
+  [x] 5. Home tab (#page-home) — today net, month chips, recurring preview, budget alerts, checklist
+  [~] 6. Smarter statement import — TNG/UOB exist; Maybank/generic CSV still TODO
+  [x] 7. Recurring calendar (#rec-calendar on Recurring tab)
+  [x] 8. Budget monthly digest on Report (“Budget vs actual” section)
+
+P2 Reliability
+  [~] 9. Offline edit queue — syncPendingSave + “Changes queued” when Sheet load blocks save (full outbox TBD)
+  [x] 10. Automated tests — `node scripts/test-sync-merge.mjs`
+  [x] 11. Sheet version history reminder — Settings → About
+
+Deploy after pull
+-----------------
+1. `node scripts/bump-build.mjs 100` (or current BUILD_VERSION in index.html)
+2. Redeploy `google-apps-script.js` as **v7** (catRules + savingsGoal tabs)
+3. `node scripts/test-sync-merge.mjs` — quick merge regression check
+
+ROADMAP (legacy — completed)
+----------------------------
 Quick wins (1-3 sessions):
   [x] Undo action toast for deletes (expense/income/petrol/bank) with 5-8s restore window
   [x] Search filters in the top search sheet (type/category/date range/amount min-max)

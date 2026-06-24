@@ -241,6 +241,145 @@ function renderMonthChecklist(totalExp, totalInc) {
     '</div>';
 }
 
+function renderHomeDashboard() {
+  var today = todayStr();
+  var td = new Date();
+  var dateLbl = document.getElementById('home-date-label');
+  if (dateLbl) {
+    dateLbl.textContent = td.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  var todayExp = expenses.filter(function(e) { return e.date === today; }).reduce(function(a, e) { return a + e.amount; }, 0);
+  var todayInc = incomes.filter(function(i) { return i.date === today; }).reduce(function(a, i) { return a + i.amount; }, 0);
+  var todayNet = todayInc - todayExp;
+  var me = typeof mExp === 'function' ? mExp() : [];
+  var mi = typeof mInc === 'function' ? mInc() : [];
+  var monthExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var monthInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var monthNet = monthInc - monthExp;
+
+  var netEl = document.getElementById('home-today-net');
+  if (netEl) {
+    netEl.textContent = (todayNet >= 0 ? '+' : '\u2212') + fmt(Math.abs(todayNet));
+    netEl.className = 'ft-page-hero__value ' + (todayNet >= 0 ? 'green' : 'red');
+  }
+  var subEl = document.getElementById('home-today-sub');
+  if (subEl) {
+    subEl.textContent = 'Today: ' + fmt(todayExp) + ' spent · ' + fmt(todayInc) + ' income · Month net ' + fmt(monthNet);
+  }
+  var chips = document.getElementById('home-chips');
+  if (chips) {
+    var bankTotal = typeof totalBanksBase === 'function' ? totalBanksBase() : banks.reduce(function(a, b) { return a + (Number(b.balance) || 0); }, 0);
+    chips.innerHTML =
+      '<div class="ft-chip"><span>Month spend</span><strong class="red">' + fmt(monthExp) + '</strong></div>' +
+      '<div class="ft-chip"><span>Month income</span><strong class="green">' + fmt(monthInc) + '</strong></div>' +
+      '<div class="ft-chip"><span>Banks</span><strong class="green">' + fmt(bankTotal) + '</strong></div>';
+  }
+
+  var recBox = document.getElementById('home-recurring');
+  if (recBox) {
+    var now = new Date();
+    var preview = [];
+    (recurring || []).forEach(function(r) {
+      if (!r || !r.active) return;
+      var d = new Date(now.getFullYear(), now.getMonth(), 1);
+      for (var i = 0; i < 2; i++) {
+        var y = d.getFullYear();
+        var m = d.getMonth();
+        var lastDay = new Date(y, m + 1, 0).getDate();
+        var fire = r.day === 'last' ? lastDay : Math.min(Number(r.day) || 1, lastDay);
+        var when = new Date(y, m, fire);
+        if (when >= now && (when - now) <= 30 * 86400000) {
+          preview.push({ date: when, amount: Number(r.amount) || 0, type: r.type, name: r.name || '' });
+        }
+        d = new Date(y, m + 1, 1);
+      }
+    });
+    if (!preview.length) {
+      recBox.hidden = true;
+    } else {
+      preview.sort(function(a, b) { return a.date - b.date; });
+      recBox.hidden = false;
+      recBox.innerHTML =
+        '<div class="panel-hd"><span class="panel-title">Upcoming recurring (30 days)</span></div>' +
+        '<div class="panel-bd">' +
+        preview.slice(0, 6).map(function(p) {
+          return '<div class="report-row"><span class="rr-label">' + esc(p.name) + ' · ' +
+            p.date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) + '</span>' +
+            '<span class="rr-val ' + (p.type === 'inc' ? 'green' : 'red') + '">' +
+            (p.type === 'inc' ? '+' : '') + fmt(p.amount) + '</span></div>';
+        }).join('') +
+        '</div>';
+    }
+  }
+
+  var budBox = document.getElementById('home-budget-alerts');
+  if (budBox && typeof budgets !== 'undefined') {
+    var alerts = [];
+    var catTotals = {};
+    me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+    Object.keys(budgets || {}).forEach(function(cat) {
+      var limit = budgets[cat];
+      var spent = catTotals[cat] || 0;
+      if (limit > 0 && spent >= limit * 0.75) {
+        var over = spent > limit;
+        alerts.push(esc(cat) + ': ' + fmt(spent) + ' / ' + fmt(limit) + (over ? ' (over)' : ' (near limit)'));
+      }
+    });
+    if (!alerts.length) {
+      budBox.hidden = true;
+    } else {
+      budBox.hidden = false;
+      budBox.innerHTML =
+        '<div class="panel-hd"><span class="panel-title">Budget alerts</span></div>' +
+        '<div class="panel-bd"><div class="ft-note">' + alerts.join(' · ') + '</div></div>';
+    }
+  }
+
+  var check = document.getElementById('home-checklist');
+  if (check) {
+    renderMonthChecklist(monthExp, monthInc);
+    var tw = document.getElementById('today-widget');
+    if (tw && !tw.hidden) {
+      check.innerHTML = tw.innerHTML;
+      tw.hidden = true;
+    }
+  }
+}
+
+function renderRecurringCalendar() {
+  var el = document.getElementById('rec-calendar');
+  if (!el) return;
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = now.getMonth();
+  var firstDow = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+  var marks = {};
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var fire = r.day === 'last' ? daysInMonth : Math.min(Number(r.day) || 1, daysInMonth);
+    if (!marks[fire]) marks[fire] = [];
+    marks[fire].push(r);
+  });
+  var monthLbl = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var hdr = '<div class="rec-cal__title">' + esc(monthLbl) + '</div>';
+  var grid = '<div class="rec-cal__grid">';
+  ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(function(d) {
+    grid += '<div class="rec-cal__dow">' + d + '</div>';
+  });
+  for (var pad = 0; pad < firstDow; pad++) grid += '<div class="rec-cal__day rec-cal__day--pad"></div>';
+  for (var day = 1; day <= daysInMonth; day++) {
+    var cls = 'rec-cal__day';
+    if (day === now.getDate()) cls += ' rec-cal__day--today';
+    if (marks[day]) cls += ' rec-cal__day--mark';
+    var tip = marks[day] ? marks[day].map(function(r) { return r.name; }).join(', ') : '';
+    grid += '<div class="' + cls + '" title="' + esc(tip) + '">' + day +
+      (marks[day] ? '<span class="rec-cal__dot"></span>' : '') + '</div>';
+  }
+  grid += '</div>';
+  el.innerHTML = hdr + grid;
+}
+
 // ╔══════════════════════════════════════════════════════════╗
 //   BUDGET TARGETS
 // ╚══════════════════════════════════════════════════════════╝
@@ -702,6 +841,7 @@ function addRecurring() {
 }
 
 function renderRecurring() {
+  renderRecurringCalendar();
   var el = document.getElementById('rec-list');
   if (!el) return;
   el.innerHTML = '';
@@ -828,7 +968,9 @@ function renderRecurring() {
 //   NET WORTH SNAPSHOT
 // ╚══════════════════════════════════════════════════════════╝
 function snapshotNetWorth() {
-  var total = banks.reduce(function(a,b){ return a+b.balance; }, 0);
+  var total = (typeof totalBanksBase === 'function')
+    ? totalBanksBase()
+    : banks.reduce(function(a,b){ return a+b.balance; }, 0);
   var today = todayStr();
   var ex    = networthHist.find(function(h){ return h.date===today; });
   if (ex) ex.total = total;

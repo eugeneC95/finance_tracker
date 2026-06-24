@@ -2242,6 +2242,56 @@ body.dark #page-settings .src-card.active {
   border-bottom: 1px solid var(--line);
 }
 .setting-row:last-child { border-bottom: none; }
+.setting-row--stack { flex-direction: column; align-items: stretch; gap: 8px; }
+.fx-rates-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.fx-rates-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--f-xs);
+  font-weight: 600;
+  color: var(--c-muted);
+}
+.rec-cal__title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-size: var(--f-md);
+}
+.rec-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+  font-size: var(--f-xs);
+}
+.rec-cal__dow {
+  font-weight: 700;
+  color: var(--ink3);
+  padding: 4px 0;
+}
+.rec-cal__day {
+  position: relative;
+  padding: 6px 2px;
+  border-radius: 8px;
+  background: var(--card-bg2);
+  min-height: 32px;
+}
+.rec-cal__day--pad { background: transparent; }
+.rec-cal__day--today { outline: 2px solid var(--blue); font-weight: 700; }
+.rec-cal__day--mark { background: rgba(55, 138, 221, .12); }
+.rec-cal__dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+  margin: 2px auto 0;
+}
 .s-lbl { font-size: var(--f-md); font-weight: 500; }
 .s-sub { font-size: var(--f-xs); color: var(--ink3); margin-top: 2px; }
 
@@ -3742,7 +3792,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v99 · 2026-05-29 16:01';
+  var BUILD_VERSION    = 'v101 · 2026-06-24 18:36';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -3863,7 +3913,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
   <nav class="sb-nav">
     <p class="nav-section-label" role="presentation">Money</p>
-    <button class="nav-item active" data-tab="expenses">
+    <button class="nav-item active" data-tab="home">
+      <span class="icon">🏠</span> Home
+    </button>
+    <button class="nav-item" data-tab="expenses">
       <span class="icon">💸</span> Expenses
     </button>
     <button class="nav-item" data-tab="income">
@@ -3916,8 +3969,31 @@ body.dark .ft-fab { background: #fff; color: #000; }
     <button class="month-arrow" id="next-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">›</button>
   </div>
 
+  <!-- ── HOME ── -->
+  <div class="page active" id="page-home">
+    <div class="page-header">
+      <h2>Home</h2>
+      <p class="sub">Today at a glance — spending, upcoming bills, and budget alerts.</p>
+    </div>
+    <div class="page-body">
+      <section class="card ft-page-hero home-hero" aria-label="Today summary">
+        <div class="ft-page-hero__row">
+          <div class="ft-page-hero__main">
+            <div class="ft-page-hero__label" id="home-date-label">Today</div>
+            <div class="ft-page-hero__value" id="home-today-net">RM 0</div>
+            <p class="ft-note" id="home-today-sub"></p>
+          </div>
+          <div class="ft-page-hero__chips" id="home-chips"></div>
+        </div>
+      </section>
+      <div id="home-recurring" class="card mb-5" hidden></div>
+      <div id="home-budget-alerts" class="card mb-5" hidden></div>
+      <div id="home-checklist" class="card mb-5"></div>
+    </div>
+  </div>
+
   <!-- ── EXPENSES ── -->
-  <div class="page active" id="page-expenses">
+  <div class="page" id="page-expenses">
     <div class="page-header">
       <div class="page-header__top">
         <div>
@@ -4222,7 +4298,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="assets-acct-list" id="bank-list"></div>
             <form class="assets-form" id="bank-add-form" autocomplete="off" onsubmit="return false">
               <div class="assets-form__title">Add account</div>
-              <div class="assets-form-grid assets-form-grid--3">
+              <div class="assets-form-grid assets-form-grid--4">
                 <div>
                   <label class="lbl" for="bk-name">Bank</label>
                   <input type="text" id="bk-name" placeholder="e.g. Maybank" maxlength="24"/>
@@ -4232,7 +4308,16 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   <input type="text" id="bk-acct" placeholder="e.g. Savings" maxlength="24"/>
                 </div>
                 <div>
-                  <label class="lbl" for="bk-balance">Balance (RM)</label>
+                  <label class="lbl" for="bk-currency">Currency</label>
+                  <select id="bk-currency" class="be-curr">
+                    <option value="MYR">MYR (RM)</option>
+                    <option value="SGD">SGD</option>
+                    <option value="USD">USD</option>
+                    <option value="JPY">JPY</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl" for="bk-balance">Balance</label>
                   <input type="number" id="bk-balance" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
                 </div>
               </div>
@@ -4381,6 +4466,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
       </div>
 
       <div class="card">
+        <div class="panel-hd"><span class="panel-title">This month calendar</span></div>
+        <div class="panel-bd">
+          <div id="rec-calendar" class="rec-cal"></div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="panel-hd"><span class="panel-title">Active recurring entries</span></div>
         <div class="panel-bd">
           <div id="rec-list"></div>
@@ -4470,6 +4562,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="ft-chip"><span>Expenses</span><strong id="settings-count-exp">0</strong></div>
             <div class="ft-chip"><span>Income</span><strong id="settings-count-inc">0</strong></div>
             <div class="ft-chip"><span>Banks</span><strong id="settings-count-bank">0</strong></div>
+            <div class="ft-chip"><span>Learned</span><strong id="settings-count-rules">0</strong></div>
             <div class="ft-chip"><span>Build</span><strong id="settings-build-chip" style="font-size:12px">—</strong></div>
           </div>
         </section>
@@ -4534,6 +4627,17 @@ body.dark .ft-fab { background: #fff; color: #000; }
               <div class="setting-row">
                 <div><div class="s-lbl">Currency symbol</div></div>
                 <input type="text" id="set-currency" class="cur-input" maxlength="6" placeholder="RM"/>
+              </div>
+              <div class="setting-row setting-row--stack">
+                <div>
+                  <div class="s-lbl">Exchange rates</div>
+                  <div class="s-sub" id="set-fx-sub">1 foreign unit → RM (for net assets total)</div>
+                </div>
+                <div class="fx-rates-grid">
+                  <label>SGD <input type="number" id="set-fx-sgd" class="cur-input" min="0" step="0.0001" inputmode="decimal"/></label>
+                  <label>USD <input type="number" id="set-fx-usd" class="cur-input" min="0" step="0.0001" inputmode="decimal"/></label>
+                  <label>JPY <input type="number" id="set-fx-jpy" class="cur-input" min="0" step="0.0001" inputmode="decimal"/></label>
+                </div>
               </div>
               <div class="setting-row">
                 <div><div class="s-lbl">Lock timeout</div><div class="s-sub">Re-enter PIN after inactivity</div></div>
@@ -4733,7 +4837,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v99 · 2026-05-29 16:01</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v101 · 2026-06-24 18:36</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -4753,6 +4857,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 <button class="btn-ghost" id="ft-reset-pin-btn" title="Require PIN again after reload. Does not delete data.">🔒 Lock app now</button>
               </div>
               <p class="ft-note" style="margin-top:8px">Lock app now ends this unlocked session — you will enter your PIN again after reload.</p>
+              <p class="ft-note" style="margin-top:12px"><strong>Recover data on Google Sheets:</strong> if sync ever removes rows, open your Sheet → <strong>File → Version history</strong> → restore a snapshot from before the problem.</p>
               <div id="ft-force-refresh-status" style="margin-top:4px;font-size:var(--f-xs);color:var(--ink3)"></div>
             </div>
           </div>
@@ -4785,6 +4890,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
         </div>
       </section>
+
+      <div class="card mb-5 pt-eff-card">
+        <div class="panel-hd"><span class="panel-title">Efficiency trend (L/100 km)</span></div>
+        <div class="panel-bd">
+          <div id="pt-eff-chart"></div>
+          <p class="ft-note" style="margin-top:8px">Last 6 months with odometer readings.</p>
+        </div>
+      </div>
 
       <div class="card mb-5 pt-form-card">
         <div class="panel-hd"><span class="panel-title">New fill-up</span></div>
@@ -4978,13 +5091,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v99 · 2026-05-29 16:01</div>
-<script src="build-id.js?v=99"></script>
-<script src="app.js?v=99"></script>
-<script src="sync.js?v=99"></script>
-<script src="features.js?v=99"></script>
-<script src="extras.js?v=99"></script>
-<script src="import-inline.js?v=99"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v101 · 2026-06-24 18:36</div>
+<script src="build-id.js?v=101"></script>
+<script src="app.js?v=101"></script>
+<script src="sync.js?v=101"></script>
+<script src="features.js?v=101"></script>
+<script src="extras.js?v=101"></script>
+<script src="import-inline.js?v=101"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

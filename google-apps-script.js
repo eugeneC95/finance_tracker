@@ -1,15 +1,15 @@
 // ============================================================
-//  Finance Tracker — Google Apps Script Backend v6 (merge-on-save)
+//  Finance Tracker — Google Apps Script Backend v7 (merge-on-save + catRules/savingsGoal)
 //
 //  WEB APP (already in sync.js — do not change unless you create a new deployment):
-//  https://script.google.com/macros/s/AKfycbwMINlMl0jg-dyDEnlkE4bv_IEMn9u_hYGwQo_UUd86IpPTw0W706fPKl3wJtKqu9NK/exec
+//  https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec
 //
 //  UPDATE LIVE SCRIPT (required after editing this file):
 //  1. script.google.com → open the project for the URL above
 //  2. Replace all code with this file → Save
 //  3. Deploy → Manage deployments → Edit (pencil) on the Web app
 //  4. Version: New version → Deploy (same /exec URL)
-//  5. Verify: node scripts/verify-apps-script.mjs  →  apiVersion 6
+//  5. Verify: node scripts/verify-apps-script.mjs  →  apiVersion 7
 //
 //  See scripts/APPS_SCRIPT_DEPLOY.md in the repo for full steps.
 // ============================================================
@@ -100,7 +100,7 @@ function handleSaveChunk_(e) {
           }
         }
         if (allGone) {
-          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 6 };
+          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 7 };
         }
         return { ok: true, partial: true, need: i };
       }
@@ -113,7 +113,7 @@ function handleSaveChunk_(e) {
       cache.remove(keyPrefix + i);
     }
     saveAllData(payload);
-    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 6 };
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 7 };
   } catch (err) {
     return { ok: false, error: err.toString() };
   } finally {
@@ -130,7 +130,7 @@ function doGet(e) {
       result = {
         ok: true,
         message: 'Finance Tracker connected successfully',
-        apiVersion: 6,
+        apiVersion: 7,
       };
 
     } else if (action === 'save') {
@@ -142,7 +142,7 @@ function doGet(e) {
         // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
         var payload = JSON.parse(raw);
         saveAllData(payload);
-        result = { ok: true, saved: new Date().toISOString(), apiVersion: 6 };
+        result = { ok: true, saved: new Date().toISOString(), apiVersion: 7 };
       }
 
     } else if (action === 'save_chunk') {
@@ -173,7 +173,7 @@ function doPost(e) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);
       return ContentService
-        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 6 }))
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 7 }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (err) {
@@ -185,7 +185,45 @@ function doPost(e) {
 }
 
 // ── Save all data tabs (merge with existing Sheet rows — never wipe missing months) ──
-var API_VERSION = 6;
+var API_VERSION = 7;
+
+function catRulesToRows(obj) {
+  return Object.keys(obj || {}).sort().map(function(k) {
+    return { key: k, cat: obj[k] };
+  });
+}
+
+function rowsToCatRules(rows) {
+  var o = {};
+  (rows || []).forEach(function(r) {
+    if (r && r.key != null && String(r.key) !== '') o[String(r.key)] = String(r.cat || '');
+  });
+  return o;
+}
+
+function mergeCatRulesRows_(incoming, existing) {
+  var map = {};
+  (existing || []).forEach(function(r) {
+    if (r && r.key != null) map[String(r.key)] = r;
+  });
+  (incoming || []).forEach(function(r) {
+    if (r && r.key != null) map[String(r.key)] = r;
+  });
+  return Object.keys(map).map(function(k) { return map[k]; });
+}
+
+function savingsGoalToRows(g) {
+  if (!g || !g.target) return [];
+  return [{ target: g.target, byDate: g.byDate || '', startDate: g.startDate || '' }];
+}
+
+function rowsToSavingsGoal(rows) {
+  if (!rows || !rows.length) return null;
+  var r = rows[0];
+  var t = parseFloat(r.target);
+  if (isNaN(t) || t <= 0) return null;
+  return { target: t, byDate: String(r.byDate || ''), startDate: String(r.startDate || '') };
+}
 
 function normalizeRowId_(raw) {
   if (raw === undefined || raw === null || raw === '') return null;
@@ -286,7 +324,7 @@ function writeTabMerged_(tabName, incomingRows, cols, dateCol) {
 function saveAllData(payload) {
   writeTabMerged_('Expenses', payload.expenses || [], ['id','name','amount','cat','date','note','auto'], 'date');
   writeTabMerged_('Income', payload.incomes || [], ['id','name','amount','cat','date','note','auto'], 'date');
-  writeTabMerged_('Banks', payload.banks || [], ['id','name','acct','balance'], null);
+  writeTabMerged_('Banks', payload.banks || [], ['id','name','acct','balance','currency'], null);
   writeTabMerged_('Recurring', payload.recurring || [], ['id','name','amount','type','cat','day','active','lastApplied'], null);
   writeTabMerged_('Petrol', payload.petrolLog || [], ['id','station','litres','ppl','odo','date','total'], 'date');
   writeTabMerged_('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','units','totalCost','purchaseDate','notes'], null);
@@ -307,6 +345,18 @@ function saveAllData(payload) {
   } else {
     Object.keys(incBud).forEach(function(k) { mergedBudObj[k] = incBud[k]; });
     writeTab('Budgets', budgetsToRows(mergedBudObj), ['cat','amount']);
+  }
+
+  var existingCR = readTab('CatRules');
+  var mergedCR = mergeCatRulesRows_(catRulesToRows(payload.catRules || {}), existingCR);
+  writeTab('CatRules', mergedCR, ['key', 'cat']);
+
+  var sgRows = savingsGoalToRows(payload.savingsGoal);
+  var existingSG = readTab('SavingsGoal');
+  if (!sgRows.length && existingSG.length) {
+    writeTab('SavingsGoal', existingSG, ['target', 'byDate', 'startDate']);
+  } else {
+    writeTab('SavingsGoal', sgRows, ['target', 'byDate', 'startDate']);
   }
 
   var meta = getOrCreateSheet('_Meta');
@@ -342,6 +392,8 @@ function loadAllData() {
     banks:        readTab('Banks'),
     recurring:    readTab('Recurring'),
     budgets:      rowsToBudgets(readTab('Budgets')),
+    catRules:     rowsToCatRules(readTab('CatRules')),
+    savingsGoal:  rowsToSavingsGoal(readTab('SavingsGoal')),
     petrolLog:    readTab('Petrol'),
     networthHist: readTab('NetWorth'),
     unitTrustHoldings: readTab('UTHoldings'),
