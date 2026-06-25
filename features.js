@@ -422,27 +422,64 @@ function renderHomeDashboard() {
 
   var insEl = document.getElementById('home-insights');
   if (insEl) {
-    var lines = [];
+    var cards = [];
+    function insightCard(icon, label, value, tone, note) {
+      return (
+        '<div class="home-insight-card ' + (tone || '') + '">' +
+        '<div class="home-insight-card__icon">' + icon + '</div>' +
+        '<div class="home-insight-card__body">' +
+        '<div class="home-insight-card__label">' + esc(label) + '</div>' +
+        '<div class="home-insight-card__value">' + esc(value) + '</div>' +
+        (note ? '<div class="home-insight-card__note">' + esc(note) + '</div>' : '') +
+        '</div></div>'
+      );
+    }
     if (prvExp > 0) {
       var expDelta = Math.round(((monthExp - prvExp) / prvExp) * 100);
-      lines.push('Spend ' + (expDelta >= 0 ? '\u2191' : '\u2193') + ' ' + Math.abs(expDelta) + '% vs last month');
+      cards.push(insightCard(
+        expDelta >= 0 ? '\u{1F4C8}' : '\u{1F4C9}',
+        'Spending trend',
+        (expDelta >= 0 ? 'Up ' : 'Down ') + Math.abs(expDelta) + '%',
+        expDelta >= 0 ? 'warn' : 'good',
+        'Compared to last month'
+      ));
     }
     if (prvInc > 0) {
       var incDelta = Math.round(((monthInc - prvInc) / prvInc) * 100);
-      lines.push('Income ' + (incDelta >= 0 ? '\u2191' : '\u2193') + ' ' + Math.abs(incDelta) + '% vs last month');
+      cards.push(insightCard(
+        incDelta >= 0 ? '\u{1F4BC}' : '\u{1F9FE}',
+        'Income trend',
+        (incDelta >= 0 ? 'Up ' : 'Down ') + Math.abs(incDelta) + '%',
+        incDelta >= 0 ? 'good' : 'warn',
+        'Compared to last month'
+      ));
     }
     var savRate = monthInc > 0 ? Math.round((monthNet / monthInc) * 100) : null;
-    if (savRate != null) lines.push('Savings rate ' + savRate + '% this month');
+    if (savRate != null) {
+      cards.push(insightCard(
+        '\u{1F3AF}',
+        'Savings rate',
+        savRate + '%',
+        savRate >= 20 ? 'good' : (savRate < 0 ? 'bad' : ''),
+        'This month'
+      ));
+    }
     if (typeof petrolLog !== 'undefined' && petrolLog.length) {
       var ym = curYM;
       var pt = petrolLog.filter(function(p) { return p.date && String(p.date).indexOf(ym) === 0; });
       if (pt.length) {
         var ptSum = pt.reduce(function(a, p) { return a + (Number(p.total) || 0); }, 0);
-        lines.push('Petrol ' + fmt(ptSum) + ' (' + pt.length + ' fill-up' + (pt.length === 1 ? '' : 's') + ')');
+        cards.push(insightCard(
+          '\u26FD',
+          'Petrol spend',
+          fmt(ptSum),
+          '',
+          pt.length + ' fill-up' + (pt.length === 1 ? '' : 's') + ' this month'
+        ));
       }
     }
-    insEl.innerHTML = homePanel_('Insights', lines.length
-      ? '<ul class="ft-note" style="margin:0;padding-left:18px;line-height:1.6">' + lines.map(function(l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>'
+    insEl.innerHTML = homePanel_('Insights', cards.length
+      ? '<div class="home-insights-grid">' + cards.join('') + '</div>'
       : homeEmpty_('\u{1F4A1}', 'Add a few weeks of data for month-over-month insights.'));
   }
 

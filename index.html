@@ -2489,6 +2489,65 @@ body.dark .home-stat { background: rgba(255,255,255,.04); }
   overflow: hidden;
 }
 .home-cat-row__fill { height: 100%; border-radius: 999px; }
+.home-insights-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .home-insights-grid { grid-template-columns: 1fr 1fr; }
+}
+.home-insight-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--card-bg2);
+}
+body.dark .home-insight-card { background: rgba(255,255,255,.03); }
+.home-insight-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  background: rgba(55,138,221,.14);
+  flex-shrink: 0;
+}
+.home-insight-card.good .home-insight-card__icon {
+  background: rgba(26,158,110,.16);
+}
+.home-insight-card.warn .home-insight-card__icon {
+  background: rgba(186,117,23,.16);
+}
+.home-insight-card.bad .home-insight-card__icon {
+  background: rgba(206,59,91,.16);
+}
+.home-insight-card__body { min-width: 0; }
+.home-insight-card__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  font-weight: 700;
+}
+.home-insight-card__value {
+  margin-top: 2px;
+  font-size: var(--f-md);
+  font-weight: 800;
+}
+.home-insight-card.good .home-insight-card__value { color: var(--green); }
+.home-insight-card.warn .home-insight-card__value { color: #BA7517; }
+.home-insight-card.bad .home-insight-card__value { color: var(--red); }
+.home-insight-card__note {
+  margin-top: 2px;
+  font-size: var(--f-xs);
+  color: var(--ink3);
+}
 .home-empty {
   text-align: center;
   padding: 20px 12px;
@@ -3996,7 +4055,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v102 · 2026-06-25 16:47';
+  var BUILD_VERSION    = 'v103 · 2026-06-25 16:58';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -5062,7 +5121,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v102 · 2026-06-25 16:47</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v103 · 2026-06-25 16:58</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5316,13 +5375,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v102 · 2026-06-25 16:47</div>
-<script src="build-id.js?v=102"></script>
-<script src="app.js?v=102"></script>
-<script src="sync.js?v=102"></script>
-<script src="features.js?v=102"></script>
-<script src="extras.js?v=102"></script>
-<script src="import-inline.js?v=102"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v103 · 2026-06-25 16:58</div>
+<script src="build-id.js?v=103"></script>
+<script src="app.js?v=103"></script>
+<script src="sync.js?v=103"></script>
+<script src="features.js?v=103"></script>
+<script src="extras.js?v=103"></script>
+<script src="import-inline.js?v=103"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
