@@ -1105,6 +1105,51 @@ function addExpense() {
   render();
 }
 
+function parseSplitSpec(spec) {
+  return String(spec || '')
+    .split(',')
+    .map(function(part) { return part.trim(); })
+    .filter(Boolean)
+    .map(function(part) {
+      var m = part.match(/^(.+?)\s*[:=]\s*([0-9]+(?:\.[0-9]{1,2})?)$/);
+      if (!m) return null;
+      return { cat: m[1].trim(), amount: parseFloat(m[2]) };
+    })
+    .filter(function(x) { return x && EXP_CATS[x.cat] && x.amount > 0; });
+}
+
+function addSplitExpense() {
+  var nEl = document.getElementById('exp-name');
+  var dEl = document.getElementById('exp-date');
+  var name = nEl ? nEl.value.trim() : '';
+  var date = dEl && dEl.value ? dEl.value : todayStr();
+  if (!name) { if (nEl) shake(nEl); return; }
+  var spec = prompt('Split format: Category:Amount, Category:Amount\nExample: Groceries:80, Household:25');
+  if (!spec) return;
+  var rows = parseSplitSpec(spec);
+  if (!rows.length) {
+    showToast('Invalid split format');
+    return;
+  }
+  var group = 'split-' + Date.now();
+  rows.forEach(function(r) {
+    expenses.push({
+      id: Date.now() + Math.random(),
+      name: name + ' (split)',
+      amount: r.amount,
+      cat: r.cat,
+      date: date,
+      note: 'Split group ' + group,
+    });
+  });
+  saveExp();
+  if (nEl) nEl.value = '';
+  var aEl = document.getElementById('exp-amount');
+  if (aEl) aEl.value = '';
+  render();
+  showToast('Added split expense (' + rows.length + ' parts)');
+}
+
 function repeatLastExpense() {
   if (!lastExpenseTpl) {
     showToast('No recent expense to repeat');
@@ -2581,6 +2626,17 @@ bindClick('next-month', () => {
 
 // ── Action buttons ─────────────────────────────────────────
 bindClick('add-exp-btn', addExpense);
+var addExpBtn = document.getElementById('add-exp-btn');
+if (addExpBtn && !document.getElementById('add-exp-split-btn')) {
+  var splitBtn = document.createElement('button');
+  splitBtn.type = 'button';
+  splitBtn.className = 'btn-ghost';
+  splitBtn.id = 'add-exp-split-btn';
+  splitBtn.textContent = 'Split';
+  splitBtn.title = 'Split one receipt into multiple categories';
+  splitBtn.addEventListener('click', addSplitExpense);
+  addExpBtn.parentElement && addExpBtn.parentElement.appendChild(splitBtn);
+}
 bindClick('add-inc-btn', addIncome);
 bindClick('add-bank-btn', addBank);
 bindClick('export-btn', exportData);

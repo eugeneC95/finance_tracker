@@ -9,6 +9,7 @@ const KEY_BUD      = 'budgets_v1';
 const KEY_LAST_CAT = 'lastcat_v1';
 const KEY_CAT_RULES = 'cat_rules_v1';
 const KEY_SAVGOAL  = 'savings_goal_v1';
+const KEY_BUD_ROLL = 'budget_rollover_v1';
 
 // ╔══════════════════════════════════════════════════════════╗
 //   STATE (shared with app.js via globals)
@@ -16,6 +17,7 @@ const KEY_SAVGOAL  = 'savings_goal_v1';
 var recurring    = [];   // [{id,name,amount,type,cat,day,active,lastApplied}]
 var networthHist = [];   // [{date,total}]
 var budgets      = {};   // {catName: amount}
+var budgetRollover = {}; // {catName: true|false}
 var catRules     = {};   // normalized merchant key -> category name
 var savingsGoal  = null; // { target, byDate, startDate }
 var selectedTrendYm = null;
@@ -36,11 +38,12 @@ function loadFeatures() {
     return;
   }
   var gen = typeof _storageReadGen !== 'undefined' ? _storageReadGen : 0;
-  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES, KEY_SAVGOAL], function(r) {
+  chromeStorage.local.get([KEY_REC, KEY_NWH, KEY_BUD, KEY_LAST_CAT, KEY_CAT_RULES, KEY_SAVGOAL, KEY_BUD_ROLL], function(r) {
     if (typeof _storageReadGen !== 'undefined' && gen !== _storageReadGen) return;
     recurring    = r[KEY_REC]      || [];
     networthHist = r[KEY_NWH]      || [];
     budgets      = r[KEY_BUD]      || {};
+    budgetRollover = r[KEY_BUD_ROLL] || {};
     catRules     = r[KEY_CAT_RULES] || {};
     savingsGoal  = r[KEY_SAVGOAL] || null;
 
@@ -56,6 +59,7 @@ function loadFeatures() {
     renderRecurring();
     renderBudgets();
     renderSavingsGoal();
+    maybeNotifyUpcomingRecurring_();
     if (changed) render();
   });
 }
@@ -63,6 +67,7 @@ function loadFeatures() {
 function saveRec()  { chromeStorage.local.set({[KEY_REC]:  recurring}); }
 function saveNWH()  { chromeStorage.local.set({[KEY_NWH]:  networthHist}); }
 function saveBud()  { chromeStorage.local.set({[KEY_BUD]:  budgets}); }
+function saveBudRoll() { chromeStorage.local.set({ [KEY_BUD_ROLL]: budgetRollover }); }
 function saveSavGoal() { chromeStorage.local.set({ [KEY_SAVGOAL]: savingsGoal }); }
 function saveCatRules() { chromeStorage.local.set({ [KEY_CAT_RULES]: catRules }); }
 
@@ -254,6 +259,37 @@ function homePanel_(title, bodyHtml) {
 
 function homeEmpty_(icon, msg) {
   return '<div class="home-empty"><div class="home-empty__ico">' + icon + '</div>' + esc(msg) + '</div>';
+}
+
+function anomalyInsightLines_(ym, vm) {
+  var lines = [];
+  Object.keys(EXP_CATS || {}).forEach(function(cat) {
+    var cur = expenses.filter(function(e) { return e.cat === cat && String(e.date || '').indexOf(ym) === 0; })
+      .reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+    if (cur <= 0) return;
+    var hist = [];
+    for (var i = 1; i <= 3; i++) {
+      var d = new Date(vm.getFullYear(), vm.getMonth() - i, 1);
+      var ymPast = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      var past = expenses.filter(function(e) { return e.cat === cat && String(e.date || '').indexOf(ymPast) === 0; })
+        .reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+      if (past > 0) hist.push(past);
+    }
+    if (!hist.length) return;
+    var avg = hist.reduce(function(a, v) { return a + v; }, 0) / hist.length;
+    if (avg <= 0) return;
+    var ratio = cur / avg;
+    if (ratio >= 1.8) {
+      var info = EXP_CATS[cat] || { icon: '\u{1F4E6}' };
+      lines.push({
+        icon: '\u{1F6A8}',
+        label: 'Unusual spending',
+        value: info.icon + ' ' + cat + ' +' + Math.round((ratio - 1) * 100) + '%',
+        note: 'Vs your 3-month average'
+      });
+    }
+  });
+  return lines.slice(0, 2);
 }
 
 function renderHomeDashboard() {
@@ -478,6 +514,9 @@ function renderHomeDashboard() {
         ));
       }
     }
+    anomalyInsightLines_(curYM, vm).forEach(function(a) {
+      cards.push(insightCard(a.icon, a.label, a.value, 'warn', a.note));
+    });
     insEl.innerHTML = homePanel_('Insights', cards.length
       ? '<div class="home-insights-grid">' + cards.join('') + '</div>'
       : homeEmpty_('\u{1F4A1}', 'Add a few weeks of data for month-over-month insights.'));
@@ -545,7 +584,8 @@ function renderHomeDashboard() {
       budBox.innerHTML = homePanel_('Budgets', homeEmpty_('\u{1F4B0}', 'Set category budgets on the Expenses tab.'));
     } else {
       var rows = bkeys.map(function(cat) {
-        var limit = budgets[cat];
+        var baseLimit = Number(budgets[cat]) || 0;
+        var limit = baseLimit + budgetCarryFromPrevMonth(cat, baseLimit);
         var spent = catTotalsB[cat] || 0;
         var pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
         var over = spent > limit;
@@ -628,6 +668,20 @@ function renderRecurringCalendar() {
 // ╔══════════════════════════════════════════════════════════╗
 //   BUDGET TARGETS
 // ╚══════════════════════════════════════════════════════════╝
+function budgetCarryFromPrevMonth(cat, limit) {
+  if (!budgetRollover || !budgetRollover[cat]) return 0;
+  var vm = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+  var prv = new Date(vm.getFullYear(), vm.getMonth() - 1, 1);
+  var ym = prv.getFullYear() + '-' + String(prv.getMonth() + 1).padStart(2, '0');
+  var spent = expenses.filter(function(e) {
+    return e.cat === cat && String(e.date || '').indexOf(ym) === 0;
+  }).reduce(function(a, e) {
+    return a + (Number(e.amount) || 0);
+  }, 0);
+  var unused = (Number(limit) || 0) - spent;
+  return unused > 0 ? Number(unused.toFixed(2)) : 0;
+}
+
 function renderExpBudgetChips() {
   var wrap = document.getElementById('exp-budget-chips');
   if (!wrap) return;
@@ -646,7 +700,8 @@ function renderExpBudgetChips() {
   });
   var chips = [];
   keys.forEach(function(cat) {
-    var limit = budgets[cat];
+    var baseLimit = Number(budgets[cat]) || 0;
+    var limit = baseLimit + budgetCarryFromPrevMonth(cat, baseLimit);
     var spent = catTotals[cat] || 0;
     var pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
     if (pct < 75) return;
@@ -705,7 +760,9 @@ function renderBudgets() {
   el.innerHTML = '';
   el.className = 'ft-budget-list';
   keys.sort().forEach(function(cat) {
-    var limit = budgets[cat];
+    var baseLimit = Number(budgets[cat]) || 0;
+    var carry = budgetCarryFromPrevMonth(cat, baseLimit);
+    var limit = baseLimit + carry;
     var spent = catTotals[cat] || 0;
     var pct   = Math.min(Math.round((spent/limit)*100), 100);
     var over  = spent > limit;
@@ -724,7 +781,8 @@ function renderBudgets() {
       '<span class="ft-budget-item__nums">' + fmt(spent) + ' / ' + fmt(limit) + '</span>' +
       '<span class="ft-budget-item__pct" style="color:' + color + '">' + pct + '%</span>' +
       (over ? '<span class="ft-badge ft-badge--over">Over</span>' : '') +
-      (warn ? '<span class="ft-badge ft-badge--warn">75%+</span>' : '');
+      (warn ? '<span class="ft-badge ft-badge--warn">75%+</span>' : '') +
+      (carry > 0 ? '<span class="ft-badge">+Carry ' + fmt(carry) + '</span>' : '');
 
     var delBtn = document.createElement('button');
     delBtn.type = 'button';
@@ -764,14 +822,17 @@ function renderBudgets() {
 function addBudget() {
   var catEl = document.getElementById('bud-cat');
   var amtEl = document.getElementById('bud-amount');
+  var rollEl = document.getElementById('bud-rollover');
   var cat   = catEl ? catEl.value : '';
   var amt   = parseFloat(amtEl ? amtEl.value : '');
   if (!cat || isNaN(amt) || amt <= 0) { if(amtEl) shake(amtEl); return; }
   budgets[cat] = amt;
+  budgetRollover[cat] = !!(rollEl && rollEl.checked);
   saveBud();
+  saveBudRoll();
   if (amtEl) amtEl.value = '';
   renderBudgets();
-  showToast('Budget set for ' + cat);
+  showToast('Budget set for ' + cat + (budgetRollover[cat] ? ' (rollover on)' : ''));
 }
 
 // ╔══════════════════════════════════════════════════════════╗
@@ -910,7 +971,8 @@ function renderSearch() {
     '<input id="srch-date-from" type="date" placeholder="From"/>' +
     '<input id="srch-date-to" type="date" placeholder="To"/>' +
     '<input id="srch-min" type="number" min="0" step="0.01" placeholder="Min amount"/>' +
-    '<input id="srch-max" type="number" min="0" step="0.01" placeholder="Max amount"/>';
+    '<input id="srch-max" type="number" min="0" step="0.01" placeholder="Max amount"/>' +
+    '<button type="button" id="srch-clear" class="btn-ghost" style="height:34px">Clear filters</button>';
   el.appendChild(filterBar);
   ['type', 'cat', 'dateFrom', 'dateTo', 'amountMin', 'amountMax'].forEach(function(k) {
     var map = { type: 'srch-type', cat: 'srch-cat', dateFrom: 'srch-date-from', dateTo: 'srch-date-to', amountMin: 'srch-min', amountMax: 'srch-max' };
@@ -922,6 +984,13 @@ function renderSearch() {
       renderSearch();
     });
   });
+  var clrBtn = document.getElementById('srch-clear');
+  if (clrBtn) {
+    clrBtn.addEventListener('click', function() {
+      searchFilters = { type: 'all', cat: 'all', dateFrom: '', dateTo: '', amountMin: '', amountMax: '' };
+      renderSearch();
+    });
+  }
 
   var list = document.createElement('div');
   list.className = 'tx-list';
@@ -1060,6 +1129,44 @@ function applyRecurring() {
 
   if (changed) { saveExp(); saveInc(); saveRec(); }
   return changed;
+}
+
+function maybeNotifyUpcomingRecurring_() {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission === 'denied') return;
+  var now = new Date();
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var ym = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+  var noticeKey = 'ft_notice_rec_' + ym + '_' + String(today.getDate());
+  try {
+    if (localStorage.getItem(noticeKey)) return;
+  } catch (e) {}
+  var dueSoon = [];
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var fd = recurringFireMeta_(r, today.getFullYear(), today.getMonth());
+    var fire = new Date(today.getFullYear(), today.getMonth(), fd.fireDay);
+    var days = Math.round((fire.getTime() - today.getTime()) / 86400000);
+    if (days >= 0 && days <= 3) {
+      dueSoon.push((r.type === 'inc' ? '+' : '-') + fmt(Number(r.amount) || 0) + ' ' + r.name + ' (' + (days === 0 ? 'today' : 'in ' + days + 'd') + ')');
+    }
+  });
+  if (!dueSoon.length) return;
+  function trigger() {
+    try {
+      new Notification('Upcoming bills/reminders', {
+        body: dueSoon.slice(0, 3).join(' • '),
+        tag: 'ft-recurring-due',
+      });
+      localStorage.setItem(noticeKey, '1');
+    } catch (e) {}
+  }
+  if (Notification.permission === 'granted') trigger();
+  else if (Notification.permission === 'default') {
+    Notification.requestPermission().then(function(p) {
+      if (p === 'granted') trigger();
+    });
+  }
 }
 
 function addRecurring() {
@@ -1561,6 +1668,15 @@ var addBudBtn = document.getElementById('add-bud-btn');
 if (addBudBtn) addBudBtn.addEventListener('click', addBudget);
 var budAmtEl = document.getElementById('bud-amount');
 if (budAmtEl) budAmtEl.addEventListener('keydown', function(e){ if(e.key==='Enter') addBudget(); });
+var budCatEl = document.getElementById('bud-cat');
+if (budCatEl) {
+  var syncBudRoll = function() {
+    var rollEl = document.getElementById('bud-rollover');
+    if (rollEl) rollEl.checked = !!budgetRollover[budCatEl.value];
+  };
+  budCatEl.addEventListener('change', syncBudRoll);
+  syncBudRoll();
+}
 
 var sgSaveBtn = document.getElementById('sg-save-btn');
 if (sgSaveBtn) sgSaveBtn.addEventListener('click', saveSavingsGoalFromForm);

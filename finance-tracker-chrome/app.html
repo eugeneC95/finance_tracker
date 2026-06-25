@@ -3125,6 +3125,10 @@ body.dark .fs-btn.active { color: #000; }
               <label class="lbl" for="bud-amount">Monthly limit (RM)</label>
               <input type="number" id="bud-amount" placeholder="e.g. 500" min="0" step="0.01" inputmode="decimal"/>
             </div>
+            <label class="ft-check-label">
+              <input type="checkbox" id="bud-rollover" class="ft-check-input"/>
+              <span>Carry forward unused budget from previous month</span>
+            </label>
             <div class="ft-form-actions" style="margin-top:0">
               <button type="button" class="btn btn-primary" id="add-bud-btn">Set budget</button>
             </div>
@@ -3697,7 +3701,11 @@ body.dark .fs-btn.active { color: #000; }
                   </div>
                   <div class="src-card" id="iw-mbb-card">
                     <div class="src-icon">🏛</div>
-                    <div class="src-name">Maybank / CIMB</div>
+                    <div class="src-name">Maybank</div>
+                  </div>
+                  <div class="src-card" id="iw-cimb-card">
+                    <div class="src-icon">🏦</div>
+                    <div class="src-name">CIMB</div>
                   </div>
                 </div>
                 <button class="btn btn-primary" id="iw-next1" disabled style="width:100%">Next →</button>
@@ -3805,7 +3813,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v103 · 2026-06-25 16:58</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v104 · 2026-06-25 17:13</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4034,11 +4042,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=103"></script>
-<script src="app.js?v=103"></script>
-<script src="sync.js?v=103"></script>
-<script src="features.js?v=103"></script>
-<script src="extras.js?v=103"></script>
-<script src="import-inline.js?v=103"></script>
+<script src="build-id.js?v=104"></script>
+<script src="app.js?v=104"></script>
+<script src="sync.js?v=104"></script>
+<script src="features.js?v=104"></script>
+<script src="extras.js?v=104"></script>
+<script src="import-inline.js?v=104"></script>
 </body>
 </html>

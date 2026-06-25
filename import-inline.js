@@ -245,6 +245,8 @@ function iwReset() {
   document.getElementById('iw-uob-card').classList.remove('active');
   const mbbCard=document.getElementById('iw-mbb-card');
   if(mbbCard) mbbCard.classList.remove('active');
+  const cimbCard=document.getElementById('iw-cimb-card');
+  if(cimbCard) cimbCard.classList.remove('active');
   document.getElementById('iw-next1').disabled=true;
   document.getElementById('iw-tng-input').style.display='none';
   document.getElementById('iw-csv-input').style.display='none';
@@ -268,20 +270,24 @@ function iwSelectSource(src) {
   document.getElementById('iw-uob-card').classList.toggle('active',src==='uob');
   const mbbCard=document.getElementById('iw-mbb-card');
   if(mbbCard) mbbCard.classList.toggle('active',src==='mbb');
+  const cimbCard=document.getElementById('iw-cimb-card');
+  if(cimbCard) cimbCard.classList.toggle('active',src==='cimb');
   document.getElementById('iw-next1').disabled=false;
   document.getElementById('iw-tng-input').style.display=src==='tng'?'':'none';
-  const csvOn=src==='uob'||src==='mbb';
+  const csvOn=src==='uob'||src==='mbb'||src==='cimb';
   document.getElementById('iw-csv-input').style.display=csvOn?'':'none';
   const helpUob=document.getElementById('iw-help-uob');
   const helpMbb=document.getElementById('iw-help-mbb');
   if(helpUob) helpUob.style.display=src==='uob'?'':'none';
-  if(helpMbb) helpMbb.style.display=src==='mbb'?'':'none';
+  if(helpMbb) helpMbb.style.display=(src==='mbb'||src==='cimb')?'':'none';
 }
 
 document.getElementById('iw-tng-card').addEventListener('click',()=>iwSelectSource('tng'));
 document.getElementById('iw-uob-card').addEventListener('click',()=>iwSelectSource('uob'));
 const iwMbbCard=document.getElementById('iw-mbb-card');
 if(iwMbbCard) iwMbbCard.addEventListener('click',()=>iwSelectSource('mbb'));
+const iwCimbCard=document.getElementById('iw-cimb-card');
+if(iwCimbCard) iwCimbCard.addEventListener('click',()=>iwSelectSource('cimb'));
 document.getElementById('iw-next1').addEventListener('click',()=>{ if(iwSource) iwGoStep(2); });
 document.getElementById('iw-back2').addEventListener('click',()=>iwGoStep(1));
 document.getElementById('iw-back3').addEventListener('click',iwReset);
@@ -300,7 +306,7 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
     document.getElementById('iw-tng-err').textContent='';
     iwRows=iwParseTNG(text);
     if(!iwRows.length){ document.getElementById('iw-tng-err').textContent='No transactions found — make sure you copied the full PDF text.'; return; }
-  } else if(iwSource==='uob'||iwSource==='mbb'){
+  } else if(iwSource==='uob'||iwSource==='mbb'||iwSource==='cimb'){
     const file=document.getElementById('iw-file').files[0];
     const errEl=document.getElementById('iw-csv-err');
     if(!file){ if(errEl) errEl.textContent='Please select a file first.'; return; }

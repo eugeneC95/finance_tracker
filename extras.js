@@ -490,6 +490,53 @@ function renderPetrolEfficiencyChart() {
 // ╔══════════════════════════════════════════════════════════╗
 //   MONTHLY REPORT
 // ╚══════════════════════════════════════════════════════════╝
+function reportCashflowTimeline(daysAhead) {
+  var now = new Date();
+  var end = new Date(now.getTime() + (daysAhead || 30) * 86400000);
+  var items = [];
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var d = new Date(now.getFullYear(), now.getMonth(), 1);
+    for (var i = 0; i < 3; i++) {
+      var y = d.getFullYear();
+      var m = d.getMonth();
+      var ld = new Date(y, m + 1, 0).getDate();
+      var fire = r.day === 'last' ? ld : Math.min(Number(r.day) || 1, ld);
+      var when = new Date(y, m, fire);
+      if (when >= now && when <= end) {
+        items.push({ date: when, label: r.name, amount: Number(r.amount) || 0, type: r.type });
+      }
+      d = new Date(y, m + 1, 1);
+    }
+  });
+  items.sort(function(a, b) { return a.date - b.date; });
+  return items;
+}
+
+function reportAnomalyRows(ym) {
+  var vm = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+  var rows = [];
+  Object.keys(EXP_CATS || {}).forEach(function(cat) {
+    var cur = expenses.filter(function(e) { return e.cat === cat && String(e.date || '').indexOf(ym) === 0; })
+      .reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+    if (cur <= 0) return;
+    var hist = [];
+    for (var i = 1; i <= 3; i++) {
+      var d = new Date(vm.getFullYear(), vm.getMonth() - i, 1);
+      var ymPast = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      var v = expenses.filter(function(e) { return e.cat === cat && String(e.date || '').indexOf(ymPast) === 0; })
+        .reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+      if (v > 0) hist.push(v);
+    }
+    if (!hist.length) return;
+    var avg = hist.reduce(function(a, v) { return a + v; }, 0) / hist.length;
+    if (avg <= 0) return;
+    var ratio = cur / avg;
+    if (ratio >= 1.8) rows.push({ cat: cat, cur: cur, avg: avg, ratio: ratio });
+  });
+  return rows.sort(function(a, b) { return b.ratio - a.ratio; }).slice(0, 4);
+}
+
 function renderReport() {
   var el = document.getElementById('report-content');
   if (!el) return;
@@ -574,6 +621,27 @@ function renderReport() {
         addRow(secBud, info.icon + ' ' + row.cat, row.msg, row.cls);
       });
     }
+  }
+
+  var cashflow = reportCashflowTimeline(30);
+  if (cashflow.length) {
+    var secCf = section('Upcoming cashflow (30 days)');
+    cashflow.slice(0, 10).forEach(function(x) {
+      addRow(
+        secCf,
+        x.date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) + ' · ' + x.label,
+        (x.type === 'inc' ? '+ ' : '') + fmt(x.amount),
+        x.type === 'inc' ? 'green' : 'red'
+      );
+    });
+  }
+  var anomalies = reportAnomalyRows(ym);
+  if (anomalies.length) {
+    var secAn = section('Anomaly alerts');
+    anomalies.forEach(function(a) {
+      var info = EXP_CATS[a.cat] || { icon: '📦' };
+      addRow(secAn, info.icon + ' ' + a.cat, fmt(a.cur) + ' (avg ' + fmt(a.avg) + ')', 'red');
+    });
   }
 
   // By category
