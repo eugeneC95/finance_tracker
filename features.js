@@ -261,6 +261,65 @@ function homeEmpty_(icon, msg) {
   return '<div class="home-empty"><div class="home-empty__ico">' + icon + '</div>' + esc(msg) + '</div>';
 }
 
+function homeDateOffsetStr_(days) {
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function homeSumExpBetween_(fromStr, toStr) {
+  return expenses.filter(function(e) {
+    var d = String(e.date || '').slice(0, 10);
+    return d >= fromStr && d <= toStr;
+  }).reduce(function(a, e) { return a + Number(e.amount || 0); }, 0);
+}
+
+function renderHomeWeekDigest_() {
+  var el = document.getElementById('home-week-digest');
+  if (!el) return;
+  var today = todayStr();
+  var weekStart = homeDateOffsetStr_(-6);
+  var prevEnd = homeDateOffsetStr_(-7);
+  var prevStart = homeDateOffsetStr_(-13);
+  var thisWeek = homeSumExpBetween_(weekStart, today);
+  var lastWeek = homeSumExpBetween_(prevStart, prevEnd);
+  var delta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : null;
+  var byCat = {};
+  expenses.forEach(function(e) {
+    var d = String(e.date || '').slice(0, 10);
+    if (d < weekStart || d > today) return;
+    byCat[e.cat] = (byCat[e.cat] || 0) + Number(e.amount || 0);
+  });
+  var topCat = Object.keys(byCat).sort(function(a, b) { return byCat[b] - byCat[a]; })[0];
+  var topInfo = topCat ? (EXP_CATS[topCat] || { icon: '\u{1F4E6}' }) : null;
+  var missed = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  var rows = [
+    '<div class="home-week-digest__row"><span>This week spent</span><strong class="red">' + fmt(thisWeek) + '</strong></div>',
+    '<div class="home-week-digest__row"><span>Last week</span><strong>' + fmt(lastWeek) + '</strong></div>',
+  ];
+  if (delta != null) {
+    rows.push(
+      '<div class="home-week-digest__row"><span>Week-over-week</span><strong class="' +
+      (delta >= 0 ? 'red' : 'green') + '">' + (delta >= 0 ? '+' : '') + delta + '%</strong></div>'
+    );
+  }
+  if (topCat && topInfo) {
+    rows.push(
+      '<div class="home-week-digest__row"><span>Top category</span><strong>' +
+      topInfo.icon + ' ' + esc(topCat) + ' · ' + fmt(byCat[topCat]) + '</strong></div>'
+    );
+  }
+  if (missed.length) {
+    rows.push(
+      '<div class="home-week-digest__row home-week-digest__row--warn"><span>Missed bills</span><strong class="red">' +
+      missed.length + ' due</strong></div>'
+    );
+  }
+  el.innerHTML =
+    '<div class="panel-hd"><span class="panel-title">This week</span></div>' +
+    '<div class="panel-bd home-week-digest">' + rows.join('') + '</div>';
+}
+
 function anomalyInsightLines_(ym, vm) {
   var lines = [];
   Object.keys(EXP_CATS || {}).forEach(function(cat) {
@@ -415,23 +474,37 @@ function renderHomeDashboard() {
     if (!recent.length) {
       recentEl.innerHTML = homePanel_('Recent activity', homeEmpty_('\u{1F4CB}', 'No transactions yet \u2014 tap Expense above to add one.'));
     } else {
-      recentEl.innerHTML = homePanel_('Recent activity', recent.map(function(e) {
+      recentEl.innerHTML = homePanel_('Recent activity', '<div class="home-recent-list"></div><p class="ft-note home-recent-hint">Tap a row to edit</p>');
+      var listEl = recentEl.querySelector('.home-recent-list');
+      recent.forEach(function(e) {
         var catMap = e._type === 'inc' ? INC_CATS : EXP_CATS;
         var info = catMap[e.cat] || { icon: '\u{1F4E6}' };
         var pd = typeof parseTxDate === 'function' ? parseTxDate(e.date) : null;
         var dlbl = pd ? pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : String(e.date || '');
-        return (
-          '<div class="home-tx-row">' +
+        var row = document.createElement('div');
+        row.className = 'home-tx-row home-tx-row--clickable';
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
+        row.innerHTML =
           '<div class="home-tx-row__ico">' + info.icon + '</div>' +
           '<div class="home-tx-row__body">' +
           '<div class="home-tx-row__name">' + esc(e.name || '') + '</div>' +
           '<div class="home-tx-row__meta">' + esc(e.cat || '') + ' \u00b7 ' + dlbl + '</div></div>' +
           '<div class="home-tx-row__amt ' + (e._type === 'inc' ? 'green' : 'red') + '">' +
-          (e._type === 'inc' ? '+ ' : '') + fmt(e.amount) + '</div></div>'
-        );
-      }).join(''));
+          (e._type === 'inc' ? '+ ' : '') + fmt(e.amount) + '</div>';
+        function openRow_() {
+          if (typeof openEditModal === 'function') openEditModal(e._type, e.id);
+        }
+        row.addEventListener('click', openRow_);
+        row.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openRow_(); }
+        });
+        listEl.appendChild(row);
+      });
     }
   }
+
+  renderHomeWeekDigest_();
 
   var catsEl = document.getElementById('home-top-cats');
   if (catsEl) {
@@ -517,6 +590,16 @@ function renderHomeDashboard() {
     anomalyInsightLines_(curYM, vm).forEach(function(a) {
       cards.push(insightCard(a.icon, a.label, a.value, 'warn', a.note));
     });
+    var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+    if (missedRec.length) {
+      cards.push(insightCard(
+        '\u26A0\uFE0F',
+        'Missed recurring',
+        missedRec.length + ' bill' + (missedRec.length === 1 ? '' : 's'),
+        'warn',
+        'Due this month with no matching entry'
+      ));
+    }
     insEl.innerHTML = homePanel_('Insights', cards.length
       ? '<div class="home-insights-grid">' + cards.join('') + '</div>'
       : homeEmpty_('\u{1F4A1}', 'Add a few weeks of data for month-over-month insights.'));
@@ -541,6 +624,7 @@ function renderHomeDashboard() {
 
   var recBox = document.getElementById('home-recurring');
   if (recBox) {
+    var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
     var now = new Date();
     var preview = [];
     (recurring || []).forEach(function(r) {
@@ -561,17 +645,45 @@ function renderHomeDashboard() {
     preview.sort(function(a, b) { return a.date - b.date; });
     var recExp = preview.filter(function(x) { return x.type === 'exp'; }).reduce(function(a, x) { return a + x.amount; }, 0);
     var recInc = preview.filter(function(x) { return x.type === 'inc'; }).reduce(function(a, x) { return a + x.amount; }, 0);
-    if (!preview.length) {
+    var body = '';
+    if (missedRec.length) {
+      body += '<div class="home-rec-missed">' +
+        '<div class="home-rec-missed__title">\u26A0\uFE0F ' + missedRec.length + ' missed this month</div>' +
+        missedRec.slice(0, 3).map(function(m) {
+          var r = m.r;
+          var pd = typeof parseTxDate === 'function' ? parseTxDate(m.dateStr) : null;
+          var dlbl = pd ? pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : m.dateStr;
+          return (
+            '<div class="home-rec-missed__row">' +
+            '<span>' + esc(r.name || '') + ' \u00b7 due ' + dlbl +
+            (m.daysOver > 0 ? ' (' + m.daysOver + 'd ago)' : '') + '</span>' +
+            '<button type="button" class="btn-ghost home-rec-log-btn" data-rec-id="' + esc(String(r.id)) + '">Log</button></div>'
+          );
+        }).join('') +
+        (missedRec.length > 3 ? '<div class="ft-note">+' + (missedRec.length - 3) + ' more on Recurring tab</div>' : '') +
+        '</div>';
+    }
+    if (!preview.length && !missedRec.length) {
       recBox.innerHTML = homePanel_('Upcoming bills', homeEmpty_('\u{1F501}', 'No recurring items in the next 30 days.'));
     } else {
-      recBox.innerHTML = homePanel_('Upcoming (30 days)',
-        '<div class="ft-note" style="margin-bottom:10px">Out ' + fmt(recExp) + ' \u00b7 In ' + fmt(recInc) + ' \u00b7 Net ' + fmt(recInc - recExp) + '</div>' +
-        preview.slice(0, 5).map(function(p) {
-          return '<div class="report-row"><span class="rr-label">' + esc(p.name) + ' \u00b7 ' +
-            p.date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) + '</span>' +
-            '<span class="rr-val ' + (p.type === 'inc' ? 'green' : 'red') + '">' +
-            (p.type === 'inc' ? '+' : '') + fmt(p.amount) + '</span></div>';
-        }).join(''));
+      if (preview.length) {
+        body += '<div class="ft-note" style="margin-bottom:10px">Upcoming 30d: Out ' + fmt(recExp) + ' \u00b7 In ' + fmt(recInc) + ' \u00b7 Net ' + fmt(recInc - recExp) + '</div>' +
+          preview.slice(0, 5).map(function(p) {
+            return '<div class="report-row"><span class="rr-label">' + esc(p.name) + ' \u00b7 ' +
+              p.date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) + '</span>' +
+              '<span class="rr-val ' + (p.type === 'inc' ? 'green' : 'red') + '">' +
+              (p.type === 'inc' ? '+' : '') + fmt(p.amount) + '</span></div>';
+          }).join('');
+      }
+      recBox.innerHTML = homePanel_(missedRec.length ? 'Recurring' : 'Upcoming (30 days)', body || homeEmpty_('\u{1F501}', 'Nothing upcoming.'));
+      recBox.querySelectorAll('.home-rec-log-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(ev) {
+          ev.stopPropagation();
+          var rid = btn.getAttribute('data-rec-id');
+          var item = (recurring || []).find(function(x) { return String(x.id) === String(rid); });
+          if (item) applyOneRecurring_(item);
+        });
+      });
     }
   }
 
@@ -608,10 +720,12 @@ function renderHomeDashboard() {
   var check = document.getElementById('home-checklist');
   if (check) {
     var nearEnd = isCurrentVm && daysLeft <= 5;
+    var missedRecCheck = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
     var checklist = [
       { done: false, text: 'Review month spending on Expenses' },
       { done: monthInc > 0 && monthExp > 0, text: 'Income and expenses recorded this month' },
       { done: banks.length > 0, text: 'Bank balances up to date on Assets' },
+      { done: !missedRecCheck.length, text: 'Recurring bills logged for this month' },
     ];
     if (nearEnd) {
       checklist.push({ done: false, text: 'Export JSON backup (Settings)' });
@@ -1099,6 +1213,82 @@ function recurringHasAutoMirror_(r, dateStr) {
   return false;
 }
 
+/** Manual payment logged this month that matches a recurring item (name/amount/cat). */
+function recurringHasManualMatch_(r, dateStr) {
+  var list = r.type === 'inc' ? incomes : expenses;
+  var ym = dateStr.slice(0, 7);
+  var amt = Number(r.amount) || 0;
+  var nm = String(r.name || '').toLowerCase().trim();
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    if (!e || e.auto) continue;
+    if (String(e.date || '').slice(0, 7) !== ym) continue;
+    if (Math.abs(Number(e.amount) - amt) > 0.009) continue;
+    if (String(e.cat || '') !== String(r.cat || '')) continue;
+    var en = String(e.name || '').toLowerCase().trim();
+    if (!en || !nm) continue;
+    if (en === nm || en.indexOf(nm) >= 0 || nm.indexOf(en) >= 0) return true;
+  }
+  return false;
+}
+
+function recurringHasLoggedMatch_(r, dateStr) {
+  return recurringHasAutoMirror_(r, dateStr) || recurringHasManualMatch_(r, dateStr);
+}
+
+/** Active recurring items due this month with no matching transaction logged. */
+function recurringMissedThisMonth_() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = now.getMonth();
+  var todayD = now.getDate();
+  var missed = [];
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var fd = recurringFireMeta_(r, y, m);
+    if (todayD < fd.fireDay) return;
+    if (recurringHasLoggedMatch_(r, fd.dateStr)) return;
+    missed.push({
+      r: r,
+      dateStr: fd.dateStr,
+      daysOver: todayD - fd.fireDay,
+    });
+  });
+  missed.sort(function(a, b) { return b.daysOver - a.daysOver; });
+  return missed;
+}
+
+function applyOneRecurring_(r) {
+  if (!r) return;
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = now.getMonth();
+  var ym = y + '-' + String(m + 1).padStart(2, '0');
+  var fd = recurringFireMeta_(r, y, m);
+  if (recurringHasLoggedMatch_(r, fd.dateStr)) {
+    r.lastApplied = ym;
+    saveRec();
+    if (typeof render === 'function') render();
+    return;
+  }
+  var entry = {
+    id: Date.now() + Math.random(),
+    name: r.name,
+    amount: r.amount,
+    cat: r.cat,
+    date: fd.dateStr,
+    auto: true,
+  };
+  if (r.type === 'exp') expenses.push(entry);
+  else incomes.push(entry);
+  r.lastApplied = ym;
+  saveExp();
+  saveInc();
+  saveRec();
+  if (typeof render === 'function') render();
+  if (typeof showToast === 'function') showToast('Recurring entry logged');
+}
+
 function applyRecurring() {
   var now     = new Date();
   var y       = now.getFullYear();
@@ -1114,7 +1304,7 @@ function applyRecurring() {
     var fd = recurringFireMeta_(r, y, m);
     if (todayD < fd.fireDay) return;
 
-    if (recurringHasAutoMirror_(r, fd.dateStr)) {
+    if (recurringHasLoggedMatch_(r, fd.dateStr)) {
       r.lastApplied = ym;
       changed = true;
       return;
@@ -1197,6 +1387,34 @@ function renderRecurring() {
   var el = document.getElementById('rec-list');
   if (!el) return;
   el.innerHTML = '';
+  var missedRec = recurringMissedThisMonth_();
+  if (missedRec.length) {
+    var missBox = document.createElement('div');
+    missBox.className = 'ft-inline-hint home-rec-missed';
+    missBox.style.marginBottom = '12px';
+    missBox.innerHTML =
+      '<div class="home-rec-missed__title">\u26A0\uFE0F ' + missedRec.length + ' expected bill' +
+      (missedRec.length === 1 ? '' : 's') + ' not logged this month</div>' +
+      missedRec.map(function(m) {
+        var r = m.r;
+        var pd = typeof parseTxDate === 'function' ? parseTxDate(m.dateStr) : null;
+        var dlbl = pd ? pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : m.dateStr;
+        return (
+          '<div class="home-rec-missed__row">' +
+          '<span><strong>' + esc(r.name || '') + '</strong> \u00b7 ' + fmt(Number(r.amount) || 0) +
+          ' \u00b7 due ' + dlbl + '</span>' +
+          '<button type="button" class="btn-ghost rec-apply-one-btn" data-rec-id="' + esc(String(r.id)) + '">Log now</button></div>'
+        );
+      }).join('');
+    el.appendChild(missBox);
+    missBox.querySelectorAll('.rec-apply-one-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var rid = btn.getAttribute('data-rec-id');
+        var item = (recurring || []).find(function(x) { return String(x.id) === String(rid); });
+        if (item) applyOneRecurring_(item);
+      });
+    });
+  }
   var now = new Date();
   var preview = [];
   (recurring || []).forEach(function(r) {
@@ -1225,10 +1443,11 @@ function renderRecurring() {
     el.appendChild(pv);
   }
 
-  if (!recurring.length) {
+  if (!recurring.length && !missedRec.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🔁</div>No recurring entries yet.</div>';
     return;
   }
+  if (!recurring.length) return;
 
   recurring.forEach(function(r) {
     var catMap  = r.type==='exp' ? EXP_CATS : INC_CATS;
@@ -1320,9 +1539,11 @@ function renderRecurring() {
 //   NET WORTH SNAPSHOT
 // ╚══════════════════════════════════════════════════════════╝
 function snapshotNetWorth() {
-  var total = (typeof totalBanksBase === 'function')
+  var bankTotal = (typeof totalBanksBase === 'function')
     ? totalBanksBase()
     : banks.reduce(function(a,b){ return a+b.balance; }, 0);
+  var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
+  var total = bankTotal + utMv;
   var today = todayStr();
   var ex    = networthHist.find(function(h){ return h.date===today; });
   if (ex) ex.total = total;
@@ -1458,10 +1679,10 @@ function renderTrends() {
   renderDayBreakdown();
   renderInsightsPanel(months);
   renderNwSnapshotHint();
-  renderNetWorthChart();
+  renderAllNetWorthCharts();
   requestAnimationFrame(function() {
     if (document.getElementById('page-trends') && document.getElementById('page-trends').classList.contains('active')) {
-      renderNetWorthChart();
+      renderAllNetWorthCharts();
     }
   });
 }
@@ -1566,14 +1787,22 @@ function openTrendMonthInExpenses() {
   render();
 }
 
-function renderNetWorthChart() {
-  var el = document.getElementById('networth-chart');
+function renderAllNetWorthCharts() {
+  renderNetWorthChart('networth-chart');
+  renderNetWorthChart('assets-networth-chart');
+}
+
+function renderNetWorthChart(targetId) {
+  var el = document.getElementById(targetId || 'networth-chart');
   if (!el) return;
 
   if (networthHist.length < 2) {
-    el.innerHTML = '<div class="nw-empty">Update your bank balances over time to build a net worth history chart.</div>';
+    el.innerHTML = '<div class="nw-empty">Update bank balances and unit trusts over time to build a portfolio history chart.</div>';
     return;
   }
+
+  var chartKey = (targetId || 'networth-chart').replace(/[^a-z0-9]/gi, '');
+  var gradId = 'nw-grad-' + chartKey;
 
   var W   = el.clientWidth || 600;
   var H   = 160;
@@ -1601,11 +1830,11 @@ function renderNetWorthChart() {
   }).join('');
 
   el.innerHTML = '<div class="nw-chart-wrap"><svg class="nw-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">' +
-    '<defs><linearGradient id="nw-grad" x1="0" y1="0" x2="0" y2="1">' +
+    '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">' +
     '<stop offset="0%" stop-color="'+lc+'" stop-opacity="0.15"/>' +
     '<stop offset="100%" stop-color="'+lc+'" stop-opacity="0"/>' +
     '</linearGradient></defs>' +
-    '<path d="'+area+'" fill="url(#nw-grad)"/>' +
+    '<path d="'+area+'" fill="url(#'+gradId  +')"/>' +
     '<path d="'+path+'" fill="none" stroke="'+lc+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
     yLbls.map(function(l){ return '<text class="nw-axis-lbl" x="'+(PAD.l-6)+'" y="'+(l.y+3)+'" text-anchor="end">'+fmt(l.v)+'</text>'; }).join('') +
     xLbls.map(function(l){ return '<text class="nw-axis-lbl" x="'+l.x+'" y="'+(H-4)+'" text-anchor="middle">'+l.lbl+'</text>'; }).join('') +
@@ -1790,6 +2019,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ╔══════════════════════════════════════════════════════════╗
-//   INIT  Ecalled after DOM ready
+//   INIT  — called after DOM ready
 // ╚══════════════════════════════════════════════════════════╝
+var assetsNwSnapBtn = document.getElementById('assets-nw-snapshot-btn');
+if (assetsNwSnapBtn) {
+  assetsNwSnapBtn.addEventListener('click', function() {
+    if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
+    if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
+    if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+    if (typeof showToast === 'function') showToast('Portfolio snapshot saved for today');
+  });
+}
 loadFeatures();

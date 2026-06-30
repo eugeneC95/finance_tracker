@@ -1681,6 +1681,7 @@ function render() {
   if (pageAssets && pageAssets.classList.contains('active')) {
     renderBankList();
     renderUnitTrustPanel();
+    if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
   }
 
   // Feature hooks (defined in other files)
@@ -2566,6 +2567,8 @@ const TAB_OPEN_HOOKS = {
   assets: () => {
     renderBankList();
     renderUnitTrustPanel();
+    if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+    if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
   },
   settings: () => {
     remindMonthlyBackupIfNeeded();

@@ -2315,6 +2315,19 @@ body.dark .home-stat { background: rgba(255,255,255,.04); }
   border-bottom: 1px solid var(--line);
 }
 .home-tx-row:last-child { border-bottom: none; }
+.home-tx-row--clickable {
+  cursor: pointer;
+  border-radius: var(--r-md);
+  margin: 0 -8px;
+  padding: 10px 8px;
+  transition: background .12s;
+}
+.home-tx-row--clickable:hover,
+.home-tx-row--clickable:focus-visible {
+  background: var(--card-bg2);
+  outline: none;
+}
+.home-recent-hint { margin-top: 8px; margin-bottom: 0; }
 .home-tx-row__ico {
   width: 36px;
   height: 36px;
@@ -2339,6 +2352,49 @@ body.dark .home-stat { background: rgba(255,255,255,.04); }
   font-weight: 700;
   font-size: var(--f-sm);
   flex-shrink: 0;
+}
+.home-week-digest { display: grid; gap: 10px; }
+.home-week-digest__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--f-sm);
+}
+.home-week-digest__row--warn { color: var(--red); }
+.home-rec-missed {
+  background: rgba(226, 75, 74, 0.08);
+  border: 1px solid rgba(226, 75, 74, 0.25);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.home-rec-missed__title {
+  font-weight: 600;
+  font-size: var(--f-sm);
+  margin-bottom: 8px;
+  color: var(--red);
+}
+.home-rec-missed__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--f-sm);
+  padding: 6px 0;
+  border-top: 1px solid rgba(226, 75, 74, 0.15);
+}
+.home-rec-missed__row:first-of-type { border-top: none; padding-top: 0; }
+.home-rec-missed__row .btn-ghost {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: var(--f-xs);
+}
+.assets-nw-card .panel-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 .home-cat-row {
   display: grid;
@@ -3073,6 +3129,8 @@ body.dark .fs-btn.active { color: #000; }
 
       <div class="card home-progress-card" id="home-month-progress"></div>
 
+      <div class="card mb-5" id="home-week-digest"></div>
+
       <div class="home-grid">
         <div class="home-col">
           <div class="card mb-5" id="home-recent"></div>
@@ -3403,6 +3461,18 @@ body.dark .fs-btn.active { color: #000; }
       </section>
 
       <div id="nw-snapshot-hint-assets" class="ft-inline-hint ft-nw-hint mb-5" style="display:none" role="status"></div>
+
+      <div class="card mb-5 assets-nw-card">
+        <div class="panel-hd">
+          <span class="panel-title">Portfolio history</span>
+          <button type="button" class="btn-ghost" id="assets-nw-snapshot-btn">Snapshot today</button>
+        </div>
+        <div class="panel-bd">
+          <div id="assets-networth-chart"></div>
+          <p class="ft-note" style="margin-top:8px">Bank + unit trust total when you update balances or tap Snapshot.</p>
+        </div>
+      </div>
+
       <div class="assets-layout">
         <section class="card assets-section mb-5">
           <div class="panel-hd">
@@ -3957,7 +4027,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v106 · 2026-06-30 11:06</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v107 · 2026-06-30 12:07</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4187,11 +4257,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=106"></script>
-<script src="app.js?v=106"></script>
-<script src="sync.js?v=106"></script>
-<script src="features.js?v=106"></script>
-<script src="extras.js?v=106"></script>
-<script src="import-inline.js?v=106"></script>
+<script src="build-id.js?v=107"></script>
+<script src="app.js?v=107"></script>
+<script src="sync.js?v=107"></script>
+<script src="features.js?v=107"></script>
+<script src="extras.js?v=107"></script>
+<script src="import-inline.js?v=107"></script>
 </body>
 </html>
