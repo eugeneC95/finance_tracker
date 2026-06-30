@@ -725,6 +725,18 @@ function buildReportShareText() {
   );
 }
 
+/** Used as document.title so Save-as-PDF picks up month + generation date/time. */
+function buildReportPrintTitle() {
+  var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var now = new Date();
+  var datePart = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+  var timePart = String(now.getHours()).padStart(2, '0') + '-' +
+    String(now.getMinutes()).padStart(2, '0');
+  return 'Finance Tracker - ' + ymLabel + ' Report - ' + datePart + ' ' + timePart;
+}
+
 // ╔══════════════════════════════════════════════════════════╗
 //   WIRING
 // ╚══════════════════════════════════════════════════════════╝
@@ -746,13 +758,21 @@ if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 var printBtn = document.getElementById('print-report-btn');
 if (printBtn) printBtn.addEventListener('click', function() {
   if (typeof renderReport === 'function') renderReport();
+  var prevTitle = document.title;
+  document.title = buildReportPrintTitle();
+  function restoreTitle() {
+    document.title = prevTitle;
+    window.removeEventListener('afterprint', restoreTitle);
+  }
+  window.addEventListener('afterprint', restoreTitle);
   window.print();
 });
 var shareBtn = document.getElementById('share-report-btn');
 if (shareBtn) shareBtn.addEventListener('click', function() {
   var text = buildReportShareText();
+  var title = buildReportPrintTitle();
   if (navigator.share) {
-    navigator.share({ title: 'Monthly report', text: text }).catch(function() {});
+    navigator.share({ title: title, text: text }).catch(function() {});
     return;
   }
   if (navigator.clipboard && navigator.clipboard.writeText) {
