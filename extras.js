@@ -549,6 +549,66 @@ function reportAnomalyRows(ym) {
   return rows.sort(function(a, b) { return b.ratio - a.ratio; }).slice(0, 4);
 }
 
+function reportPrevMonthYM_() {
+  var d = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function reportMonthTotals_(ym) {
+  var exp = expenses.filter(function(e) { return String(e.date || '').indexOf(ym) === 0; })
+    .reduce(function(a, e) { return a + Number(e.amount || 0); }, 0);
+  var inc = incomes.filter(function(i) { return String(i.date || '').indexOf(ym) === 0; })
+    .reduce(function(a, i) { return a + Number(i.amount || 0); }, 0);
+  return { exp: exp, inc: inc, net: inc - exp };
+}
+
+function reportDeltaHint_(cur, prev, higherIsGood) {
+  if (prev <= 0) return { text: 'no data last month', cls: '' };
+  var pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct === 0) return { text: 'same as last month', cls: '' };
+  var up = cur > prev;
+  var good = higherIsGood ? up : !up;
+  return {
+    text: (up ? '\u2191' : '\u2193') + ' ' + Math.abs(pct) + '% vs last month',
+    cls: good ? 'green' : 'red',
+  };
+}
+
+function reportGroupCategories_(catSorted, topN) {
+  topN = topN || 5;
+  if (!catSorted.length) return [];
+  var top = catSorted.slice(0, topN);
+  var rest = catSorted.slice(topN);
+  var rows = top.map(function(entry) {
+    return { cat: entry[0], amt: entry[1], isOthers: false };
+  });
+  if (rest.length) {
+    var othersAmt = rest.reduce(function(a, e) { return a + e[1]; }, 0);
+    rows.push({ cat: 'Others', amt: othersAmt, isOthers: true, count: rest.length });
+  }
+  return rows;
+}
+
+function getReportNotesForMonth_(ym) {
+  if (typeof settings === 'undefined' || !settings.reportNotes) return '';
+  return String(settings.reportNotes[ym] || '').trim();
+}
+
+function saveReportNotesForMonth_(ym, text) {
+  if (typeof settings === 'undefined' || typeof saveSets !== 'function') return;
+  if (!settings.reportNotes || typeof settings.reportNotes !== 'object') settings.reportNotes = {};
+  var trimmed = String(text || '').trim();
+  if (!trimmed) delete settings.reportNotes[ym];
+  else settings.reportNotes[ym] = trimmed;
+  saveSets();
+}
+
+function syncReportNotesInput_(ym) {
+  var input = document.getElementById('report-notes-input');
+  if (!input || document.activeElement === input) return;
+  input.value = getReportNotesForMonth_(ym);
+}
+
 function renderReport() {
   var el = document.getElementById('report-content');
   if (!el) return;
@@ -561,11 +621,15 @@ function renderReport() {
   var totalInc = mi.reduce(function(a,i){ return a+i.amount; }, 0);
   var net      = totalInc - totalExp;
   var savings  = totalInc > 0 ? Math.max(0, (net / totalInc) * 100) : 0;
+  var prevYm   = reportPrevMonthYM_();
+  var prev     = reportMonthTotals_(prevYm);
+  syncReportNotesInput_(ym);
 
   // Category totals
   var catTotals = {};
   me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat]||0) + e.amount; });
   var catSorted = Object.entries(catTotals).sort(function(a,b){ return b[1]-a[1]; });
+  var catDisplay = reportGroupCategories_(catSorted, 5);
 
   // Income by source
   var incBySource = {};
@@ -595,6 +659,20 @@ function renderReport() {
     row.appendChild(lb); row.appendChild(vl); sec.appendChild(row);
   }
 
+  function addRowDelta(sec, label, value, cls, delta) {
+    var row = document.createElement('div'); row.className = 'report-row';
+    var lb = document.createElement('span'); lb.className = 'rr-label'; lb.textContent = label;
+    var right = document.createElement('span'); right.className = 'report-row__right';
+    var vl = document.createElement('span'); vl.className = 'rr-val' + (cls ? ' ' + cls : ''); vl.textContent = value;
+    right.appendChild(vl);
+    if (delta && delta.text) {
+      var hint = document.createElement('span'); hint.className = 'report-row__delta' + (delta.cls ? ' ' + delta.cls : '');
+      hint.textContent = delta.text;
+      right.appendChild(hint);
+    }
+    row.appendChild(lb); row.appendChild(right); sec.appendChild(row);
+  }
+
   // Header
   var hdr = document.createElement('div');
   hdr.innerHTML =
@@ -605,15 +683,40 @@ function renderReport() {
 
   // Summary
   var sec1 = section('Summary');
-  addRow(sec1, 'Total income',   fmt(totalInc), 'green');
-  addRow(sec1, 'Total expenses', fmt(totalExp), 'red');
-  addRow(sec1, 'Savings rate',   savings.toFixed(1) + '%');
+  addRowDelta(sec1, 'Total income', fmt(totalInc), 'green', reportDeltaHint_(totalInc, prev.inc, true));
+  addRowDelta(sec1, 'Total expenses', fmt(totalExp), 'red', reportDeltaHint_(totalExp, prev.exp, false));
+  addRow(sec1, 'Savings rate', savings.toFixed(1) + '%');
   var totRow = document.createElement('div'); totRow.className = 'report-total';
-  var totLbl = document.createElement('span'); totLbl.textContent = 'Net';
+  var totLeft = document.createElement('span');
+  totLeft.textContent = 'Net';
+  var netDelta = reportDeltaHint_(net, prev.net, true);
+  if (netDelta.text) {
+    var netHint = document.createElement('span');
+    netHint.className = 'report-row__delta' + (netDelta.cls ? ' ' + netDelta.cls : '');
+    netHint.textContent = netDelta.text;
+    totLeft.appendChild(netHint);
+  }
   var totVal = document.createElement('span');
   totVal.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
   totVal.textContent = (net>=0?'+':'') + fmt(net);
-  totRow.appendChild(totLbl); totRow.appendChild(totVal); sec1.appendChild(totRow);
+  totRow.appendChild(totLeft); totRow.appendChild(totVal); sec1.appendChild(totRow);
+
+  var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  if (missedRec.length) {
+    var secMiss = section('Missed recurring bills');
+    missedRec.forEach(function(m) {
+      var r = m.r;
+      var pd = typeof parseTxDate === 'function' ? parseTxDate(m.dateStr) : null;
+      var dlbl = pd ? pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : m.dateStr;
+      var typeLbl = r.type === 'inc' ? 'Income' : 'Expense';
+      addRow(
+        secMiss,
+        (r.name || 'Recurring') + ' \u00b7 ' + typeLbl + ' \u00b7 due ' + dlbl,
+        fmt(Number(r.amount) || 0),
+        r.type === 'inc' ? 'green' : 'red'
+      );
+    });
+  }
 
   if (typeof budgets !== 'undefined' && budgets && Object.keys(budgets).length) {
     var overRows = [];
@@ -656,17 +759,26 @@ function renderReport() {
     });
   }
 
-  // By category
-  if (catSorted.length) {
+  // By category (top 5 + Others)
+  if (catDisplay.length) {
     var sec2 = section('Spending by category');
-    catSorted.forEach(function(entry) {
-      var cat  = entry[0], amt = entry[1];
-      var info = EXP_CATS[cat] || {icon:'📦'};
-      var pct  = totalExp > 0 ? ((amt/totalExp)*100).toFixed(1) : 0;
-      var row  = document.createElement('div'); row.className = 'report-row';
-      var lb   = document.createElement('span'); lb.className = 'rr-label';
-      lb.textContent = info.icon + ' ' + cat;
-      var rv   = document.createElement('span'); rv.style.display = 'flex'; rv.style.gap = '16px';
+    if (catSorted.length > 5) {
+      var note = document.createElement('p');
+      note.className = 'ft-note report-cat-note';
+      note.textContent = 'Top 5 categories; remaining ' + (catSorted.length - 5) + ' grouped as Others.';
+      sec2.appendChild(note);
+    }
+    catDisplay.forEach(function(entry) {
+      var cat = entry.cat;
+      var amt = entry.amt;
+      var info = entry.isOthers ? { icon: '\u{1F4E6}' } : (EXP_CATS[cat] || { icon: '\u{1F4E6}' });
+      var pct = totalExp > 0 ? ((amt / totalExp) * 100).toFixed(1) : 0;
+      var label = entry.isOthers
+        ? info.icon + ' Others (' + entry.count + ' categories)'
+        : info.icon + ' ' + cat;
+      var row = document.createElement('div'); row.className = 'report-row';
+      var lb = document.createElement('span'); lb.className = 'rr-label'; lb.textContent = label;
+      var rv = document.createElement('span'); rv.style.display = 'flex'; rv.style.gap = '16px';
       var pctS = document.createElement('span'); pctS.style.cssText = 'color:var(--ink3);font-size:var(--f-xs)'; pctS.textContent = pct + '%';
       var amtS = document.createElement('span'); amtS.className = 'rr-val red'; amtS.textContent = fmt(amt);
       rv.appendChild(pctS); rv.appendChild(amtS);
@@ -708,21 +820,57 @@ function renderReport() {
     addRow(sec5, 'Total litres', ptLitres.toFixed(1) + ' L');
     addRow(sec5, 'Total cost',   fmt(ptTotal), 'red');
   }
+
+  var reportNotes = getReportNotesForMonth_(ym);
+  if (!reportNotes) {
+    var notesInput = document.getElementById('report-notes-input');
+    if (notesInput) reportNotes = String(notesInput.value || '').trim();
+  }
+  if (reportNotes) {
+    var secNotes = section('Notes');
+    var notesBody = document.createElement('p');
+    notesBody.className = 'report-notes-body';
+    notesBody.textContent = reportNotes;
+    secNotes.appendChild(notesBody);
+  }
 }
 
 function buildReportShareText() {
   var me = mExp();
   var mi = mInc();
+  var ym = viewYM();
   var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
   var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
   var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
   var net = totalInc - totalExp;
-  return (
-    'Finance Tracker · ' + ymLabel + '\n' +
-    'Income: ' + fmt(totalInc) + '\n' +
-    'Expenses: ' + fmt(totalExp) + '\n' +
-    'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net))
-  );
+  var prev = reportMonthTotals_(reportPrevMonthYM_());
+  var lines = [
+    'Finance Tracker · ' + ymLabel,
+    'Income: ' + fmt(totalInc) + formatShareDelta_(totalInc, prev.inc),
+    'Expenses: ' + fmt(totalExp) + formatShareDelta_(totalExp, prev.exp),
+    'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + formatShareDelta_(net, prev.net),
+  ];
+  var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  if (missedRec.length) {
+    lines.push('Missed recurring: ' + missedRec.length + ' bill' + (missedRec.length === 1 ? '' : 's'));
+    missedRec.slice(0, 3).forEach(function(m) {
+      lines.push('  · ' + (m.r.name || 'Bill') + ' ' + fmt(Number(m.r.amount) || 0));
+    });
+  }
+  var notes = getReportNotesForMonth_(ym);
+  if (!notes) {
+    var notesInput = document.getElementById('report-notes-input');
+    if (notesInput) notes = String(notesInput.value || '').trim();
+  }
+  if (notes) lines.push('Notes: ' + notes);
+  return lines.join('\n');
+}
+
+function formatShareDelta_(cur, prev) {
+  if (prev <= 0) return '';
+  var pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct === 0) return ' (same vs last month)';
+  return ' (' + (pct > 0 ? '+' : '') + pct + '% vs last month)';
 }
 
 /** Used as document.title so Save-as-PDF picks up month + generation date/time. */
@@ -755,6 +903,19 @@ var ptDate = document.getElementById('pt-date');
 if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 
 // Report
+var reportNotesInput = document.getElementById('report-notes-input');
+if (reportNotesInput) {
+  var reportNotesTimer = null;
+  reportNotesInput.addEventListener('input', function() {
+    clearTimeout(reportNotesTimer);
+    reportNotesTimer = setTimeout(function() {
+      if (typeof viewYM === 'function') saveReportNotesForMonth_(viewYM(), reportNotesInput.value);
+    }, 400);
+  });
+  reportNotesInput.addEventListener('blur', function() {
+    if (typeof viewYM === 'function') saveReportNotesForMonth_(viewYM(), reportNotesInput.value);
+  });
+}
 var printBtn = document.getElementById('print-report-btn');
 if (printBtn) printBtn.addEventListener('click', function() {
   if (typeof renderReport === 'function') renderReport();

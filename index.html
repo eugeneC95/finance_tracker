@@ -3307,7 +3307,7 @@ body.dark .fs-btn.active { color: #041312; }
 
 /* ── Report ── */
 @media print {
-  .sb, .page-header .sub, .ft-toolbar, .exp-search-pop, .exp-search-toggle { display:none !important; }
+  .sb, .page-header .sub, .ft-toolbar, .report-notes-field, .exp-search-pop, .exp-search-toggle { display:none !important; }
   .main { width:100% !important; }
   #page-report { display:block !important; }
   #page-report .page-body { display:block !important; }
@@ -3323,6 +3323,39 @@ body.dark .fs-btn.active { color: #041312; }
 .report-row .rr-val.red   { color:var(--red); }
 .report-row .rr-val.green { color:var(--green); }
 .report-total { display:flex; justify-content:space-between; padding:12px 0 0; margin-top:8px; border-top:2px solid var(--line); font-weight:700; font-size:var(--f-lg); }
+.report-row__right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; text-align:right; }
+.report-row__delta { display:block; font-size:var(--f-xs); font-weight:500; color:var(--ink3); }
+.report-row__delta.green { color:var(--green); }
+.report-row__delta.red { color:var(--red); }
+.report-total .report-row__delta { display:block; font-size:var(--f-xs); font-weight:500; margin-top:2px; }
+.report-cat-note { margin: -4px 0 10px; }
+.report-notes-field {
+  padding: var(--s4);
+  margin-bottom: var(--s4);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.report-notes-input {
+  width: 100%;
+  min-height: 72px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font: inherit;
+  font-size: var(--f-sm);
+  resize: vertical;
+  background: var(--card-bg2);
+  color: var(--ink);
+}
+.report-notes-body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: var(--f-sm);
+  line-height: 1.6;
+  color: var(--ink2);
+}
 
 
 
@@ -4241,7 +4274,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v109 · 2026-06-30 12:55';
+  var BUILD_VERSION    = 'v110 · 2026-06-30 17:05';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -5344,7 +5377,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v109 · 2026-06-30 12:55</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v110 · 2026-06-30 17:05</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5496,6 +5529,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <button type="button" class="btn btn-primary" id="print-report-btn">Print or save PDF</button>
         <button type="button" class="btn-ghost" id="share-report-btn">Share summary</button>
       </div>
+      <div class="report-notes-field">
+        <label class="lbl" for="report-notes-input">Notes for this report (optional)</label>
+        <textarea id="report-notes-input" class="report-notes-input" rows="3" placeholder="One-off spend this month: laptop repair"></textarea>
+        <p class="ft-note" style="margin-top:8px;margin-bottom:0">Saved per month. Included when you print or share.</p>
+      </div>
       <div id="report-content"></div>
     </div>
   </div>
@@ -5599,13 +5637,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v109 · 2026-06-30 12:55</div>
-<script src="build-id.js?v=109"></script>
-<script src="app.js?v=109"></script>
-<script src="sync.js?v=109"></script>
-<script src="features.js?v=109"></script>
-<script src="extras.js?v=109"></script>
-<script src="import-inline.js?v=109"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v110 · 2026-06-30 17:05</div>
+<script src="build-id.js?v=110"></script>
+<script src="app.js?v=110"></script>
+<script src="sync.js?v=110"></script>
+<script src="features.js?v=110"></script>
+<script src="extras.js?v=110"></script>
+<script src="import-inline.js?v=110"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
