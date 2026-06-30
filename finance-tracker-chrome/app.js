@@ -2097,7 +2097,7 @@ function renderBankList() {
     curWrap.appendChild(curLab);
     curWrap.appendChild(curSel);
 
-    const balWrap = document.createElement('div');
+    const balFieldWrap = document.createElement('div');
     const balLab = document.createElement('label');
     balLab.className = 'lbl';
     balLab.textContent = 'Balance';
@@ -2107,13 +2107,13 @@ function renderBankList() {
     balInp.value = String(b.balance);
     balInp.min = '0';
     balInp.step = '0.01';
-    balWrap.appendChild(balLab);
-    balWrap.appendChild(balInp);
+    balFieldWrap.appendChild(balLab);
+    balFieldWrap.appendChild(balInp);
 
     grid.appendChild(nameWrap);
     grid.appendChild(acctWrap);
     grid.appendChild(curWrap);
-    grid.appendChild(balWrap);
+    grid.appendChild(balFieldWrap);
     editBody.appendChild(grid);
 
     const btnRow = document.createElement('div');
