@@ -39,7 +39,7 @@ var FT_FINANCE_STORAGE_KEYS_ = [
 
 // Hard-coded Google Apps Script web app (…/exec only). Shown read-only on Settings; not user-editable.
 var APPS_SCRIPT_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec';
+  'https://script.google.com/macros/s/AKfycbwHOytl1mIYf070-EQCWjddyZar0FGLfchijC5LXoveT7TeRuzZ9JgRRD1ImX566_Dc/exec';
 
 var syncUrl   = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
