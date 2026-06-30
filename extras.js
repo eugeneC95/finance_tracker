@@ -744,7 +744,10 @@ if (ptDate && typeof todayStr === 'function') ptDate.value = todayStr();
 
 // Report
 var printBtn = document.getElementById('print-report-btn');
-if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
+if (printBtn) printBtn.addEventListener('click', function() {
+  if (typeof renderReport === 'function') renderReport();
+  window.print();
+});
 var shareBtn = document.getElementById('share-report-btn');
 if (shareBtn) shareBtn.addEventListener('click', function() {
   var text = buildReportShareText();

@@ -3026,11 +3026,12 @@ body.dark .fs-btn.active { color: #000; }
 
 /* ── Report ── */
 @media print {
-  .sb, .page-header .sub, #print-report-btn, .page-header + div, .exp-search-pop, .exp-search-toggle { display:none !important; }
+  .sb, .page-header .sub, .ft-toolbar, .exp-search-pop, .exp-search-toggle { display:none !important; }
   .main { width:100% !important; }
   #page-report { display:block !important; }
+  #page-report .page-body { display:block !important; }
   .page:not(#page-report) { display:none !important; }
-  body { background:#fff !important; }
+  body { background:#fff !important; color:#000 !important; }
 }
 .report-section { margin-bottom:24px; }
 .report-section h3 { font-size:var(--f-lg); font-weight:700; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--line); }
@@ -4027,7 +4028,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v107 · 2026-06-30 12:07</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v108 · 2026-06-30 12:52</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4257,11 +4258,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=107"></script>
-<script src="app.js?v=107"></script>
-<script src="sync.js?v=107"></script>
-<script src="features.js?v=107"></script>
-<script src="extras.js?v=107"></script>
-<script src="import-inline.js?v=107"></script>
+<script src="build-id.js?v=108"></script>
+<script src="app.js?v=108"></script>
+<script src="sync.js?v=108"></script>
+<script src="features.js?v=108"></script>
+<script src="extras.js?v=108"></script>
+<script src="import-inline.js?v=108"></script>
 </body>
 </html>
