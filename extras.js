@@ -141,12 +141,23 @@ function petrolLastOdoEntry() {
   return list.length ? list[list.length - 1] : null;
 }
 
+function petrolKmPerL(l100) {
+  if (!l100 || l100 <= 0) return 0;
+  return 100 / l100;
+}
+
+function petrolFmtEfficiency(l100) {
+  if (!l100 || l100 <= 0) return '—';
+  return l100.toFixed(1) + ' L/100 km · ' + petrolKmPerL(l100).toFixed(2) + ' km/L';
+}
+
 function petrolFillEfficiency(entry, withOdo) {
   var idx = withOdo.findIndex(function(x) { return x.id === entry.id; });
   if (!entry.odo || idx <= 0) return null;
   var km = entry.odo - withOdo[idx - 1].odo;
   if (km <= 0) return null;
-  return { km: km, l100: (entry.litres / km) * 100 };
+  var l100 = (entry.litres / km) * 100;
+  return { km: km, l100: l100, kmL: petrolKmPerL(l100) };
 }
 
 function petrolAvgL100(withOdo) {
@@ -239,7 +250,7 @@ function updatePetrolCalc() {
   if (odo > 0 && last && last.odo > 0 && odo > last.odo && litres > 0) {
     var km = odo - last.odo;
     parts.push(km.toLocaleString() + ' km');
-    parts.push((litres / km * 100).toFixed(1) + ' L/100 km');
+    parts.push(petrolFmtEfficiency((litres / km) * 100));
   }
   if (liveSub) liveSub.textContent = parts.length ? parts.join(' · ') : 'Enter litres and price per litre (or total RM)';
 
@@ -247,7 +258,7 @@ function updatePetrolCalc() {
   if (odoHint) {
     odoHint.textContent = last && last.odo
       ? 'Last odometer: ' + last.odo.toLocaleString() + ' km (' + last.date + ')'
-      : 'Optional — two readings unlock cost/km and L/100 km';
+      : 'Optional — two readings unlock cost/km, L/100 km, and km/L';
   }
 }
 
@@ -287,7 +298,7 @@ function addPetrolEntry() {
     var km = odo - last.odo;
     if (km > 0) {
       var l100 = (litres / km) * 100;
-      if ((l100 > 20 || l100 < 2) && !confirm('Unusual petrol efficiency (' + l100.toFixed(1) + ' L/100km). Save anyway?')) {
+      if ((l100 > 20 || l100 < 2) && !confirm('Unusual petrol efficiency (' + petrolFmtEfficiency(l100) + '). Save anyway?')) {
         return;
       }
     }
@@ -357,7 +368,8 @@ function renderPetrolLog() {
   setEl('pt-litres', totalLitres > 0 ? totalLitres.toFixed(1) + ' L' : '0 L');
   setEl('pt-ppl', avgPpl > 0 ? 'RM ' + avgPpl.toFixed(2) : '—');
   setEl('pt-cpk', cpk > 0 ? 'RM ' + cpk.toFixed(2) : '—');
-  setEl('pt-eff', avgL100 > 0 ? avgL100.toFixed(1) + ' L/100km' : '—');
+  setEl('pt-eff', avgL100 > 0 ? avgL100.toFixed(1) + ' L/100 km' : '—');
+  setEl('pt-kml', avgL100 > 0 ? petrolKmPerL(avgL100).toFixed(2) + ' km/L' : '—');
 
   var histNote = document.getElementById('pt-history-note');
   if (histNote) {
@@ -415,7 +427,7 @@ function renderPetrolLog() {
       extra.className = 'pt-card__extra';
       var bits = [];
       if (e.odo) bits.push(e.odo.toLocaleString() + ' km');
-      if (eff) bits.push(eff.km.toLocaleString() + ' km trip · ' + eff.l100.toFixed(1) + ' L/100 km');
+      if (eff) bits.push(eff.km.toLocaleString() + ' km trip · ' + petrolFmtEfficiency(eff.l100));
       extra.textContent = bits.join(' · ');
       card.appendChild(extra);
     }
@@ -475,7 +487,7 @@ function renderPetrolEfficiencyChart() {
   if (!el) return;
   var series = petrolEfficiencyByMonth();
   if (!series.length) {
-    el.innerHTML = '<div class="ft-note" style="padding:12px 0">Log odometer on fill-ups to see L/100 km trend.</div>';
+    el.innerHTML = '<div class="ft-note" style="padding:12px 0">Log odometer on fill-ups to see L/100 km and km/L trend.</div>';
     return;
   }
   if (typeof renderMonthDailyLineChart !== 'function') return;

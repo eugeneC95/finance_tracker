@@ -1596,7 +1596,9 @@ function render() {
       }
     }
     expPtEl.textContent = (avgL100 > 0 && cpk > 0)
-      ? ('Petrol: ' + avgL100.toFixed(1) + ' L/100 km · RM ' + cpk.toFixed(2) + '/km')
+      ? ('Petrol: ' + (typeof petrolFmtEfficiency === 'function'
+        ? petrolFmtEfficiency(avgL100)
+        : avgL100.toFixed(1) + ' L/100 km') + ' · RM ' + cpk.toFixed(2) + '/km')
       : '';
     expPtEl.hidden = !expPtEl.textContent;
   }
@@ -1633,16 +1635,47 @@ function render() {
   renderBarChart('inc-chart', mi, INC_CATS, true);
 
   // Assets
-  document.getElementById('ns-banks').textContent  = fmt(totalBanks);
-  document.getElementById('ns-income').textContent = fmt(totalInc);
-  document.getElementById('ns-exp').textContent    = fmt(totalExp);
+  const totalBanksVal = totalBanks;
+  const utMv = computeUtTotalMarketValue();
+  const portfolioTotal = totalBanksVal + utMv;
+  const monthCashflow = totalInc - totalExp;
+
+  const nsBanks = document.getElementById('ns-banks');
+  if (nsBanks) nsBanks.textContent = fmt(totalBanksVal);
+  const nsIncome = document.getElementById('ns-income');
+  if (nsIncome) nsIncome.textContent = fmt(totalInc);
+  const nsExp = document.getElementById('ns-exp');
+  if (nsExp) nsExp.textContent = fmt(totalExp);
+
+  const nsPortfolio = document.getElementById('ns-portfolio');
+  if (nsPortfolio) {
+    nsPortfolio.textContent = fmt(portfolioTotal);
+    nsPortfolio.className = 'assets-hero__value ' + (portfolioTotal >= 0 ? 'green' : 'red');
+  }
+  const nsCashflow = document.getElementById('ns-cashflow');
+  if (nsCashflow) {
+    nsCashflow.textContent = (monthCashflow >= 0 ? '+' : '−') + fmt(Math.abs(monthCashflow));
+    nsCashflow.className = 'assets-cashflow-pill__val ' + (monthCashflow >= 0 ? 'green' : 'red');
+  }
+  const nsUt = document.getElementById('ns-ut');
+  if (nsUt) nsUt.textContent = fmt(utMv);
+  const nsBankCount = document.getElementById('ns-bank-count');
+  if (nsBankCount) {
+    nsBankCount.textContent = banks.length + ' account' + (banks.length === 1 ? '' : 's');
+  }
+  const nsUtCount = document.getElementById('ns-ut-count');
+  if (nsUtCount) {
+    nsUtCount.textContent = utHoldings.length + ' fund' + (utHoldings.length === 1 ? '' : 's');
+  }
+
   const nnet = document.getElementById('ns-net');
-  const na   = totalBanks + totalInc - totalExp;
-  nnet.textContent = fmt(na);
-  nnet.className   = 'assets-hero__value ' + (na >= 0 ? 'green' : 'red');
+  if (nnet) {
+    nnet.textContent = fmt(portfolioTotal);
+    nnet.className = 'assets-hero__value ' + (portfolioTotal >= 0 ? 'green' : 'red');
+  }
 
   const utSumEl = document.getElementById('ut-summary-mv');
-  if (utSumEl) utSumEl.textContent = fmt(computeUtTotalMarketValue());
+  if (utSumEl) utSumEl.textContent = fmt(utMv);
 
   const pageAssets = document.getElementById('page-assets');
   if (pageAssets && pageAssets.classList.contains('active')) {
@@ -1955,6 +1988,9 @@ function renderBankList() {
   }
 
   banks.forEach(b => {
+    const wrap = document.createElement('div');
+    wrap.className = 'assets-bank-card';
+
     const row = document.createElement('div');
     row.className = 'assets-acct-row';
 
@@ -1963,21 +1999,37 @@ function renderBankList() {
     ico.textContent = '🏦';
 
     const body = document.createElement('div');
+    body.className = 'assets-acct-row__body';
     const nameEl = document.createElement('div');
     nameEl.className = 'assets-acct-row__name';
     nameEl.textContent = b.name;
     const meta = document.createElement('div');
     meta.className = 'assets-acct-row__meta';
-    meta.textContent = (b.acct || 'Account') + ' · ' + normalizeBankCurrency(b.currency);
+    meta.textContent = b.acct || 'Account';
     body.appendChild(nameEl);
     body.appendChild(meta);
+
+    const curBadge = document.createElement('span');
+    curBadge.className = 'assets-currency-pill';
+    curBadge.textContent = normalizeBankCurrency(b.currency);
 
     const bal = document.createElement('div');
     bal.className = 'assets-acct-row__bal';
     bal.textContent = fmtBankAmount(b.balance, b.currency);
+    const balBase = document.createElement('div');
+    balBase.className = 'assets-acct-row__bal-base';
+    if (normalizeBankCurrency(b.currency) !== 'MYR') {
+      balBase.textContent = '≈ ' + fmt(bankBalanceInBase(b));
+    }
 
     const actions = document.createElement('div');
     actions.className = 'assets-acct-row__actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'assets-icon-btn';
+    editBtn.title = 'Edit';
+    editBtn.textContent = '✎';
 
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
@@ -1987,11 +2039,17 @@ function renderBankList() {
     delBtn.addEventListener('click', () => {
       if (confirm('Delete this account?')) deleteBank(b.id);
     });
+    actions.appendChild(editBtn);
     actions.appendChild(delBtn);
 
     row.appendChild(ico);
     row.appendChild(body);
-    row.appendChild(bal);
+    row.appendChild(curBadge);
+    const balWrap = document.createElement('div');
+    balWrap.className = 'assets-acct-row__bal-wrap';
+    balWrap.appendChild(bal);
+    if (balBase.textContent) balWrap.appendChild(balBase);
+    row.appendChild(balWrap);
     row.appendChild(actions);
 
     const edit = document.createElement('details');
@@ -2088,8 +2146,13 @@ function renderBankList() {
     editBody.appendChild(btnRow);
     edit.appendChild(editBody);
 
-    el.appendChild(row);
-    el.appendChild(edit);
+    editBtn.addEventListener('click', () => {
+      edit.open = !edit.open;
+    });
+
+    wrap.appendChild(row);
+    wrap.appendChild(edit);
+    el.appendChild(wrap);
   });
 }
 

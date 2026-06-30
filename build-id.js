@@ -1,7 +1,7 @@
 'use strict';
 /** Single source for cache bust — run `node scripts/bump-build.mjs` after JS/HTML changes. */
 window.FT_BUILD = {
-  ver: 104,
-  stamp: 'v104 · 2026-06-25 17:13',
-  cache: 'ft-v104',
+  ver: 105,
+  stamp: 'v105 · 2026-06-30 11:00',
+  cache: 'ft-v105',
 };

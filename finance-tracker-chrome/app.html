@@ -1049,7 +1049,7 @@ body.dark .bar-track { background: var(--card-bg2); }
 }
 .assets-acct-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
   gap: var(--s3) var(--s4);
   align-items: center;
   padding: var(--s4);
@@ -1057,6 +1057,128 @@ body.dark .bar-track { background: var(--card-bg2); }
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
+.assets-acct-row__body { min-width: 0; }
+.assets-acct-row__bal-wrap {
+  text-align: right;
+}
+.assets-acct-row__bal-base {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.assets-currency-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(55, 138, 221, 0.12);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.assets-bank-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: var(--s2);
+}
+.assets-bank-card .assets-acct-edit {
+  margin: 0;
+  border: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--card-bg);
+}
+.assets-bank-card .assets-acct-edit summary { display: none; }
+.assets-bank-card .assets-acct-edit__body {
+  border-top: 1px solid var(--line);
+  padding: var(--s4);
+}
+.assets-hero-v2 {
+  margin-bottom: var(--s6);
+  padding: var(--s6);
+  background: linear-gradient(145deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+  border: 1px solid var(--line);
+}
+body.dark .assets-hero-v2 {
+  background: linear-gradient(145deg, #1e1e22 0%, #25252c 100%);
+}
+.assets-hero-v2__top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+.assets-cashflow-pill {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  text-align: right;
+}
+.assets-cashflow-pill span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  margin-bottom: 4px;
+}
+.assets-cashflow-pill__val {
+  font-size: var(--f-lg);
+  font-weight: 800;
+}
+.assets-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 720px) {
+  .assets-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.assets-stat-tile {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.55);
+  border: 1px solid var(--line);
+}
+body.dark .assets-stat-tile { background: rgba(255,255,255,.04); }
+.assets-stat-tile__lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+}
+.assets-stat-tile__val {
+  margin-top: 4px;
+  font-size: var(--f-md);
+  font-weight: 800;
+}
+.assets-stat-tile__val.green { color: var(--green); }
+.assets-stat-tile__val.red { color: var(--red); }
+.assets-stat-tile__sub {
+  margin-top: 2px;
+  font-size: var(--f-xs);
+  color: var(--ink3);
+}
+.assets-add-panel {
+  margin-top: var(--s4);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s4);
+}
+.assets-add-panel summary {
+  cursor: pointer;
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink2);
+  list-style: none;
+}
+.assets-add-panel summary::-webkit-details-marker { display: none; }
+.assets-add-panel[open] summary { margin-bottom: var(--s4); }
 .assets-acct-row__ico {
   width: 40px;
   height: 40px;
@@ -1323,15 +1445,22 @@ body.dark .bar-track { background: var(--card-bg2); }
   .assets-form-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 680px) {
-  .assets-hero { padding: var(--s5); }
+  .assets-hero, .assets-hero-v2 { padding: var(--s5); }
   .assets-acct-row {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto auto;
+  }
+  .assets-acct-row__bal-wrap {
+    grid-column: 2 / -1;
+    text-align: left;
   }
   .assets-acct-row__bal {
-    grid-column: 2;
     text-align: left;
     font-size: var(--f-md);
+  }
+  .assets-currency-pill {
+    grid-column: 3;
+    grid-row: 1;
   }
   .assets-acct-row__actions {
     grid-column: 1 / -1;
@@ -3236,28 +3365,41 @@ body.dark .fs-btn.active { color: #000; }
     </div>
     <div class="page-body">
 
-      <section class="card assets-hero" aria-label="Net assets summary">
-        <div class="assets-hero__row">
+      <section class="card assets-hero-v2" aria-label="Portfolio summary">
+        <div class="assets-hero-v2__top">
           <div class="assets-hero__main">
-            <div class="assets-hero__label">Net assets</div>
-            <div class="assets-hero__value" id="ns-net">RM 0</div>
-            <p class="assets-hero__hint">Bank balances plus this month’s income minus expenses.</p>
+            <div class="assets-hero__label">Total portfolio</div>
+            <div class="assets-hero__value green" id="ns-portfolio">RM 0</div>
+            <p class="assets-hero__hint">Bank balances plus unit-trust market value (in RM).</p>
           </div>
-          <div class="assets-hero__chips">
-            <div class="assets-chip">
-              <span>Bank</span>
-              <strong class="green" id="ns-banks">RM 0</strong>
-            </div>
-            <div class="assets-chip">
-              <span>Income</span>
-              <strong class="green" id="ns-income">RM 0</strong>
-            </div>
-            <div class="assets-chip">
-              <span>Expenses</span>
-              <strong class="red" id="ns-exp">RM 0</strong>
-            </div>
+          <div class="assets-cashflow-pill">
+            <span>Month cashflow</span>
+            <strong class="assets-cashflow-pill__val green" id="ns-cashflow">RM 0</strong>
           </div>
         </div>
+        <div class="assets-stat-grid">
+          <div class="assets-stat-tile">
+            <div class="assets-stat-tile__lbl">Banks</div>
+            <div class="assets-stat-tile__val green" id="ns-banks">RM 0</div>
+            <div class="assets-stat-tile__sub" id="ns-bank-count">0 accounts</div>
+          </div>
+          <div class="assets-stat-tile">
+            <div class="assets-stat-tile__lbl">Unit trusts</div>
+            <div class="assets-stat-tile__val green" id="ns-ut">RM 0</div>
+            <div class="assets-stat-tile__sub" id="ns-ut-count">0 funds</div>
+          </div>
+          <div class="assets-stat-tile">
+            <div class="assets-stat-tile__lbl">Income (month)</div>
+            <div class="assets-stat-tile__val green" id="ns-income">RM 0</div>
+            <div class="assets-stat-tile__sub">Selected month</div>
+          </div>
+          <div class="assets-stat-tile">
+            <div class="assets-stat-tile__lbl">Expenses (month)</div>
+            <div class="assets-stat-tile__val red" id="ns-exp">RM 0</div>
+            <div class="assets-stat-tile__sub">Selected month</div>
+          </div>
+        </div>
+        <div id="ns-net" hidden aria-hidden="true"></div>
       </section>
 
       <div id="nw-snapshot-hint-assets" class="ft-inline-hint ft-nw-hint mb-5" style="display:none" role="status"></div>
@@ -3268,8 +3410,9 @@ body.dark .fs-btn.active { color: #000; }
           </div>
           <div class="panel-bd">
             <div class="assets-acct-list" id="bank-list"></div>
+            <details class="assets-add-panel">
+              <summary>+ Add bank account</summary>
             <form class="assets-form" id="bank-add-form" autocomplete="off" onsubmit="return false">
-              <div class="assets-form__title">Add account</div>
               <div class="assets-form-grid assets-form-grid--4">
                 <div>
                   <label class="lbl" for="bk-name">Bank</label>
@@ -3297,6 +3440,7 @@ body.dark .fs-btn.active { color: #000; }
                 <button type="button" class="btn btn-primary" id="add-bank-btn">Add account</button>
               </div>
             </form>
+            </details>
           </div>
         </section>
 
@@ -3813,7 +3957,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v104 · 2026-06-25 17:13</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v105 · 2026-06-30 11:00</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -3849,12 +3993,13 @@ body.dark .fs-btn.active { color: #000; }
             <div class="ft-chip"><span>Avg RM/L</span><strong id="pt-ppl">—</strong></div>
             <div class="ft-chip"><span>Cost / km</span><strong id="pt-cpk">—</strong></div>
             <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff">—</strong></div>
+            <div class="ft-chip"><span>km / L</span><strong id="pt-kml">—</strong></div>
           </div>
         </div>
       </section>
 
       <div class="card mb-5 pt-eff-card">
-        <div class="panel-hd"><span class="panel-title">Efficiency trend (L/100 km)</span></div>
+        <div class="panel-hd"><span class="panel-title">Efficiency trend (L/100 km &amp; km/L)</span></div>
         <div class="panel-bd">
           <div id="pt-eff-chart"></div>
           <p class="ft-note" style="margin-top:8px">Last 6 months with odometer readings.</p>
@@ -3910,10 +4055,10 @@ body.dark .fs-btn.active { color: #000; }
           </div>
 
           <details class="assets-help pt-help">
-            <summary>How cost/km and L/100 km are calculated</summary>
+            <summary>How cost/km, L/100 km, and km/L are calculated</summary>
             <div class="assets-help__body">
-              <p><strong>This fill:</strong> if you enter odometer, we show km since your last reading and L/100 km for this tank.</p>
-              <p style="margin-top:8px"><strong>Summary chips:</strong> cost/km and average L/100 km use all fills with odometer readings (first tank’s litres are excluded from the km average).</p>
+              <p><strong>This fill:</strong> if you enter odometer, we show km since your last reading, L/100 km, and km/L for this tank.</p>
+              <p style="margin-top:8px"><strong>Summary chips:</strong> cost/km and average efficiency use all fills with odometer readings (first tank’s litres are excluded from the km average). km/L = 100 ÷ L/100 km.</p>
             </div>
           </details>
 
@@ -4042,11 +4187,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=104"></script>
-<script src="app.js?v=104"></script>
-<script src="sync.js?v=104"></script>
-<script src="features.js?v=104"></script>
-<script src="extras.js?v=104"></script>
-<script src="import-inline.js?v=104"></script>
+<script src="build-id.js?v=105"></script>
+<script src="app.js?v=105"></script>
+<script src="sync.js?v=105"></script>
+<script src="features.js?v=105"></script>
+<script src="extras.js?v=105"></script>
+<script src="import-inline.js?v=105"></script>
 </body>
 </html>
