@@ -1,5 +1,5 @@
 // ============================================================
-//  Finance Tracker — Google Apps Script Backend v7 (merge-on-save + catRules/savingsGoal)
+//  Finance Tracker — Google Apps Script Backend v8 (fix _Meta save range)
 //
 //  WEB APP (already in sync.js — do not change unless you create a new deployment):
 //  https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec
@@ -9,12 +9,13 @@
 //  2. Replace all code with this file → Save
 //  3. Deploy → Manage deployments → Edit (pencil) on the Web app
 //  4. Version: New version → Deploy (same /exec URL)
-//  5. Verify: node scripts/verify-apps-script.mjs  →  apiVersion 7
+//  5. Verify: node scripts/verify-apps-script.mjs  →  apiVersion 8
 //
 //  See scripts/APPS_SCRIPT_DEPLOY.md in the repo for full steps.
 // ============================================================
 
 var SHEET_NAME = 'Finance Tracker';
+var API_VERSION = 8;
 
 // ── Get or create spreadsheet ──────────────────────────────
 function getOrCreateSheet(tabName) {
@@ -100,7 +101,7 @@ function handleSaveChunk_(e) {
           }
         }
         if (allGone) {
-          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: 7 };
+          return { ok: true, saved: new Date().toISOString(), duplicate: true, apiVersion: API_VERSION };
         }
         return { ok: true, partial: true, need: i };
       }
@@ -113,7 +114,7 @@ function handleSaveChunk_(e) {
       cache.remove(keyPrefix + i);
     }
     saveAllData(payload);
-    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: 7 };
+    return { ok: true, saved: new Date().toISOString(), saveChunkTotal: total, apiVersion: API_VERSION };
   } catch (err) {
     return { ok: false, error: err.toString() };
   } finally {
@@ -130,7 +131,7 @@ function doGet(e) {
       result = {
         ok: true,
         message: 'Finance Tracker connected successfully',
-        apiVersion: 7,
+        apiVersion: API_VERSION,
       };
 
     } else if (action === 'save') {
@@ -142,7 +143,7 @@ function doGet(e) {
         // or JSON containing a literal % (e.g. "50% off" in a note) throws URIError.
         var payload = JSON.parse(raw);
         saveAllData(payload);
-        result = { ok: true, saved: new Date().toISOString(), apiVersion: 7 };
+        result = { ok: true, saved: new Date().toISOString(), apiVersion: API_VERSION };
       }
 
     } else if (action === 'save_chunk') {
@@ -173,7 +174,7 @@ function doPost(e) {
       var payload = JSON.parse(e.postData.contents);
       saveAllData(payload);
       return ContentService
-        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: 7 }))
+        .createTextOutput(JSON.stringify({ ok: true, saved: new Date().toISOString(), apiVersion: API_VERSION }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   } catch (err) {
@@ -185,7 +186,6 @@ function doPost(e) {
 }
 
 // ── Save all data tabs (merge with existing Sheet rows — never wipe missing months) ──
-var API_VERSION = 7;
 
 function catRulesToRows(obj) {
   return Object.keys(obj || {}).sort().map(function(k) {
@@ -361,7 +361,10 @@ function saveAllData(payload) {
 
   var meta = getOrCreateSheet('_Meta');
   meta.clearContents();
-  meta.getRange(1, 1, 1, 2).setValues([['lastSaved', new Date().toISOString()], ['apiVersion', API_VERSION]]);
+  meta.getRange(1, 1, 2, 2).setValues([
+    ['lastSaved', new Date().toISOString()],
+    ['apiVersion', API_VERSION],
+  ]);
 }
 
 function writeTab(tabName, rows, cols) {

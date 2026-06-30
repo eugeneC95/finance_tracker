@@ -19,6 +19,7 @@ console.log(JSON.stringify(data, null, 2));
 const v = Number(data.apiVersion);
 if (data.ok && v >= 6) {
   console.log('\nOK — merge-on-save (v6+) is live.');
+  if (v >= 8) console.log('v8+ — _Meta save range fix deployed.');
   process.exit(0);
 }
 if (data.ok && v < 6) {
