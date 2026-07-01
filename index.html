@@ -920,6 +920,58 @@ body.dark .cat-btn.active { color: #041312; }
 .modal.modal--edit {
   max-width: 420px;
 }
+.modal.modal--split {
+  max-width: 480px;
+}
+.split-desc-preview {
+  font-weight: 600;
+  font-size: var(--f-md);
+  margin: 0 0 6px;
+  word-break: break-word;
+}
+.split-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(108px, 132px) 36px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.split-row__cat {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  font-size: var(--f-sm);
+}
+.split-row__amt {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  font-size: var(--f-sm);
+  text-align: right;
+}
+.split-row__rm { flex-shrink: 0; }
+.split-summary {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--card-bg2);
+  font-size: var(--f-sm);
+  color: var(--ink2);
+  line-height: 1.45;
+}
+.split-summary--ok { color: var(--green); }
+.split-summary--warn { color: var(--red); }
+.split-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
 .edit-modal-bd .lbl {
   margin-bottom: 0;
 }
@@ -4371,7 +4423,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v116 · 2026-07-01 14:57';
+  var BUILD_VERSION    = 'v117 · 2026-07-01 15:12';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -5539,7 +5591,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v116 · 2026-07-01 14:57</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v117 · 2026-07-01 15:12</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5770,6 +5822,32 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <!-- ══════════════════════════════════════════
+     SPLIT EXPENSE MODAL
+══════════════════════════════════════════ -->
+<div class="overlay" id="split-overlay">
+  <div class="modal modal--split" role="dialog" aria-modal="true" aria-labelledby="split-title">
+    <div class="modal-hd">
+      <div class="modal-title" id="split-title">Split expense</div>
+      <button type="button" class="modal-close" id="split-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-bd">
+      <p class="split-desc-preview" id="split-desc-preview"></p>
+      <p class="ft-note" id="split-total-hint" style="margin-top:0;margin-bottom:14px"></p>
+      <div id="split-rows" aria-label="Split lines"></div>
+      <div class="split-modal-actions">
+        <button type="button" class="btn-ghost" id="split-add-row">+ Add line</button>
+        <button type="button" class="btn-ghost" id="split-even" hidden>Split evenly</button>
+      </div>
+      <div class="split-summary" id="split-summary"></div>
+    </div>
+    <div class="modal-ft modal-ft--edit">
+      <button type="button" class="btn-ghost" id="split-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="split-save">Add split</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      CATEGORY DRILL-DOWN MODAL
 ══════════════════════════════════════════ -->
 <div class="overlay" id="cat-detail-overlay">
@@ -5826,13 +5904,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v116 · 2026-07-01 14:57</div>
-<script src="build-id.js?v=116"></script>
-<script src="app.js?v=116"></script>
-<script src="sync.js?v=116"></script>
-<script src="features.js?v=116"></script>
-<script src="extras.js?v=116"></script>
-<script src="import-inline.js?v=116"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v117 · 2026-07-01 15:12</div>
+<script src="build-id.js?v=117"></script>
+<script src="app.js?v=117"></script>
+<script src="sync.js?v=117"></script>
+<script src="features.js?v=117"></script>
+<script src="extras.js?v=117"></script>
+<script src="import-inline.js?v=117"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

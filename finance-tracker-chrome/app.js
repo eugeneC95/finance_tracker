@@ -1106,6 +1106,7 @@ function moneySetCents(el, cents) {
   cents = Math.max(0, Math.min(MONEY_INPUT_MAX_CENTS, Math.round(cents || 0)));
   el.dataset.moneyCents = String(cents);
   el.value = cents === 0 ? '' : (cents / 100).toFixed(2);
+  try { el.dispatchEvent(new CustomEvent('ft-money-change', { bubbles: true })); } catch (err) {}
 }
 
 function moneySetAmount(el, amount) {
@@ -1236,19 +1237,191 @@ function parseSplitSpec(spec) {
     .filter(function(x) { return x && EXP_CATS[x.cat] && x.amount > 0; });
 }
 
-function addSplitExpense() {
+function splitModalTotal_() {
+  var hint = document.getElementById('split-total-hint');
+  if (!hint || !hint.dataset.splitTotal) return 0;
+  var t = parseFloat(hint.dataset.splitTotal);
+  return isNaN(t) || t <= 0 ? 0 : t;
+}
+
+function buildSplitCatSelect_(selected) {
+  var sel = document.createElement('select');
+  sel.className = 'split-row__cat';
+  Object.keys(EXP_CATS).forEach(function(c) {
+    var opt = document.createElement('option');
+    var info = EXP_CATS[c] || {};
+    opt.value = c;
+    opt.textContent = (info.icon ? info.icon + ' ' : '') + c;
+    if (c === selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  return sel;
+}
+
+function addSplitRow_(defaultCat) {
+  var list = document.getElementById('split-rows');
+  if (!list) return;
+  var row = document.createElement('div');
+  row.className = 'split-row';
+
+  var sel = buildSplitCatSelect_(defaultCat || selectedCat || 'Other');
+  var amt = document.createElement('input');
+  amt.type = 'text';
+  amt.className = 'split-row__amt';
+  amt.placeholder = 'Amount';
+  amt.inputMode = 'numeric';
+  amt.autocomplete = 'off';
+  wireCalculatorMoneyInput(amt);
+
+  var rm = document.createElement('button');
+  rm.type = 'button';
+  rm.className = 'assets-icon-btn del split-row__rm';
+  rm.title = 'Remove line';
+  rm.textContent = '\u2715';
+  rm.addEventListener('click', function() {
+    if (list.children.length <= 2) {
+      showToast('Keep at least 2 lines for a split');
+      return;
+    }
+    row.remove();
+    updateSplitSummary_();
+  });
+
+  row.appendChild(sel);
+  row.appendChild(amt);
+  row.appendChild(rm);
+  list.appendChild(row);
+}
+
+function collectSplitRows_() {
+  var list = document.getElementById('split-rows');
+  if (!list) return [];
+  var rows = [];
+  list.querySelectorAll('.split-row').forEach(function(row) {
+    var cat = row.querySelector('.split-row__cat');
+    var amt = row.querySelector('.split-row__amt');
+    if (!cat || !amt) return;
+    var amount = moneyAmountFromInput(amt);
+    if (amount > 0 && EXP_CATS[cat.value]) {
+      rows.push({ cat: cat.value, amount: amount });
+    }
+  });
+  return rows;
+}
+
+function updateSplitSummary_() {
+  var summary = document.getElementById('split-summary');
+  var evenBtn = document.getElementById('split-even');
+  if (!summary) return;
+  var rows = collectSplitRows_();
+  var allocated = rows.reduce(function(a, r) { return a + r.amount; }, 0);
+  var total = splitModalTotal_();
+  var parts = ['Parts: ' + rows.length + ' \u00b7 Allocated: ' + fmt(allocated)];
+  summary.className = 'split-summary';
+  if (total > 0) {
+    var diff = total - allocated;
+    parts.push('of ' + fmt(total));
+    if (Math.abs(diff) < 0.009) {
+      parts.push('\u2713 matches receipt');
+      summary.classList.add('split-summary--ok');
+    } else if (diff > 0) {
+      parts.push(fmt(diff) + ' left');
+    } else {
+      parts.push(fmt(Math.abs(diff)) + ' over');
+      summary.classList.add('split-summary--warn');
+    }
+  }
+  summary.textContent = parts.join(' \u00b7 ');
+  if (evenBtn) evenBtn.hidden = !(total > 0 && listRowCount_() >= 2);
+}
+
+function listRowCount_() {
+  var list = document.getElementById('split-rows');
+  return list ? list.querySelectorAll('.split-row').length : 0;
+}
+
+function splitEvenly_() {
+  var total = splitModalTotal_();
+  if (total <= 0) return;
+  var list = document.getElementById('split-rows');
+  if (!list) return;
+  var amts = list.querySelectorAll('.split-row__amt');
+  var n = amts.length;
+  if (n < 2) return;
+  var each = Math.floor((total * 100) / n) / 100;
+  var used = 0;
+  amts.forEach(function(el, i) {
+    if (i === n - 1) moneySetAmount(el, Math.round((total - used) * 100) / 100);
+    else {
+      moneySetAmount(el, each);
+      used += each;
+    }
+  });
+  updateSplitSummary_();
+}
+
+function openSplitModal_() {
+  var nEl = document.getElementById('exp-name');
+  var name = nEl ? nEl.value.trim() : '';
+  if (!name) {
+    if (nEl) shake(nEl);
+    showToast('Enter a description first');
+    return;
+  }
+  var preview = document.getElementById('split-desc-preview');
+  if (preview) preview.textContent = name;
+
+  var aEl = document.getElementById('exp-amount');
+  var total = aEl ? moneyAmountFromInput(aEl) : 0;
+  var hint = document.getElementById('split-total-hint');
+  if (hint) {
+    if (total > 0) {
+      hint.textContent = 'Receipt total from amount field: ' + fmt(total);
+      hint.dataset.splitTotal = String(total);
+    } else {
+      hint.textContent = 'Tip: fill Amount on the form first to track how much is left to allocate.';
+      delete hint.dataset.splitTotal;
+    }
+  }
+
+  var list = document.getElementById('split-rows');
+  if (list) {
+    list.innerHTML = '';
+    addSplitRow_(selectedCat || 'Food');
+    addSplitRow_('Other');
+  }
+  updateSplitSummary_();
+
+  var overlay = document.getElementById('split-overlay');
+  if (overlay) overlay.classList.add('open');
+  var firstAmt = list && list.querySelector('.split-row__amt');
+  if (firstAmt) setTimeout(function() { try { firstAmt.focus(); } catch (e) {} }, 60);
+}
+
+function closeSplitModal_() {
+  var overlay = document.getElementById('split-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function saveSplitExpense_() {
   var nEl = document.getElementById('exp-name');
   var dEl = document.getElementById('exp-date');
   var name = nEl ? nEl.value.trim() : '';
   var date = dEl && dEl.value ? dEl.value : todayStr();
   if (!name) { if (nEl) shake(nEl); return; }
-  var spec = prompt('Split format: Category:Amount, Category:Amount\nExample: Groceries:80, Household:25');
-  if (!spec) return;
-  var rows = parseSplitSpec(spec);
-  if (!rows.length) {
-    showToast('Invalid split format');
+
+  var rows = collectSplitRows_();
+  if (rows.length < 2) {
+    showToast('Add at least 2 parts with amounts');
     return;
   }
+
+  var total = splitModalTotal_();
+  var allocated = rows.reduce(function(a, r) { return a + r.amount; }, 0);
+  if (total > 0 && allocated > total + 0.009) {
+    if (!confirm('Split total ' + fmt(allocated) + ' is more than receipt ' + fmt(total) + '. Save anyway?')) return;
+  }
+
   var group = 'split-' + Date.now();
   rows.forEach(function(r) {
     expenses.push({
@@ -1264,8 +1437,13 @@ function addSplitExpense() {
   if (nEl) nEl.value = '';
   var aEl = document.getElementById('exp-amount');
   if (aEl) moneyClearInput(aEl);
+  closeSplitModal_();
   render();
-  showToast('Added split expense (' + rows.length + ' parts)');
+  showToast('Split into ' + rows.length + ' expenses (' + fmt(allocated) + ')');
+}
+
+function addSplitExpense() {
+  openSplitModal_();
 }
 
 function repeatLastExpense() {
@@ -2650,6 +2828,28 @@ document.getElementById('edit-name').addEventListener('keydown', e => {
 });
 document.getElementById('edit-amount').addEventListener('keydown', e => {
   if (e.key==='Enter') saveEdit(); if (e.key==='Escape') closeEditModal();
+});
+
+bindClick('split-close', closeSplitModal_);
+bindClick('split-cancel', closeSplitModal_);
+bindClick('split-save', saveSplitExpense_);
+bindClick('split-add-row', function() { addSplitRow_('Other'); updateSplitSummary_(); });
+bindClick('split-even', splitEvenly_);
+var splitOverlay = document.getElementById('split-overlay');
+if (splitOverlay) {
+  splitOverlay.addEventListener('click', function(e) {
+    if (e.target === splitOverlay) closeSplitModal_();
+  });
+}
+var splitRowsEl = document.getElementById('split-rows');
+if (splitRowsEl) splitRowsEl.addEventListener('ft-money-change', updateSplitSummary_);
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var so = document.getElementById('split-overlay');
+  if (so && so.classList.contains('open')) {
+    e.preventDefault();
+    closeSplitModal_();
+  }
 });
 document.getElementById('cd-close').addEventListener('click', closeCatDetail);
 document.getElementById('cat-detail-overlay').addEventListener('click', e => {
