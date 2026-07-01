@@ -4371,7 +4371,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v115 · 2026-07-01 12:59';
+  var BUILD_VERSION    = 'v116 · 2026-07-01 14:57';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4671,7 +4671,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="exp-add-mid">
               <div class="exp-add-field exp-add-field--amount">
                 <label class="lbl" for="exp-amount">Amount (RM)</label>
-                <input type="number" id="exp-amount" class="exp-input exp-input--amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+                <input type="text" id="exp-amount" class="exp-input exp-input--amount" placeholder="1030 → 10.30" inputmode="numeric" autocomplete="off"/>
                 <div id="exp-quick-amt" class="exp-quick-amt" aria-label="Add to amount"></div>
               </div>
               <div class="exp-add-side">
@@ -4821,7 +4821,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
             <div>
               <label class="lbl" for="inc-amount">Amount (RM)</label>
-              <input type="number" id="inc-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+              <input type="text" id="inc-amount" placeholder="1030 → 10.30" inputmode="numeric" autocomplete="off"/>
             </div>
             <div>
               <label class="lbl" for="inc-cat">Category</label>
@@ -5539,7 +5539,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v115 · 2026-07-01 12:59</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v116 · 2026-07-01 14:57</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5746,7 +5746,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="edit-grid-2">
         <div class="edit-field edit-field--amount">
           <label class="lbl" for="edit-amount">Amount (RM)</label>
-          <input type="number" id="edit-amount" min="0" step="0.01" inputmode="decimal"/>
+          <input type="text" id="edit-amount" inputmode="numeric" autocomplete="off" placeholder="1030 → 10.30"/>
         </div>
         <div class="edit-field">
           <label class="lbl" for="edit-date">Date</label>
@@ -5826,13 +5826,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v115 · 2026-07-01 12:59</div>
-<script src="build-id.js?v=115"></script>
-<script src="app.js?v=115"></script>
-<script src="sync.js?v=115"></script>
-<script src="features.js?v=115"></script>
-<script src="extras.js?v=115"></script>
-<script src="import-inline.js?v=115"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v116 · 2026-07-01 14:57</div>
+<script src="build-id.js?v=116"></script>
+<script src="app.js?v=116"></script>
+<script src="sync.js?v=116"></script>
+<script src="features.js?v=116"></script>
+<script src="extras.js?v=116"></script>
+<script src="import-inline.js?v=116"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

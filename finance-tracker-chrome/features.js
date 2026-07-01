@@ -135,8 +135,8 @@ document.getElementById('cat-btns').addEventListener('click', function(e) {
     btn.className = 'btn-ghost exp-quick-btn';
     btn.textContent = '+' + val;
     btn.addEventListener('click', function() {
-      var cur = parseFloat(amtInput.value) || 0;
-      amtInput.value = (cur + val).toFixed(2);
+      var cur = moneyCentsFromInput(amtInput);
+      moneySetCents(amtInput, cur + val * 100);
       amtInput.focus();
     });
     mount.appendChild(btn);
@@ -961,7 +961,8 @@ function homeQuickAddMerchant_(name, cat, amount) {
   var aEl = document.getElementById('exp-amount');
   var dEl = document.getElementById('exp-date');
   if (nEl) nEl.value = name;
-  if (aEl) aEl.value = amount > 0 ? String(amount) : '';
+  if (aEl && typeof moneySetAmount === 'function') moneySetAmount(aEl, amount);
+  else if (aEl) aEl.value = amount > 0 ? String(amount) : '';
   if (dEl && typeof todayStr === 'function') dEl.value = todayStr();
   if (cat && typeof EXP_CATS !== 'undefined' && EXP_CATS[cat]) {
     selectedCat = cat;

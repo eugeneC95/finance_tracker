@@ -1082,12 +1082,125 @@ function findNearDuplicateExpense(name, amount, date) {
   });
 }
 
+// ── Calculator-style money input (1030 → 10.30) ────────────
+var MONEY_INPUT_MAX_CENTS = 99999999999;
+
+function moneyCentsFromInput(el) {
+  if (!el) return 0;
+  if (el.dataset.moneyCents != null && el.dataset.moneyCents !== '') {
+    var stored = parseInt(el.dataset.moneyCents, 10);
+    if (!isNaN(stored) && stored >= 0) return stored;
+  }
+  var digits = String(el.value || '').replace(/\D/g, '');
+  if (!digits) return 0;
+  var parsed = parseInt(digits, 10);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function moneyAmountFromInput(el) {
+  return moneyCentsFromInput(el) / 100;
+}
+
+function moneySetCents(el, cents) {
+  if (!el) return;
+  cents = Math.max(0, Math.min(MONEY_INPUT_MAX_CENTS, Math.round(cents || 0)));
+  el.dataset.moneyCents = String(cents);
+  el.value = cents === 0 ? '' : (cents / 100).toFixed(2);
+}
+
+function moneySetAmount(el, amount) {
+  moneySetCents(el, Math.round((Number(amount) || 0) * 100));
+}
+
+function moneyClearInput(el) {
+  if (!el) return;
+  el.dataset.moneyCents = '0';
+  el.value = '';
+}
+
+function moneyAppendDigit_(el, digit) {
+  var cents = moneyCentsFromInput(el) * 10 + digit;
+  if (cents > MONEY_INPUT_MAX_CENTS) return;
+  moneySetCents(el, cents);
+}
+
+function moneyBackspace_(el) {
+  moneySetCents(el, Math.floor(moneyCentsFromInput(el) / 10));
+}
+
+function wireCalculatorMoneyInput(el) {
+  if (!el || el.dataset.moneyWired === '1') return;
+  el.dataset.moneyWired = '1';
+  el.type = 'text';
+  el.inputMode = 'numeric';
+  el.autocomplete = 'off';
+  el.spellcheck = false;
+  if (el.dataset.moneyCents == null) el.dataset.moneyCents = '0';
+
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Escape' || e.key.indexOf('Arrow') === 0 || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      moneyBackspace_(el);
+      return;
+    }
+    if (e.key === '.' || e.key === ',') {
+      e.preventDefault();
+      return;
+    }
+    if (e.key.length === 1 && /\d/.test(e.key)) {
+      e.preventDefault();
+      moneyAppendDigit_(el, parseInt(e.key, 10));
+    }
+  });
+
+  el.addEventListener('beforeinput', function(e) {
+    if (e.inputType === 'insertText' && e.data && /^\d$/.test(e.data)) {
+      e.preventDefault();
+      moneyAppendDigit_(el, parseInt(e.data, 10));
+      return;
+    }
+    if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
+      e.preventDefault();
+      moneyBackspace_(el);
+      return;
+    }
+    if (e.inputType === 'insertFromPaste') {
+      e.preventDefault();
+      return;
+    }
+  });
+
+  el.addEventListener('paste', function(e) {
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData('text') || '';
+    var digits = String(text).replace(/\D/g, '');
+    if (!digits) {
+      moneyClearInput(el);
+      return;
+    }
+    var cents = parseInt(digits, 10);
+    if (isNaN(cents)) moneyClearInput(el);
+    else moneySetCents(el, cents);
+  });
+
+  el.addEventListener('focus', function() {
+    try { el.select(); } catch (err) {}
+  });
+}
+
+function initCalculatorMoneyInputs_() {
+  ['exp-amount', 'inc-amount', 'edit-amount'].forEach(function(id) {
+    wireCalculatorMoneyInput(document.getElementById(id));
+  });
+}
+
 // ── Add expenses ───────────────────────────────────────────
 function addExpense() {
   const nEl = document.getElementById('exp-name');
   const aEl = document.getElementById('exp-amount');
   const name   = nEl.value.trim();
-  const amount = parseFloat(aEl.value);
+  const amount = moneyAmountFromInput(aEl);
   const date   = document.getElementById('exp-date').value || todayStr();
   let ok = true;
   if (!name)                        { shake(nEl); ok = false; }
@@ -1104,7 +1217,8 @@ function addExpense() {
   lastExpenseTpl = { name, amount, cat: selectedCat };
   chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
   saveExp();
-  nEl.value = ''; aEl.value = '';
+  nEl.value = '';
+  moneyClearInput(aEl);
   nEl.focus();
   render();
 }
@@ -1149,7 +1263,7 @@ function addSplitExpense() {
   saveExp();
   if (nEl) nEl.value = '';
   var aEl = document.getElementById('exp-amount');
-  if (aEl) aEl.value = '';
+  if (aEl) moneyClearInput(aEl);
   render();
   showToast('Added split expense (' + rows.length + ' parts)');
 }
@@ -1198,7 +1312,7 @@ function addIncome() {
   const nEl = document.getElementById('inc-name');
   const aEl = document.getElementById('inc-amount');
   const name   = nEl.value.trim();
-  const amount = parseFloat(aEl.value);
+  const amount = moneyAmountFromInput(aEl);
   const cat    = document.getElementById('inc-cat').value;
   const date   = document.getElementById('inc-date').value || todayStr();
   let ok = true;
@@ -1210,7 +1324,8 @@ function addIncome() {
   lastIncomeTpl = { name, amount, cat };
   chromeStorage.local.set({ [KEY_LAST_INC]: lastIncomeTpl });
   saveInc();
-  nEl.value = ''; aEl.value = '';
+  nEl.value = '';
+  moneyClearInput(aEl);
   render();
 }
 
@@ -1296,7 +1411,7 @@ function openEditModal(type, id) {
   editCtx = { type, id };
   document.getElementById('edit-title').textContent = type==='exp' ? 'Edit expense' : 'Edit income';
   document.getElementById('edit-name').value   = entry.name;
-  document.getElementById('edit-amount').value = entry.amount;
+  moneySetAmount(document.getElementById('edit-amount'), entry.amount);
   document.getElementById('edit-date').value   = entry.date;
 
   const sel = document.getElementById('edit-cat');
@@ -1327,7 +1442,7 @@ function saveEdit() {
   const nEl = document.getElementById('edit-name');
   const aEl = document.getElementById('edit-amount');
   const name   = nEl.value.trim();
-  const amount = parseFloat(aEl.value);
+  const amount = moneyAmountFromInput(aEl);
   let ok = true;
   if (!name)                        { shake(nEl); ok = false; }
   if (isNaN(amount) || amount <= 0) { shake(aEl); ok = false; }
@@ -2765,3 +2880,4 @@ if (expNameEl) {
 );
 fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
 
+initCalculatorMoneyInputs_();
