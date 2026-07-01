@@ -2,7 +2,7 @@
 //  Finance Tracker — Google Apps Script Backend v8 (fix _Meta save range)
 //
 //  WEB APP (already in sync.js — do not change unless you create a new deployment):
-//  https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec
+//  https://script.google.com/macros/s/AKfycbxquKbqVuXv24y2CFsx1-DO9g46EH38sVJDpJ4jCX5ZEQdX9YALAs5SOb16JLGOsfIx/exec
 //
 //  UPDATE LIVE SCRIPT (required after editing this file):
 //  1. script.google.com → open the project for the URL above
