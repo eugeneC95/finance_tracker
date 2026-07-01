@@ -449,6 +449,8 @@ function renderHomeDashboard() {
     });
   }
 
+  renderHomeRecentMerchants_();
+
   var prog = document.getElementById('home-month-progress');
   if (prog) {
     prog.innerHTML =
@@ -505,6 +507,7 @@ function renderHomeDashboard() {
   }
 
   renderHomeWeekDigest_();
+  renderBudgetPaceCard_('home-budget-pace');
 
   var catsEl = document.getElementById('home-top-cats');
   if (catsEl) {
@@ -741,6 +744,8 @@ function renderHomeDashboard() {
       '</ul></div>';
   }
 
+  renderHomeNwMini_();
+
   var tw = document.getElementById('today-widget');
   if (tw) tw.hidden = true;
 }
@@ -852,6 +857,207 @@ function renderExpBudgetChips() {
   });
 }
 
+function budgetPaceData_() {
+  var vm = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+  vm = new Date(vm.getFullYear(), vm.getMonth(), 1);
+  var td = new Date();
+  var isCurrent = td.getFullYear() === vm.getFullYear() && td.getMonth() === vm.getMonth();
+  var lastDay = new Date(vm.getFullYear(), vm.getMonth() + 1, 0).getDate();
+  var dayOfMonth = isCurrent ? td.getDate() : lastDay;
+  var daysLeft = isCurrent ? Math.max(0, lastDay - td.getDate()) : 0;
+  var me = typeof mExp === 'function' ? mExp() : [];
+  var catTotals = {};
+  me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  var totalBudget = 0;
+  var totalSpent = 0;
+  var rows = [];
+  Object.keys(budgets || {}).forEach(function(cat) {
+    var base = Number(budgets[cat]) || 0;
+    var limit = base + budgetCarryFromPrevMonth(cat, base);
+    var spent = catTotals[cat] || 0;
+    totalBudget += limit;
+    totalSpent += spent;
+    var left = limit - spent;
+    rows.push({
+      cat: cat,
+      limit: limit,
+      spent: spent,
+      left: left,
+      daily: daysLeft > 0 ? left / daysLeft : left,
+      over: spent > limit,
+    });
+  });
+  return {
+    isCurrent: isCurrent,
+    daysLeft: daysLeft,
+    dayOfMonth: dayOfMonth,
+    lastDay: lastDay,
+    totalBudget: totalBudget,
+    totalSpent: totalSpent,
+    totalLeft: totalBudget - totalSpent,
+    dailyAllowance: daysLeft > 0 ? (totalBudget - totalSpent) / daysLeft : (totalBudget - totalSpent),
+    rows: rows.sort(function(a, b) { return (b.spent / (b.limit || 1)) - (a.spent / (a.limit || 1)); }),
+  };
+}
+
+function renderBudgetPaceCard_(elId) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (!Object.keys(budgets || {}).length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  var p = budgetPaceData_();
+  el.hidden = false;
+  var tone = p.totalLeft < 0 ? 'budget-pace--over' : (p.dailyAllowance < 0 ? 'budget-pace--over' : '');
+  var headline = p.totalLeft >= 0
+    ? fmt(p.totalLeft) + ' left across budgets'
+    : fmt(Math.abs(p.totalLeft)) + ' over budget';
+  var sub = p.isCurrent
+    ? (p.daysLeft > 0
+      ? '~' + fmt(Math.max(0, p.dailyAllowance)) + '/day for ' + p.daysLeft + ' day' + (p.daysLeft === 1 ? '' : 's')
+      : 'Last day — spend carefully')
+    : 'Historical month view';
+  var rowHtml = p.rows.slice(0, elId === 'home-budget-pace' ? 3 : 6).map(function(r) {
+    var info = EXP_CATS[r.cat] || { icon: '\u{1F4E6}' };
+    var pct = r.limit > 0 ? Math.min(100, Math.round((r.spent / r.limit) * 100)) : 0;
+    var dailyTxt = p.isCurrent && p.daysLeft > 0
+      ? (r.left >= 0 ? fmt(r.daily) + '/d' : 'Over')
+      : (r.left >= 0 ? fmt(r.left) + ' left' : 'Over ' + fmt(Math.abs(r.left)));
+    return (
+      '<div class="budget-pace__row">' +
+      '<span>' + info.icon + ' ' + esc(r.cat) + '</span>' +
+      '<span class="budget-pace__nums">' + fmt(r.spent) + ' / ' + fmt(r.limit) + ' · ' + pct + '%</span>' +
+      '<span class="budget-pace__daily ' + (r.over ? 'red' : '') + '">' + dailyTxt + '</span></div>'
+    );
+  }).join('');
+  el.innerHTML =
+    '<div class="panel-hd"><span class="panel-title">Budget pace</span></div>' +
+    '<div class="panel-bd budget-pace ' + tone + '">' +
+    '<div class="budget-pace__headline">' + esc(headline) + '</div>' +
+    '<div class="budget-pace__sub">' + esc(sub) + '</div>' +
+    (rowHtml ? '<div class="budget-pace__rows">' + rowHtml + '</div>' : '') +
+    '</div>';
+}
+
+function recentMerchantChips_() {
+  var seen = {};
+  var list = [];
+  expenses.slice().sort(function(a, b) {
+    return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
+  }).forEach(function(e) {
+    var n = String(e.name || '').trim();
+    if (!n || seen[n]) return;
+    seen[n] = true;
+    list.push({ name: n, cat: e.cat, amount: Number(e.amount) || 0 });
+  });
+  return list.slice(0, 6);
+}
+
+function homeQuickAddMerchant_(name, cat, amount) {
+  if (typeof activateNavTab === 'function') activateNavTab('expenses');
+  var nEl = document.getElementById('exp-name');
+  var aEl = document.getElementById('exp-amount');
+  var dEl = document.getElementById('exp-date');
+  if (nEl) nEl.value = name;
+  if (aEl) aEl.value = amount > 0 ? String(amount) : '';
+  if (dEl && typeof todayStr === 'function') dEl.value = todayStr();
+  if (cat && typeof EXP_CATS !== 'undefined' && EXP_CATS[cat]) {
+    selectedCat = cat;
+    if (typeof buildCatButtons === 'function') buildCatButtons();
+  }
+  if (nEl) {
+    try { nEl.focus(); nEl.select(); } catch (e) {}
+  }
+  if (typeof showToast === 'function') showToast('Quick add — adjust amount if needed');
+}
+
+function renderHomeRecentMerchants_() {
+  var el = document.getElementById('home-recent-merchants');
+  if (!el) return;
+  var merchants = recentMerchantChips_();
+  if (!merchants.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML =
+    '<div class="panel-hd"><span class="panel-title">Quick add from recent</span></div>' +
+    '<div class="panel-bd home-merchant-chips">' +
+    merchants.map(function(m) {
+      var info = EXP_CATS[m.cat] || { icon: '\u{1F4E6}' };
+      return (
+        '<button type="button" class="home-merchant-chip" data-merchant="' + esc(m.name) + '" data-cat="' + esc(m.cat) + '" data-amt="' + m.amount + '">' +
+        '<span class="home-merchant-chip__ico">' + info.icon + '</span>' +
+        '<span class="home-merchant-chip__name">' + esc(m.name) + '</span>' +
+        (m.amount > 0 ? '<span class="home-merchant-chip__amt">' + fmt(m.amount) + '</span>' : '') +
+        '</button>'
+      );
+    }).join('') +
+    '</div>';
+  el.querySelectorAll('.home-merchant-chip').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      homeQuickAddMerchant_(btn.getAttribute('data-merchant'), btn.getAttribute('data-cat'), parseFloat(btn.getAttribute('data-amt') || '0'));
+    });
+  });
+}
+
+function renderHomeNwMini_() {
+  var wrap = document.getElementById('home-nw-mini');
+  if (!wrap) return;
+  if (typeof renderNetWorthChart === 'function') renderNetWorthChart('home-nw-chart');
+  wrap.hidden = !networthHist || networthHist.length < 2;
+}
+
+function renderCatRulesPanel_() {
+  var el = document.getElementById('settings-cat-rules-list');
+  if (!el) return;
+  var keys = Object.keys(catRules || {}).sort();
+  if (!keys.length) {
+    el.innerHTML = '<p class="ft-note" style="margin:0">No merchant rules yet — they are learned when you categorize expenses, or add one below.</p>';
+    return;
+  }
+  el.innerHTML = keys.map(function(k) {
+    var cat = catRules[k];
+    var info = (typeof EXP_CATS !== 'undefined' && EXP_CATS[cat]) ? EXP_CATS[cat] : { icon: '\u{1F4E6}' };
+    return (
+      '<div class="cat-rule-row">' +
+      '<span class="cat-rule-row__pattern">' + esc(k) + '</span>' +
+      '<span class="cat-rule-row__arrow">\u2192</span>' +
+      '<span class="cat-rule-row__cat">' + info.icon + ' ' + esc(cat) + '</span>' +
+      '<button type="button" class="assets-icon-btn del cat-rule-del" data-rule-key="' + esc(k) + '" title="Remove rule">\u2715</button></div>'
+    );
+  }).join('');
+  el.querySelectorAll('.cat-rule-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var key = btn.getAttribute('data-rule-key');
+      if (key && catRules[key]) {
+        delete catRules[key];
+        saveCatRules();
+        renderCatRulesPanel_();
+        if (typeof showToast === 'function') showToast('Rule removed');
+      }
+    });
+  });
+}
+
+function addCatRuleManual_() {
+  var patEl = document.getElementById('cat-rule-pattern');
+  var catEl = document.getElementById('cat-rule-cat');
+  if (!patEl || !catEl) return;
+  var key = normMerchantKey(patEl.value);
+  var cat = catEl.value;
+  if (key.length < 3) { shake(patEl); return; }
+  if (!cat || typeof EXP_CATS === 'undefined' || !EXP_CATS[cat]) { shake(catEl); return; }
+  catRules[key] = cat;
+  saveCatRules();
+  patEl.value = '';
+  renderCatRulesPanel_();
+  if (typeof showToast === 'function') showToast('Rule saved: ' + key + ' \u2192 ' + cat);
+}
+
 function renderBudgets() {
   var el = document.getElementById('budget-panel');
   if (!el) return;
@@ -868,6 +1074,7 @@ function renderBudgets() {
   if (!keys.length) {
     el.innerHTML = '<div class="empty" style="padding:12px 0"><div class="empty-icon">🎯</div>No budgets set. Add limits below.</div>';
     renderExpBudgetChips();
+    renderBudgetPaceCard_('exp-budget-pace');
     return;
   }
 
@@ -931,6 +1138,7 @@ function renderBudgets() {
     }
   });
   renderExpBudgetChips();
+  renderBudgetPaceCard_('exp-budget-pace');
 }
 
 function addBudget() {
@@ -1323,6 +1531,7 @@ function applyRecurring() {
 
 function maybeNotifyUpcomingRecurring_() {
   if (typeof Notification === 'undefined') return;
+  if (typeof settings !== 'undefined' && settings.notifyRecurring === false) return;
   if (Notification.permission === 'denied') return;
   var now = new Date();
   var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1331,21 +1540,26 @@ function maybeNotifyUpcomingRecurring_() {
   try {
     if (localStorage.getItem(noticeKey)) return;
   } catch (e) {}
-  var dueSoon = [];
+  var lines = [];
   (recurring || []).forEach(function(r) {
     if (!r || !r.active) return;
     var fd = recurringFireMeta_(r, today.getFullYear(), today.getMonth());
     var fire = new Date(today.getFullYear(), today.getMonth(), fd.fireDay);
     var days = Math.round((fire.getTime() - today.getTime()) / 86400000);
-    if (days >= 0 && days <= 3) {
-      dueSoon.push((r.type === 'inc' ? '+' : '-') + fmt(Number(r.amount) || 0) + ' ' + r.name + ' (' + (days === 0 ? 'today' : 'in ' + days + 'd') + ')');
+    if (days >= 0 && days <= 7) {
+      lines.push((r.type === 'inc' ? '+' : '-') + fmt(Number(r.amount) || 0) + ' ' + r.name + ' (' + (days === 0 ? 'today' : 'in ' + days + 'd') + ')');
     }
   });
-  if (!dueSoon.length) return;
+  var missed = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  missed.slice(0, 3).forEach(function(m) {
+    var r = m.r;
+    lines.unshift('Missed: ' + (r.name || 'Bill') + ' ' + fmt(Number(r.amount) || 0) + (m.daysOver > 0 ? ' (' + m.daysOver + 'd ago)' : ''));
+  });
+  if (!lines.length) return;
   function trigger() {
     try {
-      new Notification('Upcoming bills/reminders', {
-        body: dueSoon.slice(0, 3).join(' • '),
+      new Notification(missed.length ? 'Bills need attention' : 'Upcoming bills', {
+        body: lines.slice(0, 4).join(' \u2022 '),
         tag: 'ft-recurring-due',
       });
       localStorage.setItem(noticeKey, '1');
@@ -1790,6 +2004,7 @@ function openTrendMonthInExpenses() {
 function renderAllNetWorthCharts() {
   renderNetWorthChart('networth-chart');
   renderNetWorthChart('assets-networth-chart');
+  renderNetWorthChart('home-nw-chart');
 }
 
 function renderNetWorthChart(targetId) {
@@ -1803,9 +2018,10 @@ function renderNetWorthChart(targetId) {
 
   var chartKey = (targetId || 'networth-chart').replace(/[^a-z0-9]/gi, '');
   var gradId = 'nw-grad-' + chartKey;
+  var isMini = targetId === 'home-nw-chart';
 
-  var W   = el.clientWidth || 600;
-  var H   = 160;
+  var W   = el.clientWidth || (isMini ? 320 : 600);
+  var H   = isMini ? 96 : 160;
   var PAD = {t:10, r:20, b:30, l:72};
   var cW  = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
   var vals = networthHist.map(function(h){ return h.total; });
@@ -2030,4 +2246,11 @@ if (assetsNwSnapBtn) {
     if (typeof showToast === 'function') showToast('Portfolio snapshot saved for today');
   });
 }
+var catRuleAddBtn = document.getElementById('cat-rule-add-btn');
+if (catRuleAddBtn) catRuleAddBtn.addEventListener('click', addCatRuleManual_);
+var catRulePat = document.getElementById('cat-rule-pattern');
+if (catRulePat) catRulePat.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addCatRuleManual_();
+});
+
 loadFeatures();

@@ -6,6 +6,7 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_STATE = 'sync_state_v1';
+/** When true, every auto-sync session wipes local/session cache and loads the Sheet (full replace). */
 var FT_FORCE_SHEET_SOURCE = true;
 window.__ftForceSheetSource = FT_FORCE_SHEET_SOURCE;
 
@@ -17,6 +18,7 @@ var FT_FINANCE_STORAGE_KEYS_ = [
   'sync_state_v1', 'sync_url_v1'
 ];
 
+// Scrub persisted finance data before features.js / extras.js read localStorage (app.js is already parsed).
 (function ftForceSheetBootstrap_() {
   if (!FT_FORCE_SHEET_SOURCE) return;
   var i, k, extra = [];
@@ -124,6 +126,7 @@ function snapshotSheetBaseline_() {
   _sheetSessionLoaded = true;
 }
 
+/** True when local rows are missing whole months that exist on the last Sheet snapshot. */
 function localRowsMissingBaselineMonths_(localRows, baselineRows) {
   var localByM = countExpensesByMonth_(localRows);
   var baseByM = countExpensesByMonth_(baselineRows);
@@ -139,6 +142,7 @@ function localRowsMissingBaselineMonths_(localRows, baselineRows) {
   return false;
 }
 
+/** Merge for save: local edits win; keep other months from baseline so Sheet is not wiped. */
 function mergeRowArraysForSave_(localRows, baselineRows) {
   var map = {};
   (localRows || []).forEach(function(e) {
@@ -394,6 +398,7 @@ function syncSave(silent, onDone) {
       if (data && data.ok) {
         clearSyncDirty_();
         syncPendingSave = false;
+        clearSyncOutbox_();
         if (data.apiVersion != null) syncApiVersion = Number(data.apiVersion);
         _syncDirtyKinds.tx = false;
         _syncDirtyKinds.recurring = false;
@@ -418,6 +423,7 @@ function syncSave(silent, onDone) {
           }
         }
       } else {
+        markSyncOutboxPending_();
         var msg = humanizeSaveApiError((data && data.error) || 'unknown');
         setSyncStatus('error', 'Save failed: ' + msg);
         if (!silent) showToast('Save failed — ' + msg);
@@ -437,6 +443,7 @@ function syncSave(silent, onDone) {
       if (!silent) {
         showToast(looksOffline ? 'Offline — data saved locally' : msg);
       }
+      markSyncOutboxPending_();
       if (onDone) onDone(false);
     });
 }
@@ -459,6 +466,7 @@ function syncFinishLoad_(opts, ok) {
   }
 }
 
+/** Wipe finance cache + in-memory rows (keeps PIN session unlock). */
 function resetFinanceDataOnly_() {
   clearSyncDirty_();
   clearTimeout(syncTimer);
@@ -496,7 +504,6 @@ var _sheetPipelineBusy = false;
 var _sheetPipelineRetries = 0;
 var SHEET_LOAD_MAX_RETRIES = 4;
 
-/** Cold open only: reset local cache once, then load Sheet. No reload while app is in use. */
 function ensureSheetSessionLoad_(opts) {
   opts = opts || {};
   if (_sheetPipelineBusy || _sheetSessionLoaded) return;
@@ -555,6 +562,43 @@ var syncLocalDirty = false;
 var syncSaveBlocked = false;
 var syncPendingSave = false;
 var syncApiVersion = null;
+var KEY_SYNC_OUTBOX = 'ft_sync_outbox_v1';
+
+function loadSyncOutbox_() {
+  try {
+    var raw = localStorage.getItem(KEY_SYNC_OUTBOX);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function markSyncOutboxPending_() {
+  syncPendingSave = true;
+  try {
+    var ob = loadSyncOutbox_() || { retries: 0 };
+    ob.pending = true;
+    ob.at = new Date().toISOString();
+    ob.retries = (ob.retries || 0) + 1;
+    localStorage.setItem(KEY_SYNC_OUTBOX, JSON.stringify(ob));
+  } catch (e) {}
+  if (typeof updateSyncUI === 'function') updateSyncUI();
+}
+
+function clearSyncOutbox_() {
+  try { localStorage.removeItem(KEY_SYNC_OUTBOX); } catch (e) {}
+}
+
+function retrySyncOutboxNow_() {
+  if (!syncUrl) {
+    if (typeof showToast === 'function') showToast('Sync URL not configured');
+    return;
+  }
+  syncSave(false, function(ok) {
+    if (ok) clearSyncOutbox_();
+    if (typeof updateSyncUI === 'function') updateSyncUI();
+  });
+}
 
 function markSyncDirty_() { syncLocalDirty = true; }
 function clearSyncDirty_() { syncLocalDirty = false; }
@@ -589,6 +633,7 @@ function countExpensesByMonth_(arr) {
   return out;
 }
 
+/** Local has rows in a month the cloud payload lacks (e.g. May local, June only on Sheet). */
 function localHasMonthRowsMissingOnCloud_(localExp, cloudExp) {
   var localByM = countExpensesByMonth_(localExp);
   var cloudByM = countExpensesByMonth_(cloudExp);
@@ -918,6 +963,7 @@ window.addEventListener('ft-unlocked', function() {
   setTimeout(function() { ensureSheetSessionLoad_({ silent: true }); }, 100);
 });
 
+// Tab focus reload disabled for sheet-source mode — it cleared the UI while the user was working.
 function scheduleDebouncedSheetPull_() {
   if (FT_FORCE_SHEET_SOURCE) return;
   clearTimeout(scheduleDebouncedSheetPull_._t);
@@ -1043,8 +1089,29 @@ function updateSyncUI() {
   if (buildChip && window.FT_BUILD) buildChip.textContent = 'v' + FT_BUILD.ver;
 
   var hero = document.getElementById('settings-hero-status');
+  var outbox = loadSyncOutbox_();
+  var outboxEl = document.getElementById('sync-outbox-banner');
+  if (outboxEl) {
+    if (outbox && outbox.pending && syncLocalDirty) {
+      outboxEl.hidden = false;
+      var when = outbox.at ? fmtRelativeTime(outbox.at) : 'recently';
+      outboxEl.innerHTML =
+        '<div class="sync-outbox-banner__text">' +
+        '<strong>Offline save queued</strong> — changes from ' + when + ' will retry when online.' +
+        (outbox.retries > 1 ? ' (' + outbox.retries + ' attempts)' : '') +
+        '</div>' +
+        '<button type="button" class="btn btn-primary" id="sync-outbox-retry">Retry now</button>';
+      var retryBtn = document.getElementById('sync-outbox-retry');
+      if (retryBtn) retryBtn.addEventListener('click', retrySyncOutboxNow_);
+    } else {
+      outboxEl.hidden = true;
+      outboxEl.innerHTML = '';
+    }
+  }
   if (hero) {
-    if (syncPendingSave && syncLocalDirty) {
+    if (outbox && outbox.pending && syncLocalDirty) {
+      hero.textContent = 'Offline — ' + (outbox.retries || 1) + ' save(s) waiting to sync';
+    } else if (syncPendingSave && syncLocalDirty) {
       hero.textContent = 'Changes queued — will sync when Sheet load finishes';
     } else if (syncState.status === 'error' && syncState.message) {
       hero.textContent = syncState.message;
@@ -1109,6 +1176,10 @@ function updateSyncUI() {
     if (syncPendingSave && syncLocalDirty) {
       parts.push('Pending sync (waiting for Sheet)');
     }
+    var ob = loadSyncOutbox_();
+    if (ob && ob.pending) {
+      parts.push('Outbox: retry when online');
+    }
     if (syncState.lastSaved) {
       parts.push('Last saved ' + fmtRelativeTime(syncState.lastSaved) + ' (' + fmtTime(syncState.lastSaved) + ')');
     }
@@ -1139,6 +1210,13 @@ function wireSyncUI() {
   if (pingBtn) pingBtn.addEventListener('click', syncPing);
   if (saveBtn) saveBtn.addEventListener('click', function() { syncSave(false); });
   if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
+
+  window.addEventListener('online', function() {
+    var ob = loadSyncOutbox_();
+    if (ob && ob.pending && syncLocalDirty) {
+      setTimeout(function() { syncSave(true, function(ok) { if (ok) clearSyncOutbox_(); }); }, 800);
+    }
+  });
 }
 
 // ── Init ───────────────────────────────────────────────────

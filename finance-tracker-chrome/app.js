@@ -125,7 +125,7 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 let expenses = [], incomes = [], banks = [];
 let utHoldings = [];
 let utNavPoints = [];
-let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true, lockTimeoutMin:5 };
+let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true, lockTimeoutMin:5, notifyRecurring:true, petrolFullTankOnly:false };
 let lastExpenseTpl = null;
 let lastIncomeTpl = null;
 let viewMonth = new Date(); viewMonth.setDate(1);
@@ -1056,6 +1056,10 @@ function applySettings() {
   if (compEl) compEl.checked = !!settings.compact;
   const nwAutoEl = document.getElementById('set-nw-auto');
   if (nwAutoEl) nwAutoEl.checked = settings.nwAutoSnapshot !== false;
+  const notifyRecEl = document.getElementById('set-notify-recurring');
+  if (notifyRecEl) notifyRecEl.checked = settings.notifyRecurring !== false;
+  const ptFullOnlyEl = document.getElementById('set-petrol-full-only');
+  if (ptFullOnlyEl) ptFullOnlyEl.checked = !!settings.petrolFullTankOnly;
   const lockEl = document.getElementById('set-lock-timeout');
   if (lockEl) lockEl.value = String(settings.lockTimeoutMin == null ? 5 : settings.lockTimeoutMin);
   try { localStorage.setItem('ft_lock_timeout_min', String(settings.lockTimeoutMin == null ? 5 : settings.lockTimeoutMin)); } catch (e) {}
@@ -2411,6 +2415,23 @@ if (setNwAuto) {
     showToast(settings.nwAutoSnapshot ? 'Net worth will snapshot when banks change' : 'Net worth auto-snapshot off');
   });
 }
+const setNotifyRec = document.getElementById('set-notify-recurring');
+if (setNotifyRec) {
+  setNotifyRec.addEventListener('change', e => {
+    settings.notifyRecurring = e.target.checked;
+    saveSets();
+    showToast(settings.notifyRecurring ? 'Bill reminders on' : 'Bill reminders off');
+  });
+}
+const setPtFullOnly = document.getElementById('set-petrol-full-only');
+if (setPtFullOnly) {
+  setPtFullOnly.addEventListener('change', e => {
+    settings.petrolFullTankOnly = e.target.checked;
+    saveSets();
+    if (typeof renderPetrolLog === 'function') renderPetrolLog();
+    showToast(settings.petrolFullTankOnly ? 'Efficiency: full tank fills only' : 'Efficiency: all fill-ups');
+  });
+}
 
 // ── Quick-add FAB (mobile) ───────────────────────────────────
 function focusExpenseForm() {
@@ -2573,6 +2594,7 @@ const TAB_OPEN_HOOKS = {
   settings: () => {
     remindMonthlyBackupIfNeeded();
     if (typeof updateSyncUI === 'function') updateSyncUI();
+    if (typeof renderCatRulesPanel_ === 'function') renderCatRulesPanel_();
   },
 };
 const TAB_OPEN_DELAY_MS = { trends: 50, petrol: 10, report: 10 };
@@ -2692,6 +2714,7 @@ bindClick('next-month', () => {
 
 // ── Action buttons ─────────────────────────────────────────
 bindClick('add-exp-btn', addExpense);
+bindClick('add-exp-split-btn', addSplitExpense);
 var addExpBtn = document.getElementById('add-exp-btn');
 if (addExpBtn && !document.getElementById('add-exp-split-btn')) {
   var splitBtn = document.createElement('button');

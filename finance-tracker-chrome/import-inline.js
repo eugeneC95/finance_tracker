@@ -109,13 +109,13 @@ function iwParseBankCSV(text) {
   let hi=0;
   for(let i=0;i<Math.min(25,lines.length);i++){
     const low=lines[i].toLowerCase();
-    const hasDate=low.includes('date')||low.includes('tarikh');
-    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark');
+    const hasDate=low.includes('date')||low.includes('tarikh')||low.includes('posting')||low.includes('value date');
+    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark')||low.includes('reference');
     const hasAmt=low.includes('withdraw')||low.includes('debit')||low.includes('credit')||low.includes('deposit')||low.includes('amount')||low.includes('jumlah')||low==='dr'||low==='cr'||low.includes('keluar')||low.includes('masuk');
     if(hasDate&&hasDesc&&hasAmt){hi=i;break;}
   }
   const hdrs=iwParseCSVRow(lines[hi]).map(h=>h.toLowerCase().trim());
-  const di=hdrs.findIndex(h=>h.includes('date')||h.includes('tarikh'));
+  const di=hdrs.findIndex(h=>h.includes('date')||h.includes('tarikh')||h.includes('posting')||h.includes('value'));
   const xi=hdrs.findIndex(h=>/desc|narrat|particular|transaction|detail|remark/.test(h));
   const dri=hdrs.findIndex(h=>h.includes('withdraw')||h.includes('debit')||h==='dr'||h.includes('keluar')||h.includes('money out'));
   const cri=hdrs.findIndex(h=>h.includes('deposit')||h.includes('credit')||h==='cr'||h.includes('masuk')||h.includes('money in'));
@@ -247,6 +247,8 @@ function iwReset() {
   if(mbbCard) mbbCard.classList.remove('active');
   const cimbCard=document.getElementById('iw-cimb-card');
   if(cimbCard) cimbCard.classList.remove('active');
+  const bankCard=document.getElementById('iw-bank-card');
+  if(bankCard) bankCard.classList.remove('active');
   document.getElementById('iw-next1').disabled=true;
   document.getElementById('iw-tng-input').style.display='none';
   document.getElementById('iw-csv-input').style.display='none';
@@ -272,14 +274,16 @@ function iwSelectSource(src) {
   if(mbbCard) mbbCard.classList.toggle('active',src==='mbb');
   const cimbCard=document.getElementById('iw-cimb-card');
   if(cimbCard) cimbCard.classList.toggle('active',src==='cimb');
+  const bankCard=document.getElementById('iw-bank-card');
+  if(bankCard) bankCard.classList.toggle('active',src==='bank');
   document.getElementById('iw-next1').disabled=false;
   document.getElementById('iw-tng-input').style.display=src==='tng'?'':'none';
-  const csvOn=src==='uob'||src==='mbb'||src==='cimb';
+  const csvOn=src==='uob'||src==='mbb'||src==='cimb'||src==='bank';
   document.getElementById('iw-csv-input').style.display=csvOn?'':'none';
   const helpUob=document.getElementById('iw-help-uob');
   const helpMbb=document.getElementById('iw-help-mbb');
   if(helpUob) helpUob.style.display=src==='uob'?'':'none';
-  if(helpMbb) helpMbb.style.display=(src==='mbb'||src==='cimb')?'':'none';
+  if(helpMbb) helpMbb.style.display=(src==='mbb'||src==='cimb'||src==='bank')?'':'none';
 }
 
 document.getElementById('iw-tng-card').addEventListener('click',()=>iwSelectSource('tng'));
@@ -288,6 +292,8 @@ const iwMbbCard=document.getElementById('iw-mbb-card');
 if(iwMbbCard) iwMbbCard.addEventListener('click',()=>iwSelectSource('mbb'));
 const iwCimbCard=document.getElementById('iw-cimb-card');
 if(iwCimbCard) iwCimbCard.addEventListener('click',()=>iwSelectSource('cimb'));
+const iwBankCard=document.getElementById('iw-bank-card');
+if(iwBankCard) iwBankCard.addEventListener('click',()=>iwSelectSource('bank'));
 document.getElementById('iw-next1').addEventListener('click',()=>{ if(iwSource) iwGoStep(2); });
 document.getElementById('iw-back2').addEventListener('click',()=>iwGoStep(1));
 document.getElementById('iw-back3').addEventListener('click',iwReset);
@@ -306,7 +312,7 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
     document.getElementById('iw-tng-err').textContent='';
     iwRows=iwParseTNG(text);
     if(!iwRows.length){ document.getElementById('iw-tng-err').textContent='No transactions found — make sure you copied the full PDF text.'; return; }
-  } else if(iwSource==='uob'||iwSource==='mbb'||iwSource==='cimb'){
+  } else if(iwSource==='uob'||iwSource==='mbb'||iwSource==='cimb'||iwSource==='bank'){
     const file=document.getElementById('iw-file').files[0];
     const errEl=document.getElementById('iw-csv-err');
     if(!file){ if(errEl) errEl.textContent='Please select a file first.'; return; }

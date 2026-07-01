@@ -2625,6 +2625,37 @@ body.dark .home-stat { background: rgba(255,255,255,.04); }
   font-size: var(--f-sm);
 }
 .home-week-digest__row--warn { color: var(--red); }
+.home-merchant-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-merchant-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card-bg2);
+  font-size: var(--f-sm); cursor: pointer; max-width: 100%;
+}
+.home-merchant-chip:hover { border-color: var(--ink3); background: var(--card-bg); }
+.home-merchant-chip__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+.home-merchant-chip__amt { color: var(--ink3); font-size: var(--f-xs); }
+.budget-pace__headline { font-size: var(--f-lg); font-weight: 700; margin-bottom: 4px; }
+.budget-pace__sub { font-size: var(--f-sm); color: var(--ink3); margin-bottom: 12px; }
+.budget-pace--over .budget-pace__headline { color: var(--red); }
+.budget-pace__rows { display: grid; gap: 8px; font-size: var(--f-sm); }
+.budget-pace__row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.budget-pace__nums { color: var(--ink3); font-size: var(--f-xs); text-align: right; }
+.budget-pace__daily { grid-column: 2; text-align: right; font-weight: 600; }
+#home-nw-chart .nw-chart-wrap { max-height: 100px; }
+#home-nw-chart .nw-empty { font-size: var(--f-xs); padding: 8px 0; }
+.cat-rule-row {
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--f-sm);
+}
+.cat-rule-row:last-child { border-bottom: none; }
+.cat-rule-row__pattern { font-family: ui-monospace, monospace; color: var(--ink2); word-break: break-all; }
+.sync-outbox-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between;
+  padding: 12px 14px; margin-bottom: 12px; border-radius: var(--radius-sm);
+  background: rgba(186, 117, 23, 0.12); border: 1px solid rgba(186, 117, 23, 0.35);
+  font-size: var(--f-sm);
+}
+.sync-outbox-banner__text { flex: 1; min-width: 180px; line-height: 1.45; }
 .home-rec-missed {
   background: rgba(226, 75, 74, 0.08);
   border: 1px solid rgba(226, 75, 74, 0.25);
@@ -4340,7 +4371,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v114 · 2026-07-01 12:46';
+  var BUILD_VERSION    = 'v115 · 2026-07-01 12:59';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4542,7 +4573,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
       <div class="home-quick-actions" id="home-quick-actions" aria-label="Quick navigation"></div>
 
+      <div class="card mb-5 home-merchant-card" id="home-recent-merchants" hidden></div>
+
       <div class="card home-progress-card" id="home-month-progress"></div>
+
+      <div class="card mb-5" id="home-budget-pace" hidden></div>
 
       <div class="card mb-5" id="home-week-digest"></div>
 
@@ -4553,6 +4588,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card mb-5" id="home-insights"></div>
         </div>
         <div class="home-col">
+          <div class="card mb-5" id="home-nw-mini" hidden>
+            <div class="panel-hd"><span class="panel-title">Net worth trend</span></div>
+            <div class="panel-bd"><div id="home-nw-chart"></div></div>
+          </div>
           <div class="card mb-5" id="home-savings"></div>
           <div class="card mb-5" id="home-recurring"></div>
           <div class="card mb-5" id="home-budgets"></div>
@@ -4642,6 +4681,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
                 </div>
                 <div class="exp-add-actions">
                   <button type="button" class="btn btn-primary" id="add-exp-btn">Add expense</button>
+                  <button type="button" class="btn-ghost" id="add-exp-split-btn" title="Split one purchase across categories">Split</button>
                 </div>
               </div>
             </div>
@@ -4703,6 +4743,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="card mb-5 exp-budget-card" id="exp-budget-card">
         <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
         <div class="panel-bd">
+          <div id="exp-budget-pace" hidden></div>
           <div id="budget-panel"></div>
           <form class="ft-form ft-form--compact" onsubmit="return false">
             <div class="ft-form__title">Set a monthly limit</div>
@@ -5265,6 +5306,56 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   <div class="toggle-knob"></div>
                 </label>
               </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Bill reminders</div><div class="s-sub">Notify for upcoming &amp; missed recurring</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-notify-recurring" checked/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Petrol efficiency</div><div class="s-sub">Count full tank fills only</div></div>
+                <label class="toggle">
+                  <input type="checkbox" id="set-petrol-full-only"/>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-catrules-title">
+          <h3 class="settings-section__title" id="settings-catrules-title">Category rules</h3>
+          <div class="card settings-card">
+            <div class="panel-bd">
+              <p class="ft-note" style="margin-top:0">Merchant name patterns auto-assign categories when adding expenses.</p>
+              <div id="settings-cat-rules-list"></div>
+              <form class="ft-form ft-form--compact" style="margin-top:14px" onsubmit="return false">
+                <div class="ft-form-grid ft-form-grid--3">
+                  <div>
+                    <label class="lbl" for="cat-rule-pattern">Merchant contains</label>
+                    <input type="text" id="cat-rule-pattern" placeholder="e.g. grab, tesco" maxlength="48" autocomplete="off"/>
+                  </div>
+                  <div>
+                    <label class="lbl" for="cat-rule-cat">Category</label>
+                    <select id="cat-rule-cat">
+                      <option value="Food">🍜 Food &amp; drink</option>
+                      <option value="Shopping">🛍 Shopping</option>
+                      <option value="Health">💊 Health</option>
+                      <option value="Bills">🧾 Bills</option>
+                      <option value="Entertainment">🎬 Entertainment</option>
+                      <option value="Petrol">⛽ Petrol</option>
+                      <option value="Transport">🚌 Transport</option>
+                      <option value="Other">📦 Other</option>
+                    </select>
+                  </div>
+                  <div class="ft-form-actions" style="margin-top:0">
+                    <button type="button" class="btn btn-primary" id="cat-rule-add-btn">Add rule</button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </section>
@@ -5280,6 +5371,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </span>
             </div>
             <div class="panel-bd">
+              <div id="sync-outbox-banner" hidden></div>
               <div id="sync-detail" class="sync-detail" style="margin-bottom:12px;font-size:var(--f-xs);color:var(--ink3);line-height:1.5"></div>
               <label class="lbl">Apps Script web app (built into this app)</label>
               <div id="sync-url-display" style="font-size:var(--f-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;word-break:break-all;color:var(--ink2);padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line);margin-top:6px"></div>
@@ -5336,6 +5428,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
                   <div class="src-card" id="iw-cimb-card">
                     <div class="src-icon">🏦</div>
                     <div class="src-name">CIMB</div>
+                  </div>
+                  <div class="src-card" id="iw-bank-card">
+                    <div class="src-icon">📄</div>
+                    <div class="src-name">Other bank CSV</div>
                   </div>
                 </div>
                 <button class="btn btn-primary" id="iw-next1" disabled style="width:100%">Next →</button>
@@ -5443,7 +5539,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v114 · 2026-07-01 12:46</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v115 · 2026-07-01 12:59</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5563,6 +5659,12 @@ body.dark .ft-fab { background: #fff; color: #000; }
               <p class="pt-field-hint" id="pt-odo-hint"></p>
             </div>
             <div class="pt-meta-field">
+              <label class="ft-check-label" style="margin-top:28px">
+                <input type="checkbox" id="pt-full-tank" class="ft-check-input" checked/>
+                <span>Full tank fill</span>
+              </label>
+            </div>
+            <div class="pt-meta-field">
               <label class="lbl" for="pt-station">Station / note</label>
               <input type="text" id="pt-station" placeholder="Optional" maxlength="60"/>
             </div>
@@ -5613,6 +5715,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="ft-toolbar">
         <button type="button" class="btn btn-primary" id="print-report-btn">Print or save PDF</button>
         <button type="button" class="btn-ghost" id="share-report-btn">Share summary</button>
+        <button type="button" class="btn-ghost" id="download-report-txt">Download .txt</button>
+        <button type="button" class="btn-ghost" id="download-report-md">Download .md</button>
       </div>
       <div class="report-notes-field">
         <label class="lbl" for="report-notes-input">Notes for this report (optional)</label>
@@ -5722,13 +5826,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v114 · 2026-07-01 12:46</div>
-<script src="build-id.js?v=114"></script>
-<script src="app.js?v=114"></script>
-<script src="sync.js?v=114"></script>
-<script src="features.js?v=114"></script>
-<script src="extras.js?v=114"></script>
-<script src="import-inline.js?v=114"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v115 · 2026-07-01 12:59</div>
+<script src="build-id.js?v=115"></script>
+<script src="app.js?v=115"></script>
+<script src="sync.js?v=115"></script>
+<script src="features.js?v=115"></script>
+<script src="extras.js?v=115"></script>
+<script src="import-inline.js?v=115"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

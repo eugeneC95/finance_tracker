@@ -212,6 +212,7 @@ function petrolEfficiencyRangeSummary_(withOdo, rangeOpts) {
     var fillDate = String(list[i].date || '').slice(0, 10);
     if (from && fillDate < from) continue;
     if (to && fillDate > to) continue;
+    if (typeof settings !== 'undefined' && settings.petrolFullTankOnly && list[i].fullTank === false) continue;
     var km = list[i].odo - list[i - 1].odo;
     if (km > 0) {
       totalKm += km;
@@ -479,7 +480,9 @@ function addPetrolEntry() {
   }
 
   var total = parseFloat((litres * ppl).toFixed(2));
-  petrolLog.unshift({ id: Date.now(), station: station, litres: litres, ppl: ppl, odo: odo, date: date, total: total });
+  var ftEl = document.getElementById('pt-full-tank');
+  var fullTank = ftEl ? !!ftEl.checked : true;
+  petrolLog.unshift({ id: Date.now(), station: station, litres: litres, ppl: ppl, odo: odo, date: date, total: total, fullTank: fullTank });
   lastPetrolTpl = { station: station, litres: litres, ppl: ppl, odo: odo };
   savePetrol();
 
@@ -823,6 +826,30 @@ function syncReportNotesInput_(ym) {
   input.value = getReportNotesForMonth_(ym);
 }
 
+function reportYtdTotals_(ym) {
+  var year = String(ym || '').slice(0, 4);
+  if (!year) return { exp: 0, inc: 0, net: 0, months: 0 };
+  var vm = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+  var endMonth = vm.getFullYear() + '-' + String(vm.getMonth() + 1).padStart(2, '0');
+  if (endMonth.slice(0, 4) !== year) endMonth = year + '-12';
+  var exp = 0;
+  var inc = 0;
+  var months = new Set();
+  expenses.forEach(function(e) {
+    var d = String(e.date || '').slice(0, 10);
+    if (d.slice(0, 4) !== year || d.slice(0, 7) > endMonth) return;
+    exp += Number(e.amount) || 0;
+    months.add(d.slice(0, 7));
+  });
+  incomes.forEach(function(i) {
+    var d = String(i.date || '').slice(0, 10);
+    if (d.slice(0, 4) !== year || d.slice(0, 7) > endMonth) return;
+    inc += Number(i.amount) || 0;
+    months.add(d.slice(0, 7));
+  });
+  return { exp: exp, inc: inc, net: inc - exp, months: months.size };
+}
+
 function renderReport() {
   var el = document.getElementById('report-content');
   if (!el) return;
@@ -914,6 +941,19 @@ function renderReport() {
   totVal.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
   totVal.textContent = (net>=0?'+':'') + fmt(net);
   totRow.appendChild(totLeft); totRow.appendChild(totVal); sec1.appendChild(totRow);
+
+  var ytd = reportYtdTotals_(ym);
+  if (ytd.exp > 0 || ytd.inc > 0) {
+    var ytdLabel = viewMonth.getFullYear() + ' (Jan\u2013' + viewMonth.toLocaleString('default', { month: 'short' }) + ')';
+    var secYtd = section('Year to date \u2014 ' + ytdLabel);
+    addRow(secYtd, 'YTD income', fmt(ytd.inc), 'green');
+    addRow(secYtd, 'YTD expenses', fmt(ytd.exp), 'red');
+    var ytdNet = ytd.net;
+    addRow(secYtd, 'YTD net', (ytdNet >= 0 ? '+' : '') + fmt(ytdNet), ytdNet >= 0 ? 'green' : 'red');
+    var ytdSav = ytd.inc > 0 ? Math.max(0, (ytdNet / ytd.inc) * 100) : 0;
+    addRow(secYtd, 'YTD savings rate', ytdSav.toFixed(1) + '%');
+    addRow(secYtd, 'Months with data', String(ytd.months));
+  }
 
   var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
   if (missedRec.length) {
@@ -1080,6 +1120,124 @@ function buildReportShareText() {
   return lines.join('\n');
 }
 
+function buildReportPlainText_() {
+  var me = mExp();
+  var mi = mInc();
+  var ym = viewYM();
+  var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var net = totalInc - totalExp;
+  var prev = reportMonthTotals_(reportPrevMonthYM_());
+  var lines = [
+    'Finance Tracker — ' + ymLabel + ' Report',
+    'Generated ' + new Date().toLocaleString('en-MY'),
+    '',
+    'SUMMARY',
+    'Income: ' + fmt(totalInc) + formatShareDelta_(totalInc, prev.inc),
+    'Expenses: ' + fmt(totalExp) + formatShareDelta_(totalExp, prev.exp),
+    'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + formatShareDelta_(net, prev.net),
+    'Savings rate: ' + (totalInc > 0 ? ((net / totalInc) * 100).toFixed(1) : '0') + '%',
+  ];
+  var ytd = reportYtdTotals_(ym);
+  if (ytd.exp > 0 || ytd.inc > 0) {
+    lines.push('', 'YEAR TO DATE (' + viewMonth.getFullYear() + ')');
+    lines.push('YTD income: ' + fmt(ytd.inc));
+    lines.push('YTD expenses: ' + fmt(ytd.exp));
+    lines.push('YTD net: ' + (ytd.net >= 0 ? '+' : '') + fmt(ytd.net));
+  }
+  var catTotals = {};
+  me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  var catSorted = Object.entries(catTotals).sort(function(a, b) { return b[1] - a[1]; });
+  if (catSorted.length) {
+    lines.push('', 'SPENDING BY CATEGORY');
+    reportGroupCategories_(catSorted, 5).forEach(function(entry) {
+      lines.push((entry.isOthers ? 'Others' : entry.cat) + ': ' + fmt(entry.amt));
+    });
+  }
+  var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  if (missedRec.length) {
+    lines.push('', 'MISSED RECURRING (' + missedRec.length + ')');
+    missedRec.forEach(function(m) {
+      lines.push('  ' + (m.r.name || 'Bill') + ': ' + fmt(Number(m.r.amount) || 0));
+    });
+  }
+  var notes = getReportNotesForMonth_(ym);
+  if (!notes) {
+    var notesInput = document.getElementById('report-notes-input');
+    if (notesInput) notes = String(notesInput.value || '').trim();
+  }
+  if (notes) lines.push('', 'NOTES', notes);
+  return lines.join('\n');
+}
+
+function buildReportMarkdown_() {
+  var me = mExp();
+  var mi = mInc();
+  var ym = viewYM();
+  var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var net = totalInc - totalExp;
+  var prev = reportMonthTotals_(reportPrevMonthYM_());
+  var lines = [
+    '# Finance Tracker — ' + ymLabel,
+    '',
+    '_Generated ' + new Date().toLocaleString('en-MY') + '_',
+    '',
+    '## Summary',
+    '',
+    '| | Amount |',
+    '|---|---:|',
+    '| Income | ' + fmt(totalInc) + formatShareDelta_(totalInc, prev.inc) + ' |',
+    '| Expenses | ' + fmt(totalExp) + formatShareDelta_(totalExp, prev.exp) + ' |',
+    '| **Net** | **' + (net >= 0 ? '+' : '') + fmt(net) + '**' + formatShareDelta_(net, prev.net) + ' |',
+    '| Savings rate | ' + (totalInc > 0 ? ((net / totalInc) * 100).toFixed(1) : '0') + '% |',
+  ];
+  var ytd = reportYtdTotals_(ym);
+  if (ytd.exp > 0 || ytd.inc > 0) {
+    lines.push('', '## Year to date (' + viewMonth.getFullYear() + ')', '');
+    lines.push('| | Amount |', '|---|---:|');
+    lines.push('| YTD income | ' + fmt(ytd.inc) + ' |');
+    lines.push('| YTD expenses | ' + fmt(ytd.exp) + ' |');
+    lines.push('| YTD net | ' + (ytd.net >= 0 ? '+' : '') + fmt(ytd.net) + ' |');
+  }
+  var catTotals = {};
+  me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  var catSorted = Object.entries(catTotals).sort(function(a, b) { return b[1] - a[1]; });
+  if (catSorted.length) {
+    lines.push('', '## Spending by category', '', '| Category | Amount |', '|---|---:|');
+    reportGroupCategories_(catSorted, 5).forEach(function(entry) {
+      lines.push('| ' + (entry.isOthers ? 'Others' : entry.cat) + ' | ' + fmt(entry.amt) + ' |');
+    });
+  }
+  var notes = getReportNotesForMonth_(ym);
+  if (!notes) {
+    var notesInput = document.getElementById('report-notes-input');
+    if (notesInput) notes = String(notesInput.value || '').trim();
+  }
+  if (notes) lines.push('', '## Notes', '', notes);
+  return lines.join('\n');
+}
+
+function downloadReportFile_(content, filename, mime) {
+  try {
+    var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 500);
+    if (typeof showToast === 'function') showToast('Downloaded ' + filename);
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Download failed');
+  }
+}
+
 function formatShareDelta_(cur, prev) {
   if (prev <= 0) return '';
   var pct = Math.round(((cur - prev) / prev) * 100);
@@ -1159,6 +1317,18 @@ if (shareBtn) shareBtn.addEventListener('click', function() {
     return;
   }
   showToast('Share not supported on this device');
+});
+var dlTxtBtn = document.getElementById('download-report-txt');
+if (dlTxtBtn) dlTxtBtn.addEventListener('click', function() {
+  if (typeof renderReport === 'function') renderReport();
+  var ym = typeof viewYM === 'function' ? viewYM() : 'report';
+  downloadReportFile_(buildReportPlainText_(), 'finance-report-' + ym + '.txt', 'text/plain;charset=utf-8');
+});
+var dlMdBtn = document.getElementById('download-report-md');
+if (dlMdBtn) dlMdBtn.addEventListener('click', function() {
+  if (typeof renderReport === 'function') renderReport();
+  var ym = typeof viewYM === 'function' ? viewYM() : 'report';
+  downloadReportFile_(buildReportMarkdown_(), 'finance-report-' + ym + '.md', 'text/markdown;charset=utf-8');
 });
 
 loadExtras();
