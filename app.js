@@ -1248,6 +1248,15 @@ function wireEmptyStateCtas_() {
   });
 }
 
+function syncMobileMonthNav_() {
+  var lbl = document.getElementById('month-label');
+  var lblM = document.getElementById('month-label-m');
+  if (lblM && lbl) lblM.textContent = lbl.textContent;
+  var nav = document.getElementById('mobile-month-nav');
+  if (!nav) return;
+  nav.hidden = !ftIsMobileLayout_();
+}
+
 function ftMonthChangeHint_() {
   return ftIsMobileLayout_()
     ? ' \u2014 tap \u2039 \u203a above to change month'
@@ -3115,12 +3124,21 @@ function activateNavTab(tab) {
   scrollNavItemIntoView(document.querySelector('.nav-item.active'));
   closeMobileNavMore();
   runTabOpenHooks(tab);
+  if (ftIsMobileLayout_()) {
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+  }
+  syncMobileMonthNav_();
 }
 
 function scrollNavItemIntoView(btn) {
-  if (!btn) return;
+  if (!btn || !ftIsMobileLayout_()) return;
   const strip = btn.closest('.sb-nav');
   if (!strip) return;
+  try {
+    btn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  } catch (e) {
+    btn.scrollIntoView(false);
+  }
 }
 
 document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
@@ -3258,3 +3276,27 @@ wireEmptyStateCtas_();
 initExpFoldCards_();
 initSettingsFoldCards_();
 window.addEventListener('resize', scheduleUxLayoutCards_);
+(function hookMobileMonthRender_() {
+  if (typeof render !== 'function') return;
+  var origRender = render;
+  render = function() {
+    origRender();
+    syncMobileMonthNav_();
+  };
+})();
+(function wireMobileMonthArrows_() {
+  var pMM = document.getElementById('prev-month-m');
+  var nMM = document.getElementById('next-month-m');
+  if (pMM) pMM.addEventListener('click', function() {
+    var prev = document.getElementById('prev-month');
+    if (prev) prev.click();
+    syncMobileMonthNav_();
+  });
+  if (nMM) nMM.addEventListener('click', function() {
+    var next = document.getElementById('next-month');
+    if (next) next.click();
+    syncMobileMonthNav_();
+  });
+})();
+syncMobileMonthNav_();
+window.addEventListener('resize', syncMobileMonthNav_);

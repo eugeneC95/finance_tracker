@@ -3249,10 +3249,10 @@ body.dark .fs-btn.active { color: #000; }
      MAIN
 ══════════════════════════════════════════ -->
 <main class="main" id="main-content">
-  <div class="month-controls" id="mobile-month-nav" style="display:none">
-    <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
-    <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center">—</span>
-    <button class="month-arrow" id="next-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">›</button>
+  <div class="month-controls ft-month-nav" id="mobile-month-nav" role="navigation" aria-label="Month" hidden>
+    <button type="button" class="month-arrow" id="prev-month-m" aria-label="Previous month">‹</button>
+    <span id="month-label-m" class="month-name">—</span>
+    <button type="button" class="month-arrow" id="next-month-m" aria-label="Next month">›</button>
   </div>
 
   <!-- ── EXPENSES ── -->
@@ -4270,7 +4270,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v126 · 2026-07-01 18:48</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v127 · 2026-07-01 18:53</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4563,34 +4563,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script>
-function syncMobileMonthNav() {
-  var lbl = document.getElementById('month-label');
-  var lblM = document.getElementById('month-label-m');
-  if (lblM && lbl) lblM.textContent = lbl.textContent;
-}
-if (typeof render === 'function') {
-  var origRender = render;
-  render = function() {
-    origRender();
-    syncMobileMonthNav();
-  };
-}
-window.addEventListener('resize', function() {
-  var nav = document.getElementById('mobile-month-nav');
-  if (nav) nav.style.display = window.innerWidth <= 680 ? 'flex' : 'none';
-});
-window.dispatchEvent(new Event('resize'));
-var pMM = document.getElementById('prev-month-m');
-var nMM = document.getElementById('next-month-m');
-if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
-if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
-</script>
-<script src="build-id.js?v=126"></script>
-<script src="app.js?v=126"></script>
-<script src="sync.js?v=126"></script>
-<script src="features.js?v=126"></script>
-<script src="extras.js?v=126"></script>
-<script src="import-inline.js?v=126"></script>
+<script src="build-id.js?v=127"></script>
+<script src="app.js?v=127"></script>
+<script src="sync.js?v=127"></script>
+<script src="features.js?v=127"></script>
+<script src="extras.js?v=127"></script>
+<script src="import-inline.js?v=127"></script>
 </body>
 </html>
