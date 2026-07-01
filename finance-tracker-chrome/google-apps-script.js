@@ -7,7 +7,7 @@
 // ============================================================
 
 var SHEET_NAME = 'Finance Tracker';
-var API_VERSION = 8;
+var API_VERSION = 9;
 
 // ── Get or create spreadsheet ──────────────────────────────
 function getOrCreateSheet(tabName) {
@@ -314,7 +314,7 @@ function writeTabMerged_(tabName, incomingRows, cols, dateCol) {
 }
 
 function saveAllData(payload) {
-  writeTabMerged_('Expenses', payload.expenses || [], ['id','name','amount','cat','date','note','auto'], 'date');
+  writeTabMerged_('Expenses', payload.expenses || [], ['id','name','amount','cat','date','note','auto','place'], 'date');
   writeTabMerged_('Income', payload.incomes || [], ['id','name','amount','cat','date','note','auto'], 'date');
   writeTabMerged_('Banks', payload.banks || [], ['id','name','acct','balance','currency'], null);
   writeTabMerged_('Recurring', payload.recurring || [], ['id','name','amount','type','cat','day','active','lastApplied'], null);

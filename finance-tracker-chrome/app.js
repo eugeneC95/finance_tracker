@@ -1199,8 +1199,10 @@ function initCalculatorMoneyInputs_() {
 // ── Add expenses ───────────────────────────────────────────
 function addExpense() {
   const nEl = document.getElementById('exp-name');
+  const pEl = document.getElementById('exp-place');
   const aEl = document.getElementById('exp-amount');
   const name   = nEl.value.trim();
+  const place  = pEl ? pEl.value.trim() : '';
   const amount = moneyAmountFromInput(aEl);
   const date   = document.getElementById('exp-date').value || todayStr();
   let ok = true;
@@ -1213,12 +1215,15 @@ function addExpense() {
     if (!confirm(msg)) return;
   }
   if (amount >= 3000 && !confirm('Large expense detected (' + fmt(amount) + '). Save anyway?')) return;
-  if (typeof learnCatRule === 'function') learnCatRule(name, selectedCat);
-  expenses.push({ id: Date.now(), name, amount, cat: selectedCat, date });
-  lastExpenseTpl = { name, amount, cat: selectedCat };
+  if (typeof learnCatRule === 'function') learnCatRule(place || name, selectedCat);
+  const entry = { id: Date.now(), name, amount, cat: selectedCat, date };
+  if (place) entry.place = place;
+  expenses.push(entry);
+  lastExpenseTpl = { name, amount, cat: selectedCat, place: place || undefined };
   chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
   saveExp();
   nEl.value = '';
+  if (pEl) pEl.value = '';
   moneyClearInput(aEl);
   nEl.focus();
   render();
@@ -1423,18 +1428,23 @@ function saveSplitExpense_() {
   }
 
   var group = 'split-' + Date.now();
+  var pEl = document.getElementById('exp-place');
+  var place = pEl ? pEl.value.trim() : '';
   rows.forEach(function(r) {
-    expenses.push({
+    var row = {
       id: Date.now() + Math.random(),
       name: name + ' (split)',
       amount: r.amount,
       cat: r.cat,
       date: date,
       note: 'Split group ' + group,
-    });
+    };
+    if (place) row.place = place;
+    expenses.push(row);
   });
   saveExp();
   if (nEl) nEl.value = '';
+  if (pEl) pEl.value = '';
   var aEl = document.getElementById('exp-amount');
   if (aEl) moneyClearInput(aEl);
   closeSplitModal_();
@@ -1454,13 +1464,15 @@ function repeatLastExpense() {
   const cat = lastExpenseTpl.cat && EXP_CATS[lastExpenseTpl.cat] ? lastExpenseTpl.cat : selectedCat;
   selectedCat = cat;
   buildCatButtons();
-  expenses.push({
+  const row = {
     id: Date.now(),
     name: lastExpenseTpl.name,
     amount: lastExpenseTpl.amount,
     cat,
     date: todayStr(),
-  });
+  };
+  if (lastExpenseTpl.place) row.place = lastExpenseTpl.place;
+  expenses.push(row);
   saveExp();
   render();
   showToast('Repeated: ' + lastExpenseTpl.name);
@@ -1606,6 +1618,11 @@ function openEditModal(type, id) {
   const noteEl = document.getElementById('edit-note');
   if (noteEl) noteEl.value = entry.note || '';
 
+  const placeWrap = document.getElementById('edit-place-wrap');
+  const placeEl = document.getElementById('edit-place');
+  if (placeWrap) placeWrap.hidden = type !== 'exp';
+  if (placeEl) placeEl.value = (type === 'exp' && entry.place) ? entry.place : '';
+
   document.getElementById('edit-overlay').classList.add('open');
   document.getElementById('edit-name').focus();
 }
@@ -1635,6 +1652,12 @@ function saveEdit() {
   if (!entry) return;
 
   entry.name = name; entry.amount = amount; entry.date = date; entry.cat = cat; entry.note = note;
+  if (editCtx.type === 'exp') {
+    const placeEl = document.getElementById('edit-place');
+    const place = placeEl ? placeEl.value.trim() : '';
+    if (place) entry.place = place;
+    else delete entry.place;
+  }
 
   if (editCtx.type === 'exp') saveExp(); else saveInc();
   closeEditModal();
@@ -2047,7 +2070,11 @@ function renderTxList(id, items, catMap, isIncome) {
 
     const meta = document.createElement('div');
     meta.className = 'tx-meta';
-    meta.textContent = entry.cat + ' · ' + dlbl;
+    var metaParts = [];
+    if (!isIncome && entry.place) metaParts.push(entry.place);
+    metaParts.push(entry.cat);
+    metaParts.push(dlbl);
+    meta.textContent = metaParts.join(' · ');
     if (entry.note) {
       const noteSpan = document.createElement('span');
       noteSpan.style.cssText = 'color:var(--ink3);font-style:italic';
@@ -3069,6 +3096,23 @@ if (expNameEl) {
   expNameEl.addEventListener('blur', () => {
     if (typeof applySuggestedCategory === 'function') {
       applySuggestedCategory(expNameEl.value.trim(), { silent: false });
+    }
+  });
+}
+const expPlaceEl = document.getElementById('exp-place');
+if (expPlaceEl) {
+  let placeSuggestTimer = null;
+  expPlaceEl.addEventListener('input', () => {
+    clearTimeout(placeSuggestTimer);
+    placeSuggestTimer = setTimeout(() => {
+      if (typeof applySuggestedCategory === 'function') {
+        applySuggestedCategory(expPlaceEl.value.trim(), { silent: true });
+      }
+    }, 400);
+  });
+  expPlaceEl.addEventListener('blur', () => {
+    if (typeof applySuggestedCategory === 'function') {
+      applySuggestedCategory(expPlaceEl.value.trim(), { silent: false });
     }
   });
 }

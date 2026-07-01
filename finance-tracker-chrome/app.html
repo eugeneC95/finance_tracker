@@ -3372,6 +3372,10 @@ body.dark .fs-btn.active { color: #000; }
               <label class="lbl" for="exp-name">Description</label>
               <input type="text" id="exp-name" class="exp-input" placeholder="What did you spend on?" maxlength="80" autocomplete="off"/>
             </div>
+            <div class="exp-add-field exp-add-field--place">
+              <label class="lbl" for="exp-place">Where</label>
+              <input type="text" id="exp-place" class="exp-input" placeholder="99 Speedmart, Petronas, restaurant, office…" maxlength="60" autocomplete="off"/>
+            </div>
             <div class="exp-add-mid">
               <div class="exp-add-field exp-add-field--amount">
                 <label class="lbl" for="exp-amount">Amount (RM)</label>
@@ -4243,7 +4247,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v117 · 2026-07-01 15:12</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v118 · 2026-07-01 15:23</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4461,6 +4465,10 @@ body.dark .fs-btn.active { color: #000; }
         <label class="lbl" for="edit-cat">Category</label>
         <select id="edit-cat"></select>
       </div>
+      <div class="edit-field" id="edit-place-wrap">
+        <label class="lbl" for="edit-place">Where</label>
+        <input type="text" id="edit-place" maxlength="60" autocomplete="off" placeholder="Shop, petrol station, office…"/>
+      </div>
       <div class="edit-field">
         <label class="lbl" for="edit-note">Note <span class="edit-optional">(optional)</span></label>
         <input type="text" id="edit-note" placeholder="Receipt #, location…" maxlength="120"/>
@@ -4531,11 +4539,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=117"></script>
-<script src="app.js?v=117"></script>
-<script src="sync.js?v=117"></script>
-<script src="features.js?v=117"></script>
-<script src="extras.js?v=117"></script>
-<script src="import-inline.js?v=117"></script>
+<script src="build-id.js?v=118"></script>
+<script src="app.js?v=118"></script>
+<script src="sync.js?v=118"></script>
+<script src="features.js?v=118"></script>
+<script src="extras.js?v=118"></script>
+<script src="import-inline.js?v=118"></script>
 </body>
 </html>

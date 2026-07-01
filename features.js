@@ -491,7 +491,9 @@ function renderHomeDashboard() {
           '<div class="home-tx-row__ico">' + info.icon + '</div>' +
           '<div class="home-tx-row__body">' +
           '<div class="home-tx-row__name">' + esc(e.name || '') + '</div>' +
-          '<div class="home-tx-row__meta">' + esc(e.cat || '') + ' \u00b7 ' + dlbl + '</div></div>' +
+          '<div class="home-tx-row__meta">' +
+          (e._type === 'exp' && e.place ? esc(e.place) + ' \u00b7 ' : '') +
+          esc(e.cat || '') + ' \u00b7 ' + dlbl + '</div></div>' +
           '<div class="home-tx-row__amt ' + (e._type === 'inc' ? 'green' : 'red') + '">' +
           (e._type === 'inc' ? '+ ' : '') + fmt(e.amount) + '</div>';
         function openRow_() {
@@ -963,6 +965,8 @@ function homeQuickAddMerchant_(name, cat, amount) {
   if (nEl) nEl.value = name;
   if (aEl && typeof moneySetAmount === 'function') moneySetAmount(aEl, amount);
   else if (aEl) aEl.value = amount > 0 ? String(amount) : '';
+  var pEl = document.getElementById('exp-place');
+  if (pEl) pEl.value = name;
   if (dEl && typeof todayStr === 'function') dEl.value = todayStr();
   if (cat && typeof EXP_CATS !== 'undefined' && EXP_CATS[cat]) {
     selectedCat = cat;
@@ -1246,7 +1250,10 @@ function renderSearch() {
     return;
   }
 
-  var allExp = expenses.filter(function(e){ return searchTxStr(e.name).includes(q) || searchTxStr(e.cat).includes(q); });
+  var allExp = expenses.filter(function(e) {
+    return searchTxStr(e.name).includes(q) || searchTxStr(e.cat).includes(q) ||
+      searchTxStr(e.place).includes(q);
+  });
   var allInc = incomes.filter(function(i){ return searchTxStr(i.name).includes(q) || searchTxStr(i.cat).includes(q); });
   if (searchFilters.type === 'exp') allInc = [];
   if (searchFilters.type === 'inc') allExp = [];
