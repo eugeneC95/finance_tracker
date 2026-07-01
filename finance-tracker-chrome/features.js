@@ -385,7 +385,14 @@ function renderHomeDashboard() {
       : 'Viewing past month';
   }
   var headerSub = document.getElementById('home-header-sub');
-  if (headerSub) headerSub.textContent = 'Snapshot for ' + monthLbl + (isCurrentVm ? '' : ' — use sidebar arrows to change month');
+  if (headerSub) {
+    if (isCurrentVm) {
+      headerSub.textContent = 'Snapshot for ' + monthLbl + '.';
+    } else {
+      var hint = typeof ftMonthChangeHint_ === 'function' ? ftMonthChangeHint_() : ' \u2014 use sidebar arrows to change month';
+      headerSub.textContent = 'Snapshot for ' + monthLbl + hint;
+    }
+  }
 
   var netEl = document.getElementById('home-month-net');
   if (netEl) {

@@ -3628,31 +3628,7 @@ body.dark .fs-btn.active { color: #041312; }
 
   .card { border-radius: 14px; }
 
-  /* v21 —UX focus: surface the Add Expense form, shrink everything else.
-     Reorder the Expenses page on phone so the most-common action (add) is at
-     the top, then a quick glance at spending, then recent activity. Budget
-     and the chart are pushed below the fold for users who scroll for context.
-
-     Order on mobile (Expenses page only):
-       1. Add expense  2. Summary  3. Transactions  4. By category
-       5. Daily chart  6. Budget (bottom)                                                */
-  #page-expenses .page-body {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  #page-expenses .page-body > * { margin-bottom: 0 !important; }
-  /* Flatten the desktop .cols-2 wrapper so its two cards (transactions, chart)
-     become direct flex children we can independently order. */
-  #page-expenses .cols-2 { display: contents; }
-  #page-expenses .cols-2 > div { width: 100%; }
-
-  #page-expenses .exp-add-card { order: 1; }
-  #page-expenses .ft-page-hero { order: 2; }
-  #page-expenses .cols-2 > div:first-child { order: 3; }
-  #page-expenses .cols-2 > div:last-child { order: 4; }
-  #page-expenses .exp-daily-card { order: 5; }
-  #page-expenses .exp-budget-card { order: 6; }
+  /* Expenses mobile order → theme-modern.css */
 
   /* Stat strip on phone: two compact tiles up top, transaction count full-
      width below. No more "hero" gradient —it stole attention from the form. */
@@ -4274,7 +4250,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   }
 }
 </style>
-<link rel="stylesheet" href="theme-modern.css?v=123"/>
+<link rel="stylesheet" href="theme-modern.css?v=124"/>
 
 </head>
 <body class="fs-md">
@@ -4364,7 +4340,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v123 · 2026-07-01 18:25';
+  var BUILD_VERSION    = 'v124 · 2026-07-01 18:34';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4545,7 +4521,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page active" id="page-home">
     <div class="page-header">
       <h2>Home</h2>
-      <p class="sub" id="home-header-sub">Your financial snapshot for the month in the sidebar.</p>
+      <p class="sub" id="home-header-sub">Your financial snapshot for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
     <div class="page-body home-body">
       <section class="card home-hero-card" aria-label="Month overview">
@@ -4601,7 +4577,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="page-header__top">
         <div>
           <h2>Expenses</h2>
-          <p class="sub">Track spending for the month in the sidebar. Use search to find any transaction.</p>
+          <p class="sub">Track spending for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>. Use search to find any transaction.</p>
         </div>
         <button type="button" class="exp-search-toggle" id="exp-search-toggle" aria-expanded="false" aria-controls="exp-search-pop" title="Search all months (Ctrl+F)">🔍</button>
       </div>
@@ -4646,7 +4622,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
       <div class="card mb-5 exp-daily-card">
         <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
         <div class="panel-bd">
-          <p class="ft-note">Daily totals for the selected month —use the sidebar arrows to change month.</p>
+          <p class="ft-note">Daily totals for the selected month — <span class="ft-month-hint ft-month-hint--desk">use the sidebar arrows</span><span class="ft-month-hint ft-month-hint--mob">tap ‹ › above</span> to change month.</p>
           <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
       </div>
@@ -4656,6 +4632,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
         <div class="panel-hd"><span class="panel-title">Add expense</span></div>
         <div class="panel-bd">
           <div class="cat-groups" id="cat-btns"></div>
+          <div class="ft-calc-hint" id="ft-calc-hint" hidden role="note">
+            <span>Type digits only — <strong>1030</strong> becomes <strong>RM 10.30</strong>. No decimal point needed.</span>
+            <button type="button" class="ft-calc-hint__dismiss" id="ft-calc-hint-dismiss">Got it</button>
+          </div>
           <div class="exp-add-form">
             <div class="exp-add-field exp-add-field--desc">
               <label class="lbl" for="exp-name">Description</label>
@@ -4716,8 +4696,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
         </div>
       </div>
 
-      <div class="card mb-5 exp-savings-card" id="exp-savings-card">
-        <div class="panel-hd"><span class="panel-title">Savings goal</span></div>
+      <details class="card mb-5 exp-savings-card exp-fold-card" id="exp-savings-card">
+        <summary class="exp-fold-card__summary"><span class="panel-title">Savings goal</span></summary>
         <div class="panel-bd">
           <div id="savings-goal-panel"></div>
           <form class="ft-form ft-form--compact" onsubmit="return false">
@@ -4737,10 +4717,10 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
           </form>
         </div>
-      </div>
+      </details>
       <!-- Budget overview (occasional use —bottom of page) -->
-      <div class="card mb-5 exp-budget-card" id="exp-budget-card">
-        <div class="panel-hd"><span class="panel-title">Budget targets</span></div>
+      <details class="card mb-5 exp-budget-card exp-fold-card" id="exp-budget-card">
+        <summary class="exp-fold-card__summary"><span class="panel-title">Budget targets</span></summary>
         <div class="panel-bd">
           <div id="exp-budget-pace" hidden></div>
           <div id="budget-panel"></div>
@@ -4778,7 +4758,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             </div>
           </form>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
@@ -4875,7 +4855,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-assets">
     <div class="page-header">
       <h2>Assets</h2>
-      <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow the month in the sidebar.</p>
+      <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
     <div class="page-body">
 
@@ -5538,7 +5518,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v123 · 2026-07-01 18:25</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v124 · 2026-07-01 18:34</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5573,7 +5553,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-petrol">
     <div class="page-header">
       <h2>Petrol log</h2>
-      <p class="sub">Summary uses the month in the sidebar. History lists every fill-up.</p>
+      <p class="sub">Summary uses <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>. History lists every fill-up.</p>
     </div>
     <div class="page-body page-body--petrol">
 
@@ -5678,7 +5658,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
             <div class="assets-help__body">
               <p><strong>This fill:</strong> if you enter odometer, we show km since your last reading, L/100 km, and km/L for this tank.</p>
               <p style="margin-top:8px"><strong>Date range average:</strong> choose From/To on the efficiency card, or tap Last month / All time. Only fill-ups with odometer inside the range are counted.</p>
-              <p style="margin-top:8px"><strong>Summary chips:</strong> spend and litres follow the sidebar month; L/100 km and km/L follow your chosen efficiency date range.</p>
+              <p style="margin-top:8px"><strong>Summary chips:</strong> spend and litres follow <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>; L/100 km and km/L follow your chosen efficiency date range.</p>
             </div>
           </details>
 
@@ -5708,7 +5688,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   <div class="page" id="page-report">
     <div class="page-header">
       <h2>Monthly Report</h2>
-      <p class="sub">Print-friendly summary of the month in the sidebar.</p>
+      <p class="sub">Print-friendly summary of <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
     <div class="page-body">
       <div class="ft-toolbar">
@@ -5855,13 +5835,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v123 · 2026-07-01 18:25</div>
-<script src="build-id.js?v=123"></script>
-<script src="app.js?v=123"></script>
-<script src="sync.js?v=123"></script>
-<script src="features.js?v=123"></script>
-<script src="extras.js?v=123"></script>
-<script src="import-inline.js?v=123"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v124 · 2026-07-01 18:34</div>
+<script src="build-id.js?v=124"></script>
+<script src="app.js?v=124"></script>
+<script src="sync.js?v=124"></script>
+<script src="features.js?v=124"></script>
+<script src="extras.js?v=124"></script>
+<script src="import-inline.js?v=124"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
@@ -5918,7 +5898,7 @@ if (typeof render === 'function') {
 }
 window.addEventListener('resize', function() {
   var nav = document.getElementById('mobile-month-nav');
-  if (nav) nav.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
+  if (nav) nav.style.display = window.innerWidth <= 680 ? 'flex' : 'none';
 });
 window.dispatchEvent(new Event('resize'));
 

@@ -1196,6 +1196,45 @@ function initCalculatorMoneyInputs_() {
   });
 }
 
+function ftIsMobileLayout_() {
+  return window.matchMedia('(max-width: 680px)').matches;
+}
+
+function ftMonthChangeHint_() {
+  return ftIsMobileLayout_()
+    ? ' \u2014 tap \u2039 \u203a above to change month'
+    : ' \u2014 use sidebar arrows to change month';
+}
+
+function wireCalcAmountHint_() {
+  var key = 'ft-calc-hint-dismissed-v1';
+  var hint = document.getElementById('ft-calc-hint');
+  var btn = document.getElementById('ft-calc-hint-dismiss');
+  if (!hint || localStorage.getItem(key) === '1') return;
+  hint.hidden = false;
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    try { localStorage.setItem(key, '1'); } catch (e) {}
+    hint.hidden = true;
+  });
+}
+
+function initExpFoldCards_() {
+  var cards = document.querySelectorAll('.exp-fold-card');
+  if (!cards.length) return;
+  var mobile = ftIsMobileLayout_();
+  cards.forEach(function(card) {
+    if (mobile) card.removeAttribute('open');
+    else card.setAttribute('open', '');
+  });
+}
+
+var expFoldResizeTimer_;
+function scheduleExpFoldCards_() {
+  clearTimeout(expFoldResizeTimer_);
+  expFoldResizeTimer_ = setTimeout(initExpFoldCards_, 120);
+}
+
 function collectRecentPlaces_(limit) {
   limit = limit || 25;
   var seen = {};
@@ -3154,3 +3193,6 @@ if (expPlaceEl) {
 fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
 
 initCalculatorMoneyInputs_();
+wireCalcAmountHint_();
+initExpFoldCards_();
+window.addEventListener('resize', scheduleExpFoldCards_);
