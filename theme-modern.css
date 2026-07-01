@@ -193,14 +193,13 @@ body.dark .sb {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   UNIFIED HERO PATTERN
-   All summary heroes share one teal gradient + chip system.
+   HERO HIERARCHY
+   • Home: full teal gradient (dashboard anchor)
+   • Sub-pages: elevated white card + teal accent stripe
    ═══════════════════════════════════════════════════════════════ */
-.home-hero-card,
-.ft-page-hero,
-.settings-hero,
-.assets-hero,
-.assets-hero-v2 {
+
+/* ── Primary hero: Home dashboard only ── */
+.home-hero-card {
   padding: 24px;
   border: none;
   border-radius: var(--radius-lg);
@@ -211,10 +210,7 @@ body.dark .sb {
 }
 
 .home-hero-card__date,
-.home-hero-card__label,
-.ft-page-hero__label,
-.assets-hero__label,
-.settings-hero .ft-page-hero__label {
+.home-hero-card__label {
   color: var(--ft-hero-muted);
   font-size: var(--f-xs);
   font-weight: 700;
@@ -222,27 +218,22 @@ body.dark .sb {
   letter-spacing: 0.08em;
 }
 
-.home-hero-card__month,
-.home-hero-card__value,
-.ft-page-hero__value,
-.assets-hero__value,
-.assets-hero-v2 .assets-hero__value {
+.home-hero-card__month {
   color: var(--ft-hero-text);
   font-weight: 800;
   letter-spacing: -0.04em;
 }
 
-.home-hero-card__value.green,
-.ft-page-hero__value.green,
-.assets-hero__value.green { color: #a7f3d0; }
+.home-hero-card__value {
+  color: var(--ft-hero-text);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
 
-.home-hero-card__value.red,
-.ft-page-hero__value.red,
-.assets-hero__value.red { color: #fecdd3; }
+.home-hero-card__value.green { color: #a7f3d0; }
+.home-hero-card__value.red { color: #fecdd3; }
 
-.home-hero-card__sub,
-.ft-page-hero__hint,
-.assets-hero__hint {
+.home-hero-card__sub {
   color: var(--ft-hero-muted);
 }
 
@@ -259,46 +250,131 @@ body.dark .sb {
   border-color: var(--ft-hero-chip-border);
 }
 
-.ft-chip,
-.assets-chip {
-  border-radius: 14px;
+/* ── Secondary heroes: sub-page summaries ── */
+.ft-page-hero,
+.settings-hero,
+.assets-hero,
+.assets-hero-v2 {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  margin-bottom: var(--s6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.ft-page-hero::before,
+.settings-hero::before,
+.assets-hero::before,
+.assets-hero-v2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ft-hero-gradient);
+}
+
+body.dark .ft-page-hero,
+body.dark .settings-hero,
+body.dark .assets-hero,
+body.dark .assets-hero-v2 {
+  background: linear-gradient(180deg, var(--card-bg) 0%, var(--card-bg2) 100%);
+}
+
+.ft-page-hero__label,
+.assets-hero__label,
+.settings-hero .ft-page-hero__label {
+  color: var(--ink3);
+  font-size: var(--f-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ft-page-hero__value,
+.assets-hero__value,
+.assets-hero-v2 .assets-hero__value {
+  color: var(--ink);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.ft-page-hero__value.green,
+.assets-hero__value.green { color: var(--green); }
+
+.ft-page-hero__value.red,
+.assets-hero__value.red { color: var(--red); }
+
+.ft-page-hero__hint,
+.assets-hero__hint {
+  color: var(--ink3);
+}
+
+/* Chips: frosted on home, solid on sub-pages */
+.home-hero-card .ft-chip,
+.home-hero-card .assets-chip {
   background: var(--ft-hero-chip-bg);
   border-color: var(--ft-hero-chip-border);
-  min-width: 104px;
 }
 
 .ft-page-hero .ft-chip,
 .settings-hero .ft-chip,
-.assets-hero-v2 .assets-chip {
-  background: var(--ft-hero-chip-bg);
-  border-color: var(--ft-hero-chip-border);
+.assets-hero-v2 .assets-chip,
+.assets-hero .assets-chip {
+  background: var(--card-bg);
+  border-color: var(--line);
+  border-radius: 14px;
+  min-width: 104px;
 }
 
-.ft-chip span,
-.assets-chip span,
-.settings-hero .ft-chip span {
-  color: var(--ft-hero-muted);
+.ft-page-hero .ft-chip span,
+.settings-hero .ft-chip span,
+.assets-hero .assets-chip span,
+.assets-hero-v2 .assets-chip span {
+  color: var(--ink3);
 }
 
-.ft-chip strong,
-.assets-chip strong,
-.settings-hero .ft-chip strong {
-  color: var(--ft-hero-text);
+.ft-page-hero .ft-chip strong,
+.settings-hero .ft-chip strong,
+.assets-hero .assets-chip strong,
+.assets-hero-v2 .assets-chip strong {
+  color: var(--ink);
 }
 
 .ft-chip strong.green,
-.assets-chip strong.green { color: #a7f3d0; }
+.assets-chip strong.green { color: var(--green); }
 
 .ft-chip strong.red,
-.assets-chip strong.red { color: #fecdd3; }
+.assets-chip strong.red { color: var(--red); }
 
 .settings-hero__status {
-  color: var(--ft-hero-muted);
+  color: var(--ink2);
+  font-size: var(--f-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
 }
 
 .settings-sync-pill {
-  background: var(--ft-hero-chip-bg);
-  border: 1px solid var(--ft-hero-chip-border);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  color: var(--ink2);
+}
+
+.settings-sync-pill--ok { background: rgba(5, 150, 105, 0.1); border-color: rgba(5, 150, 105, 0.25); color: var(--green); }
+.settings-sync-pill--warn { background: rgba(186, 117, 23, 0.1); border-color: rgba(186, 117, 23, 0.3); color: #BA7517; }
+.settings-sync-pill--err { background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.25); color: var(--red); }
+
+/* Default chip shape (non-hero contexts) */
+.ft-chip,
+.assets-chip {
+  border-radius: 14px;
+  min-width: 104px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -599,7 +675,11 @@ body.dark .ft-fab {
     border-radius: 16px;
   }
 
-  .home-hero-card,
+  .home-hero-card {
+    border-radius: 18px;
+    padding: 20px;
+  }
+
   .ft-page-hero,
   .settings-hero,
   .assets-hero-v2 {
@@ -618,26 +698,6 @@ body.dark .ft-fab {
 
   body.dark .sb {
     box-shadow: 8px 0 48px rgba(0, 0, 0, 0.48);
-  }
-
-  #page-expenses .stat-row .stat-card:first-child {
-    background: var(--ft-hero-gradient);
-    border: none;
-    color: #fff;
-    box-shadow: var(--ft-hero-shadow);
-  }
-
-  #page-expenses .stat-row .stat-card:first-child .s-label {
-    color: var(--ft-hero-muted);
-  }
-
-  #page-expenses .stat-row .stat-card:first-child .s-value,
-  #page-expenses .stat-row .stat-card:first-child .s-value.red {
-    color: #fff;
-  }
-
-  #page-expenses .stat-row .stat-card:first-child #mom-exp {
-    color: var(--ft-hero-muted);
   }
 }
 

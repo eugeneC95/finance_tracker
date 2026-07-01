@@ -121,28 +121,28 @@ button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
 
 /* ============================================================
-   DESIGN TOKENS
+   DESIGN TOKENS — Ledger Green (see theme-modern.css for heroes/chrome)
    ============================================================ */
 :root {
   /* Colours —light */
-  --page-bg  : #eef1ee;
-  --card-bg  : #FFFFFF;
-  --card-bg2 : #f4f6f4;
-  --line     : #e2e5e2;
-  --line2    : #c5c9c4;
-  --ink      : #141816;
-  --ink2     : #4a524c;
-  --ink3     : #8a938c;
-  --brand    : #0f3d34;
-  --primary  : #0f766e;
-  --primary-dk: #0d5c56;
-  --green    : #15803d;
+  --page-bg  : #f3f6f4;
+  --card-bg  : #ffffff;
+  --card-bg2 : #eef4f1;
+  --line     : rgba(12, 22, 20, 0.09);
+  --line2    : rgba(12, 22, 20, 0.16);
+  --ink      : #0c1a17;
+  --ink2     : #3d524c;
+  --ink3     : #5c6f68;
+  --brand    : #134e4a;
+  --primary  : #0d9488;
+  --primary-dk: #0f766e;
+  --green    : #059669;
   --red      : #dc2626;
-  --blue     : #2563eb;
+  --blue     : #0284c7;
 
   /* Sidebar */
-  --sb-bg    : #0f1612;
-  --sb-w     : 232px;
+  --sb-bg    : #0c1614;
+  --sb-w     : 248px;
 
   /* Space scale */
   --s1  : 4px;
@@ -167,32 +167,32 @@ input, select, textarea { font-family: inherit; }
   --btn-h: 48px;
 
   /* Misc */
-  --radius  : 12px;
-  --radius-sm: 8px;
-  --shadow  : 0 1px 2px rgba(15,22,18,.06), 0 4px 16px rgba(15,22,18,.08);
-  --focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
+  --radius  : 18px;
+  --radius-sm: 12px;
+  --shadow  : 0 1px 2px rgba(12, 22, 20, 0.04), 0 8px 26px rgba(12, 22, 20, 0.07);
+  --focus-ring: 0 0 0 3px rgba(13, 148, 136, 0.24);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
 /* ── Dark theme ── */
 body.dark {
-  --page-bg  : #0c0e0d;
-  --card-bg  : #161a18;
-  --card-bg2 : #1c221f;
-  --line     : #2a322e;
-  --line2    : #3d4843;
-  --ink      : #eef2ef;
-  --ink2     : #b4bcb7;
-  --ink3     : #6a736e;
-  --brand    : #d1fae5;
+  --page-bg  : #070d0b;
+  --card-bg  : #101916;
+  --card-bg2 : #16221e;
+  --line     : rgba(148, 175, 165, 0.12);
+  --line2    : rgba(148, 175, 165, 0.2);
+  --ink      : #ecf3f0;
+  --ink2     : #b8cbc3;
+  --ink3     : #7a948c;
+  --brand    : #99f6e4;
   --primary  : #2dd4bf;
   --primary-dk: #14b8a6;
-  --green    : #4ade80;
+  --green    : #34d399;
   --red      : #f87171;
-  --blue     : #60a5fa;
-  --sb-bg    : #050807;
-  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.25);
+  --blue     : #38bdf8;
+  --sb-bg    : #040a08;
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.26);
 }
 
 /* ── Font size modes ── */
@@ -277,29 +277,6 @@ body {
     box-shadow:
       0 2px 8px rgba(0, 0, 0, 0.35),
       0 18px 56px rgba(0, 0, 0, 0.42);
-  }
-  #page-expenses .stat-row .stat-card:first-child {
-    border: none !important;
-    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 42%, #115e59 100%) !important;
-    color: #fff;
-    box-shadow: 0 18px 48px rgba(15, 118, 110, 0.32);
-    transform: translateY(-2px);
-  }
-  #page-expenses .stat-row .stat-card:first-child .s-label {
-    color: rgba(255, 255, 255, 0.65) !important;
-  }
-  #page-expenses .stat-row .stat-card:first-child .s-value,
-  #page-expenses .stat-row .stat-card:first-child .s-value.red {
-    color: #fff !important;
-    font-size: 24px !important;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-  #page-expenses .stat-row .stat-card:first-child #mom-exp {
-    color: rgba(255, 255, 255, 0.78) !important;
-  }
-  body.dark #page-expenses .stat-row .stat-card:first-child {
-    background: linear-gradient(135deg, #2dd4bf 0%, #0f766e 45%, #134e4a 100%) !important;
   }
 }
 
@@ -2188,20 +2165,7 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
   margin: 0 0 8px 4px;
 }
 .settings-hero {
-  background: linear-gradient(145deg, #0f766e 0%, #0d5c56 55%, #134e4a 100%) !important;
-  color: #fff;
-  border-color: transparent !important;
   margin-bottom: 0;
-}
-body.dark .settings-hero {
-  background: linear-gradient(145deg, #2dd4bf 0%, #0f766e 45%, #134e4a 100%) !important;
-}
-.settings-hero .ft-page-hero__label,
-.settings-hero .ft-chip span { color: rgba(255,255,255,.7) !important; }
-.settings-hero .ft-chip strong { color: #fff !important; }
-.settings-hero .ft-chip {
-  background: rgba(255,255,255,.14) !important;
-  border-color: rgba(255,255,255,.18) !important;
 }
 .settings-hero__status {
   font-size: var(--f-sm);
@@ -2481,11 +2445,6 @@ body.dark #page-settings .src-card.active {
 .home-body { display: flex; flex-direction: column; gap: var(--s4); }
 .home-hero-card {
   padding: var(--s5);
-  background: linear-gradient(145deg, var(--card-bg) 0%, var(--card-bg2) 100%);
-  border: 1px solid var(--line);
-}
-body.dark .home-hero-card {
-  background: linear-gradient(145deg, #1e1e22 0%, #25252c 100%);
 }
 .home-hero-card__top {
   display: flex;
@@ -4090,28 +4049,6 @@ body.dark .ft-fab { background: #fff; color: #000; }
       0 8px 24px rgba(0, 0, 0, 0.5) !important;
   }
 
-  /* --- Hero stat card: teal gradient + white text --- */
-  #page-expenses .stat-row .stat-card:first-child {
-    background: linear-gradient(145deg, #0f766e 0%, #0a5c52 55%, #064e3b 100%) !important;
-    color: #fff;
-  }
-  #page-expenses .stat-row .stat-card:first-child .s-label {
-    color: rgba(255, 255, 255, .6) !important;
-  }
-  #page-expenses .stat-row .stat-card:first-child .s-value,
-  #page-expenses .stat-row .stat-card:first-child .s-value.red {
-    color: #fff !important;
-    font-size: 21px !important;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-  #page-expenses .stat-row .stat-card:first-child #mom-exp {
-    color: rgba(255, 255, 255, .75) !important;
-  }
-  body.dark #page-expenses .stat-row .stat-card:first-child {
-    background: linear-gradient(145deg, #2dd4bf 0%, #0f766e 50%, #134e4a 100%) !important;
-  }
-
   /* --- Panel headers: tighter and quieter --- */
   .panel-hd {
     padding: 14px 18px 4px !important;
@@ -4337,7 +4274,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   }
 }
 </style>
-<link rel="stylesheet" href="theme-modern.css?v=122"/>
+<link rel="stylesheet" href="theme-modern.css?v=123"/>
 
 </head>
 <body class="fs-md">
@@ -4427,7 +4364,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v122 · 2026-07-01 18:20';
+  var BUILD_VERSION    = 'v123 · 2026-07-01 18:25';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -5601,7 +5538,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v122 · 2026-07-01 18:20</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v123 · 2026-07-01 18:25</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5918,13 +5855,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v122 · 2026-07-01 18:20</div>
-<script src="build-id.js?v=122"></script>
-<script src="app.js?v=122"></script>
-<script src="sync.js?v=122"></script>
-<script src="features.js?v=122"></script>
-<script src="extras.js?v=122"></script>
-<script src="import-inline.js?v=122"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v123 · 2026-07-01 18:25</div>
+<script src="build-id.js?v=123"></script>
+<script src="app.js?v=123"></script>
+<script src="sync.js?v=123"></script>
+<script src="features.js?v=123"></script>
+<script src="extras.js?v=123"></script>
+<script src="import-inline.js?v=123"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
