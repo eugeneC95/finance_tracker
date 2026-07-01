@@ -161,17 +161,52 @@ function petrolFillEfficiency(entry, withOdo) {
 }
 
 function petrolAvgL100(withOdo) {
-  if (withOdo.length < 2) return 0;
+  var summary = petrolEfficiencyRangeSummary_(withOdo);
+  return summary.ok ? summary.avgL100 : 0;
+}
+
+/** Weighted average L/100 km over a date range (default: all odometer fill-ups). */
+function petrolEfficiencyRangeSummary_(withOdo) {
+  var list = withOdo || petrolOdoSorted();
+  if (list.length < 2) {
+    return { ok: false, fills: list.length, trips: 0, totalKm: 0, totalLitres: 0 };
+  }
   var totalKm = 0;
   var totalL = 0;
-  for (var i = 1; i < withOdo.length; i++) {
-    var km = withOdo[i].odo - withOdo[i - 1].odo;
+  var trips = 0;
+  for (var i = 1; i < list.length; i++) {
+    var km = list[i].odo - list[i - 1].odo;
     if (km > 0) {
       totalKm += km;
-      totalL += withOdo[i].litres;
+      totalL += list[i].litres;
+      trips++;
     }
   }
-  return totalKm > 0 ? (totalL / totalKm) * 100 : 0;
+  if (totalKm <= 0 || totalL <= 0) {
+    return { ok: false, fills: list.length, trips: trips, totalKm: 0, totalLitres: 0 };
+  }
+  var avgL100 = (totalL / totalKm) * 100;
+  return {
+    ok: true,
+    avgL100: avgL100,
+    kmL: petrolKmPerL(avgL100),
+    totalKm: totalKm,
+    totalLitres: totalL,
+    trips: trips,
+    fills: list.length,
+    fromDate: list[0].date,
+    toDate: list[list.length - 1].date,
+    fromOdo: list[0].odo,
+    toOdo: list[list.length - 1].odo,
+  };
+}
+
+function petrolFmtRangeDate_(dateStr) {
+  if (!dateStr) return '—';
+  var pd = typeof parseTxDate === 'function' ? parseTxDate(dateStr) : null;
+  return pd
+    ? pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })
+    : String(dateStr);
 }
 
 function petrolCostPerKm(withOdo, avgPpl) {
@@ -352,6 +387,7 @@ function renderPetrolLog() {
   var avgPpl = totalLitres > 0 ? totalSpent / totalLitres : 0;
 
   var withOdo = petrolOdoSorted();
+  var allTime = petrolEfficiencyRangeSummary_(withOdo);
   var cpk = petrolCostPerKm(withOdo, avgPpl);
   var avgL100 = petrolAvgL100(withOdo);
   var viewYm = petrolViewYm();
@@ -370,6 +406,15 @@ function renderPetrolLog() {
   setEl('pt-cpk', cpk > 0 ? 'RM ' + cpk.toFixed(2) : '—');
   setEl('pt-eff', avgL100 > 0 ? avgL100.toFixed(1) + ' L/100 km' : '—');
   setEl('pt-kml', avgL100 > 0 ? petrolKmPerL(avgL100).toFixed(2) + ' km/L' : '—');
+  var effChipNote = document.getElementById('pt-eff-chip-note');
+  if (effChipNote) {
+    if (allTime.ok) {
+      effChipNote.textContent = 'All-time avg · ' + petrolFmtRangeDate_(allTime.fromDate) +
+        ' – ' + petrolFmtRangeDate_(allTime.toDate);
+    } else {
+      effChipNote.textContent = 'All-time avg (needs 2+ odometer fills)';
+    }
+  }
 
   var histNote = document.getElementById('pt-history-note');
   if (histNote) {
@@ -485,9 +530,34 @@ function petrolEfficiencyByMonth() {
 function renderPetrolEfficiencyChart() {
   var el = document.getElementById('pt-eff-chart');
   if (!el) return;
+  var rangeEl = document.getElementById('pt-eff-range-summary');
+  var allTime = petrolEfficiencyRangeSummary_();
+  if (rangeEl) {
+    if (!allTime.ok) {
+      rangeEl.innerHTML =
+        '<div class="pt-eff-range pt-eff-range--empty">' +
+        '<div class="pt-eff-range__title">All-time average</div>' +
+        '<p class="ft-note">Log odometer on at least two fill-ups to see your average over the full date range.</p></div>';
+    } else {
+      rangeEl.innerHTML =
+        '<div class="pt-eff-range">' +
+        '<div class="pt-eff-range__head">' +
+        '<div class="pt-eff-range__title">All-time average</div>' +
+        '<div class="pt-eff-range__dates">' + esc(petrolFmtRangeDate_(allTime.fromDate)) +
+        ' \u2013 ' + esc(petrolFmtRangeDate_(allTime.toDate)) + '</div></div>' +
+        '<div class="pt-eff-range__main">' +
+        '<strong class="pt-eff-range__value">' + petrolFmtEfficiency(allTime.avgL100) + '</strong></div>' +
+        '<div class="pt-eff-range__meta">' +
+        allTime.totalKm.toLocaleString() + ' km tracked \u00b7 ' +
+        allTime.totalLitres.toFixed(1) + ' L \u00b7 ' +
+        allTime.trips + ' trip' + (allTime.trips === 1 ? '' : 's') + ' \u00b7 ' +
+        allTime.fills + ' fill-up' + (allTime.fills === 1 ? '' : 's') +
+        '</div></div>';
+    }
+  }
   var series = petrolEfficiencyByMonth();
   if (!series.length) {
-    el.innerHTML = '<div class="ft-note" style="padding:12px 0">Log odometer on fill-ups to see L/100 km and km/L trend.</div>';
+    el.innerHTML = '<div class="ft-note" style="padding:12px 0">Log odometer on fill-ups to see monthly L/100 km trend.</div>';
     return;
   }
   if (typeof renderMonthDailyLineChart !== 'function') return;

@@ -2929,6 +2929,41 @@ body.dark .fs-btn.active { color: #000; }
   line-height: 1.4;
 }
 #page-petrol .pt-help { margin-bottom: var(--s4); }
+.pt-eff-chip-note { margin: 10px 0 0; }
+.pt-eff-range {
+  margin-bottom: var(--s4);
+  padding: var(--s4);
+  border-radius: var(--r-lg);
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+}
+.pt-eff-range--empty { padding: var(--s3) var(--s4); }
+.pt-eff-range__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pt-eff-range__title {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+.pt-eff-range__dates {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+}
+.pt-eff-range__main { margin-bottom: 6px; }
+.pt-eff-range__value {
+  font-size: var(--f-lg);
+  color: var(--ink);
+}
+.pt-eff-range__meta {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  line-height: 1.5;
+}
 #page-petrol .pt-form-actions {
   display: flex;
   flex-direction: column;
@@ -4061,7 +4096,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v111 · 2026-06-30 17:23</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v112 · 2026-07-01 12:38</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4099,14 +4134,16 @@ body.dark .fs-btn.active { color: #000; }
             <div class="ft-chip"><span>L/100 km</span><strong id="pt-eff">—</strong></div>
             <div class="ft-chip"><span>km / L</span><strong id="pt-kml">—</strong></div>
           </div>
+          <p class="ft-note pt-eff-chip-note" id="pt-eff-chip-note"></p>
         </div>
       </section>
 
       <div class="card mb-5 pt-eff-card">
         <div class="panel-hd"><span class="panel-title">Efficiency trend (L/100 km &amp; km/L)</span></div>
         <div class="panel-bd">
+          <div id="pt-eff-range-summary"></div>
           <div id="pt-eff-chart"></div>
-          <p class="ft-note" style="margin-top:8px">Last 6 months with odometer readings.</p>
+          <p class="ft-note" style="margin-top:8px">Monthly trend (last 6 months). All-time average uses every odometer fill from first to last date.</p>
         </div>
       </div>
 
@@ -4162,7 +4199,8 @@ body.dark .fs-btn.active { color: #000; }
             <summary>How cost/km, L/100 km, and km/L are calculated</summary>
             <div class="assets-help__body">
               <p><strong>This fill:</strong> if you enter odometer, we show km since your last reading, L/100 km, and km/L for this tank.</p>
-              <p style="margin-top:8px"><strong>Summary chips:</strong> cost/km and average efficiency use all fills with odometer readings (first tank’s litres are excluded from the km average). km/L = 100 ÷ L/100 km.</p>
+              <p style="margin-top:8px"><strong>All-time average:</strong> total litres ÷ total km across your full log (first odometer date to last). First fill’s litres are excluded; each later fill’s litres count toward the km since the previous reading.</p>
+              <p style="margin-top:8px"><strong>Summary chips:</strong> spend and litres follow the sidebar month; L/100 km and km/L chips show the all-time average. km/L = 100 ÷ L/100 km.</p>
             </div>
           </details>
 
@@ -4296,11 +4334,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=111"></script>
-<script src="app.js?v=111"></script>
-<script src="sync.js?v=111"></script>
-<script src="features.js?v=111"></script>
-<script src="extras.js?v=111"></script>
-<script src="import-inline.js?v=111"></script>
+<script src="build-id.js?v=112"></script>
+<script src="app.js?v=112"></script>
+<script src="sync.js?v=112"></script>
+<script src="features.js?v=112"></script>
+<script src="extras.js?v=112"></script>
+<script src="import-inline.js?v=112"></script>
 </body>
 </html>
