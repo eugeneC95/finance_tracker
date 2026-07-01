@@ -3197,39 +3197,41 @@ body.dark .fs-btn.active { color: #000; }
 ══════════════════════════════════════════ -->
 <aside class="sb">
   <div class="sb-brand">
-    <div class="logo">💰</div>
+    <div class="brand-logo" aria-hidden="true">
+      <img class="brand-logo__img" src="../assets/brand-logo.svg" width="40" height="40" alt=""/>
+    </div>
     <div class="name">Finance Tracker</div>
     <div class="tagline">Personal money manager</div>
   </div>
 
   <nav class="sb-nav">
     <button class="nav-item active" data-tab="home">
-      <span class="icon">🏠</span> Home
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-home"/></svg></span> Home
     </button>
     <button class="nav-item" data-tab="expenses">
-      <span class="icon">💸</span> Expenses
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-expenses"/></svg></span> Expenses
     </button>
     <button class="nav-item" data-tab="income">
-      <span class="icon">💵</span> Income
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-income"/></svg></span> Income
     </button>
     <button class="nav-item" data-tab="assets">
-      <span class="icon">🏦</span> Assets
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-assets"/></svg></span> Assets
     </button>
     <button class="nav-item" data-tab="recurring">
-      <span class="icon">🔁</span> Recurring
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-recurring"/></svg></span> Recurring
     </button>
     <button class="nav-item" data-tab="trends">
-      <span class="icon">📈</span> Trends
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-trends"/></svg></span> Trends
     </button>
     <button class="nav-item" data-tab="petrol">
-      <span class="icon">⛽</span> Petrol Log
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-petrol"/></svg></span> Petrol Log
     </button>
     <button class="nav-item" data-tab="report">
-      <span class="icon">📄</span> Report
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-report"/></svg></span> Report
     </button>
     <div class="nav-spacer"></div>
     <button class="nav-item" data-tab="settings">
-      <span class="icon">⚙️</span> Settings
+      <span class="icon" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-settings"/></svg></span> Settings
     </button>
   </nav>
 
@@ -4268,7 +4270,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v125 · 2026-07-01 18:41</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v126 · 2026-07-01 18:48</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4584,11 +4586,11 @@ var nMM = document.getElementById('next-month-m');
 if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
 if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
 </script>
-<script src="build-id.js?v=125"></script>
-<script src="app.js?v=125"></script>
-<script src="sync.js?v=125"></script>
-<script src="features.js?v=125"></script>
-<script src="extras.js?v=125"></script>
-<script src="import-inline.js?v=125"></script>
+<script src="build-id.js?v=126"></script>
+<script src="app.js?v=126"></script>
+<script src="sync.js?v=126"></script>
+<script src="features.js?v=126"></script>
+<script src="extras.js?v=126"></script>
+<script src="import-inline.js?v=126"></script>
 </body>
 </html>

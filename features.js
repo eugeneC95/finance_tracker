@@ -257,8 +257,15 @@ function homePanel_(title, bodyHtml) {
   );
 }
 
-function homeEmpty_(icon, msg) {
-  return '<div class="home-empty"><div class="home-empty__ico">' + icon + '</div>' + esc(msg) + '</div>';
+function homeEmpty_(iconId, msg, opts) {
+  opts = opts || {};
+  var ico = typeof ftIconHtml_ === 'function' ? ftIconHtml_(iconId, 'ft-empty-state__svg') : '';
+  var html = '<div class="ft-empty-state home-empty"><div class="ft-empty-state__ico">' + ico + '</div>';
+  html += '<p class="ft-empty-state__msg">' + esc(msg) + '</p>';
+  if (opts.ctaTab) {
+    html += '<button type="button" class="btn btn-primary ft-empty-state__cta" data-goto-tab="' + esc(opts.ctaTab) + '">' + esc(opts.ctaLabel || 'Get started') + '</button>';
+  }
+  return html + '</div>';
 }
 
 function homeDateOffsetStr_(days) {
@@ -481,7 +488,7 @@ function renderHomeDashboard() {
     });
     var recent = merged.slice(0, 6);
     if (!recent.length) {
-      recentEl.innerHTML = homePanel_('Recent activity', homeEmpty_('\u{1F4CB}', 'No transactions yet \u2014 tap Expense above to add one.'));
+      recentEl.innerHTML = homePanel_('Recent activity', homeEmpty_('clipboard', 'No transactions yet.', { ctaTab: 'expenses', ctaLabel: 'Add expense' }));
     } else {
       recentEl.innerHTML = homePanel_('Recent activity', '<div class="home-recent-list"></div><p class="ft-note home-recent-hint">Tap a row to edit</p>');
       var listEl = recentEl.querySelector('.home-recent-list');
@@ -525,7 +532,7 @@ function renderHomeDashboard() {
     var top = Object.keys(catTotals).map(function(c) { return { cat: c, amt: catTotals[c] }; })
       .sort(function(a, b) { return b.amt - a.amt; }).slice(0, 5);
     if (!top.length) {
-      catsEl.innerHTML = homePanel_('Top spending', homeEmpty_('\u{1F4CA}', 'No spending this month yet.'));
+      catsEl.innerHTML = homePanel_('Top spending', homeEmpty_('chart', 'No spending this month yet.'));
     } else {
       catsEl.innerHTML = homePanel_('Top spending', top.map(function(t) {
         var info = EXP_CATS[t.cat] || { icon: '\u{1F4E6}', color: '#B4B2A9' };
@@ -614,7 +621,7 @@ function renderHomeDashboard() {
     }
     insEl.innerHTML = homePanel_('Insights', cards.length
       ? '<div class="home-insights-grid">' + cards.join('') + '</div>'
-      : homeEmpty_('\u{1F4A1}', 'Add a few weeks of data for month-over-month insights.'));
+      : homeEmpty_('lightbulb', 'Add a few weeks of data for month-over-month insights.'));
   }
 
   var savEl = document.getElementById('home-savings');
@@ -630,7 +637,7 @@ function renderHomeDashboard() {
         '<div class="ft-budget-track"><div class="ft-budget-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
         '<div class="ft-note" style="margin-top:8px">Target by ' + esc(savingsGoal.byDate) + '</div></div>');
     } else {
-      savEl.innerHTML = homePanel_('Savings goal', homeEmpty_('\u{1F3AF}', 'Set a goal on the Expenses tab to track progress here.'));
+      savEl.innerHTML = homePanel_('Savings goal', homeEmpty_('target', 'Set a monthly savings target.', { ctaTab: 'expenses', ctaLabel: 'Set goal' }));
     }
   }
 
@@ -676,7 +683,7 @@ function renderHomeDashboard() {
         '</div>';
     }
     if (!preview.length && !missedRec.length) {
-      recBox.innerHTML = homePanel_('Upcoming bills', homeEmpty_('\u{1F501}', 'No recurring items in the next 30 days.'));
+      recBox.innerHTML = homePanel_('Upcoming bills', homeEmpty_('recurring', 'No recurring items in the next 30 days.'));
     } else {
       if (preview.length) {
         body += '<div class="ft-note" style="margin-bottom:10px">Upcoming 30d: Out ' + fmt(recExp) + ' \u00b7 In ' + fmt(recInc) + ' \u00b7 Net ' + fmt(recInc - recExp) + '</div>' +
@@ -687,7 +694,7 @@ function renderHomeDashboard() {
               (p.type === 'inc' ? '+' : '') + fmt(p.amount) + '</span></div>';
           }).join('');
       }
-      recBox.innerHTML = homePanel_(missedRec.length ? 'Recurring' : 'Upcoming (30 days)', body || homeEmpty_('\u{1F501}', 'Nothing upcoming.'));
+      recBox.innerHTML = homePanel_(missedRec.length ? 'Recurring' : 'Upcoming (30 days)', body || homeEmpty_('recurring', 'Nothing upcoming.'));
       recBox.querySelectorAll('.home-rec-log-btn').forEach(function(btn) {
         btn.addEventListener('click', function(ev) {
           ev.stopPropagation();
@@ -705,7 +712,7 @@ function renderHomeDashboard() {
     me.forEach(function(e) { catTotalsB[e.cat] = (catTotalsB[e.cat] || 0) + e.amount; });
     var bkeys = Object.keys(budgets || {});
     if (!bkeys.length) {
-      budBox.innerHTML = homePanel_('Budgets', homeEmpty_('\u{1F4B0}', 'Set category budgets on the Expenses tab.'));
+      budBox.innerHTML = homePanel_('Budgets', homeEmpty_('wallet', 'Set category budgets to track spending.', { ctaTab: 'expenses', ctaLabel: 'Set budgets' }));
     } else {
       var rows = bkeys.map(function(cat) {
         var baseLimit = Number(budgets[cat]) || 0;

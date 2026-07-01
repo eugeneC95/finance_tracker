@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="ft-icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/>
+  </symbol>
+  <symbol id="ft-icon-expenses" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 7h10l-1.5 9H8.5L7 7z"/><path d="M9 4h6v3H9z"/><path d="M10 13h4"/>
+  </symbol>
+  <symbol id="ft-icon-income" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 4v16"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/>
+  </symbol>
+  <symbol id="ft-icon-assets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/><path d="M4 12h16"/>
+  </symbol>
+  <symbol id="ft-icon-recurring" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 7a5 5 0 0 0-8.2-3.8L7 5"/><path d="M7 17a5 5 0 0 0 8.2 3.8l1.8-1.8"/><path d="M7 5v3h3"/><path d="M17 19v-3h-3"/>
+  </symbol>
+  <symbol id="ft-icon-trends" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 18V6"/><path d="M4 18h16"/><path d="M8 14l3-3 3 2 5-6"/>
+  </symbol>
+  <symbol id="ft-icon-petrol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 4h8v16H6z"/><path d="M14 8h2l2 3v9h-4"/><path d="M8 8h4"/><path d="M8 12h3"/>
+  </symbol>
+  <symbol id="ft-icon-report" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 4h8l2 2v14H6V4z"/><path d="M9 12h6"/><path d="M9 16h4"/><path d="M9 8h6"/>
+  </symbol>
+  <symbol id="ft-icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.9 19.1 1.4-1.4"/><path d="m17.7 6.3 1.4-1.4"/>
+  </symbol>
+  <symbol id="ft-icon-more" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/>
+  </symbol>
+  <symbol id="ft-icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/>
+  </symbol>
+  <symbol id="ft-icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 19V5"/><path d="M5 19h14"/><rect x="8" y="11" width="3" height="8" rx="0.5"/><rect x="13" y="8" width="3" height="11" rx="0.5"/><rect x="18" y="13" width="3" height="6" rx="0.5"/>
+  </symbol>
+  <symbol id="ft-icon-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 3a6 6 0 0 0-3 11v2h6v-2a6 6 0 0 0-3-11z"/>
+  </symbol>
+  <symbol id="ft-icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="ft-icon-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 8h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4z"/><path d="M4 8V6a2 2 0 0 1 2-2h12"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/>
+  </symbol>
+</svg>

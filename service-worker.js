@@ -1,9 +1,11 @@
-const CACHE = 'ft-v125';
+const CACHE = 'ft-v126';
 const SHELL = [
   './build-id.js',
   './lock.html',
   './index.html',
   './theme-modern.css',
+  './assets/brand-logo.svg',
+  './assets/ft-icons.svg',
   './app.js',
   './features.js',
   './extras.js',

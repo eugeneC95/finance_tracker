@@ -1200,6 +1200,54 @@ function ftIsMobileLayout_() {
   return window.matchMedia('(max-width: 680px)').matches;
 }
 
+function ftAssetBase_() {
+  var p = String(location.pathname || '');
+  return p.indexOf('finance-tracker-chrome') !== -1 ? '../assets/' : 'assets/';
+}
+
+function ftIconHtml_(id, extraClass) {
+  var cls = 'ft-ico' + (extraClass ? ' ' + extraClass : '');
+  return '<svg class="' + cls + '" aria-hidden="true"><use href="' + ftAssetBase_() + 'ft-icons.svg#ft-icon-' + id + '"/></svg>';
+}
+
+function buildEmptyState_(opts) {
+  opts = opts || {};
+  var wrap = document.createElement('div');
+  wrap.className = 'ft-empty-state';
+  var ico = document.createElement('div');
+  ico.className = 'ft-empty-state__ico';
+  ico.innerHTML = ftIconHtml_(opts.icon || 'clipboard', 'ft-empty-state__svg');
+  wrap.appendChild(ico);
+  var msg = document.createElement('p');
+  msg.className = 'ft-empty-state__msg';
+  msg.textContent = opts.msg || '';
+  wrap.appendChild(msg);
+  if (opts.hint) {
+    var hint = document.createElement('p');
+    hint.className = 'ft-empty-state__hint';
+    hint.textContent = opts.hint;
+    wrap.appendChild(hint);
+  }
+  if (opts.ctaTab) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-primary ft-empty-state__cta';
+    btn.dataset.gotoTab = opts.ctaTab;
+    btn.textContent = opts.ctaLabel || 'Get started';
+    wrap.appendChild(btn);
+  }
+  return wrap;
+}
+
+function wireEmptyStateCtas_() {
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-goto-tab]');
+    if (!btn) return;
+    var tab = btn.getAttribute('data-goto-tab');
+    if (tab && typeof activateNavTab === 'function') activateNavTab(tab);
+  });
+}
+
 function ftMonthChangeHint_() {
   return ftIsMobileLayout_()
     ? ' \u2014 tap \u2039 \u203a above to change month'
@@ -2105,14 +2153,13 @@ function renderTxList(id, items, catMap, isIncome) {
   el.innerHTML = '';
 
   if (!items.length) {
-    const em = document.createElement('div');
-    em.className = 'empty';
-    const ico = document.createElement('div');
-    ico.className = 'empty-icon';
-    ico.textContent = isIncome ? '💵' : '💸';
-    em.appendChild(ico);
-    em.appendChild(document.createTextNode('No ' + (isIncome?'income':'expenses') + ' this month'));
-    el.appendChild(em);
+    el.appendChild(buildEmptyState_({
+      icon: isIncome ? 'income' : 'expenses',
+      msg: isIncome ? 'No income this month' : 'No expenses this month',
+      hint: isIncome ? 'Log salary, refunds, or other inflows.' : 'Use the form above to track spending.',
+      ctaTab: isIncome ? 'income' : 'expenses',
+      ctaLabel: isIncome ? 'Go to Income' : 'Add expense'
+    }));
     return;
   }
 
@@ -3207,6 +3254,7 @@ fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
 
 initCalculatorMoneyInputs_();
 wireCalcAmountHint_();
+wireEmptyStateCtas_();
 initExpFoldCards_();
 initSettingsFoldCards_();
 window.addEventListener('resize', scheduleUxLayoutCards_);
