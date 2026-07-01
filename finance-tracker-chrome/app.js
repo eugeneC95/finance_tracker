@@ -1196,6 +1196,34 @@ function initCalculatorMoneyInputs_() {
   });
 }
 
+function collectRecentPlaces_(limit) {
+  limit = limit || 25;
+  var seen = {};
+  var list = [];
+  expenses.slice().sort(function(a, b) {
+    return String(b.date).localeCompare(String(a.date)) || (Number(b.id) - Number(a.id));
+  }).forEach(function(e) {
+    var p = String(e.place || '').trim();
+    if (!p) return;
+    var key = p.toLowerCase();
+    if (seen[key]) return;
+    seen[key] = true;
+    list.push(p);
+  });
+  return list.slice(0, limit);
+}
+
+function refreshExpensePlaceDatalist_() {
+  var dl = document.getElementById('exp-place-list');
+  if (!dl) return;
+  dl.innerHTML = '';
+  collectRecentPlaces_().forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p;
+    dl.appendChild(opt);
+  });
+}
+
 // ── Add expenses ───────────────────────────────────────────
 function addExpense() {
   const nEl = document.getElementById('exp-name');
@@ -2013,6 +2041,7 @@ function render() {
   if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
   if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
   if (typeof renderRecurring  === 'function') renderRecurring();
+  refreshExpensePlaceDatalist_();
   refreshActiveTabPanels();
 }
 
