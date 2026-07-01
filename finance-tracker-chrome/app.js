@@ -1229,10 +1229,23 @@ function initExpFoldCards_() {
   });
 }
 
+function initSettingsFoldCards_() {
+  var cards = document.querySelectorAll('.settings-fold-card');
+  if (!cards.length) return;
+  var mobile = ftIsMobileLayout_();
+  cards.forEach(function(card) {
+    if (mobile) card.removeAttribute('open');
+    else card.setAttribute('open', '');
+  });
+}
+
 var expFoldResizeTimer_;
-function scheduleExpFoldCards_() {
+function scheduleUxLayoutCards_() {
   clearTimeout(expFoldResizeTimer_);
-  expFoldResizeTimer_ = setTimeout(initExpFoldCards_, 120);
+  expFoldResizeTimer_ = setTimeout(function() {
+    initExpFoldCards_();
+    initSettingsFoldCards_();
+  }, 120);
 }
 
 function collectRecentPlaces_(limit) {
@@ -3195,4 +3208,5 @@ fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
 initCalculatorMoneyInputs_();
 wireCalcAmountHint_();
 initExpFoldCards_();
-window.addEventListener('resize', scheduleExpFoldCards_);
+initSettingsFoldCards_();
+window.addEventListener('resize', scheduleUxLayoutCards_);

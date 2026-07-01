@@ -3190,6 +3190,7 @@ body.dark .fs-btn.active { color: #000; }
 <link rel="stylesheet" href="../theme-modern.css?v=124"/>
 </head>
 <body class="fs-md">
+<a class="ft-skip-link" href="#main-content">Skip to main content</a>
 
 <!-- ══════════════════════════════════════════
      SIDEBAR
@@ -3245,7 +3246,7 @@ body.dark .fs-btn.active { color: #000; }
 <!-- ══════════════════════════════════════════
      MAIN
 ══════════════════════════════════════════ -->
-<main class="main">
+<main class="main" id="main-content">
   <div class="month-controls" id="mobile-month-nav" style="display:none">
     <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
     <span id="month-label-m" style="font-size:var(--f-md);font-weight:600;color:var(--ink);min-width:110px;text-align:center">—</span>
@@ -4039,8 +4040,11 @@ body.dark .fs-btn.active { color: #000; }
           </div>
         </section>
 
-        <section aria-labelledby="settings-catrules-title">
-          <h3 class="settings-section__title" id="settings-catrules-title">Category rules</h3>
+        <details class="settings-fold-card" id="settings-catrules-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-catrules-title">Category rules</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card settings-card">
             <div class="panel-bd">
               <p class="ft-note" style="margin-top:0">Merchant name patterns auto-assign categories when adding expenses.</p>
@@ -4071,10 +4075,14 @@ body.dark .fs-btn.active { color: #000; }
               </form>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-sync-title">
-          <h3 class="settings-section__title" id="settings-sync-title">Google Sheets sync</h3>
+        <details class="settings-fold-card" id="settings-sync-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-sync-title">Google Sheets sync</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-hd">
               <span class="panel-title">Connection</span>
@@ -4110,10 +4118,14 @@ body.dark .fs-btn.active { color: #000; }
               </details>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-import-title">
-          <h3 class="settings-section__title" id="settings-import-title">Import from bank / TNG</h3>
+        <details class="settings-fold-card" id="settings-import-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-import-title">Import from bank / TNG</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-bd">
               <nav class="iw-steps" id="iw-steps" aria-label="Import progress">
@@ -4245,14 +4257,18 @@ body.dark .fs-btn.active { color: #000; }
               </div>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-about-title">
-          <h3 class="settings-section__title" id="settings-about-title">About</h3>
+        <details class="settings-fold-card" id="settings-about-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-about-title">About</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v124 · 2026-07-01 18:34</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v125 · 2026-07-01 18:41</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4262,7 +4278,8 @@ body.dark .fs-btn.active { color: #000; }
               </details>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
       </div>
     </div>
@@ -4567,11 +4584,11 @@ var nMM = document.getElementById('next-month-m');
 if (pMM) pMM.addEventListener('click', function() { document.getElementById('prev-month').click(); syncMobileMonthNav(); });
 if (nMM) nMM.addEventListener('click', function() { document.getElementById('next-month').click(); syncMobileMonthNav(); });
 </script>
-<script src="build-id.js?v=124"></script>
-<script src="app.js?v=124"></script>
-<script src="sync.js?v=124"></script>
-<script src="features.js?v=124"></script>
-<script src="extras.js?v=124"></script>
-<script src="import-inline.js?v=124"></script>
+<script src="build-id.js?v=125"></script>
+<script src="app.js?v=125"></script>
+<script src="sync.js?v=125"></script>
+<script src="features.js?v=125"></script>
+<script src="extras.js?v=125"></script>
+<script src="import-inline.js?v=125"></script>
 </body>
 </html>

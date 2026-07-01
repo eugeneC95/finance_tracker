@@ -4254,6 +4254,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 
 </head>
 <body class="fs-md">
+<a class="ft-skip-link" href="#main-content">Skip to main content</a>
 
 <!-- Visible when the 6-digit lock is hidden but JS failed —iOS PWA can serve a broken cached bundle. -->
 <div id="ft-boot" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:99990;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(26,26,26,.94);color:#ddd;font-size:12px;line-height:1.45;text-align:center;border-top:1px solid #333">
@@ -4340,7 +4341,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v124 · 2026-07-01 18:34';
+  var BUILD_VERSION    = 'v125 · 2026-07-01 18:41';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -4509,7 +4510,7 @@ body.dark .ft-fab { background: #fff; color: #000; }
 <!-- ══════════════════════════════════════════
      MAIN
 ══════════════════════════════════════════ -->
-<main class="main">
+<main class="main" id="main-content">
   <!-- Mobile month nav (hidden on desktop via CSS, shown on mobile) -->
   <div class="month-controls" id="mobile-month-nav" style="display:none">
     <button class="month-arrow" id="prev-month-m" style="background:var(--card-bg2);color:var(--ink);border:1px solid var(--line)">‹</button>
@@ -5305,8 +5306,11 @@ body.dark .ft-fab { background: #fff; color: #000; }
           </div>
         </section>
 
-        <section aria-labelledby="settings-catrules-title">
-          <h3 class="settings-section__title" id="settings-catrules-title">Category rules</h3>
+        <details class="settings-fold-card" id="settings-catrules-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-catrules-title">Category rules</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card settings-card">
             <div class="panel-bd">
               <p class="ft-note" style="margin-top:0">Merchant name patterns auto-assign categories when adding expenses.</p>
@@ -5337,10 +5341,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </form>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-sync-title">
-          <h3 class="settings-section__title" id="settings-sync-title">Google Sheets sync</h3>
+        <details class="settings-fold-card" id="settings-sync-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-sync-title">Google Sheets sync</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-hd">
               <span class="panel-title">Connection</span>
@@ -5376,10 +5384,14 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </details>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-import-title">
-          <h3 class="settings-section__title" id="settings-import-title">Import from bank / TNG</h3>
+        <details class="settings-fold-card" id="settings-import-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-import-title">Import from bank / TNG</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-bd">
               <nav class="iw-steps" id="iw-steps" aria-label="Import progress">
@@ -5511,14 +5523,18 @@ body.dark .ft-fab { background: #fff; color: #000; }
               </div>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
-        <section aria-labelledby="settings-about-title">
-          <h3 class="settings-section__title" id="settings-about-title">About &amp; maintenance</h3>
+        <details class="settings-fold-card" id="settings-about-fold">
+          <summary class="settings-fold-card__summary">
+            <span class="settings-section__title" id="settings-about-title">About &amp; maintenance</span>
+          </summary>
+          <div class="settings-fold-card__body">
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v124 · 2026-07-01 18:34</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v125 · 2026-07-01 18:41</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -5542,7 +5558,8 @@ body.dark .ft-fab { background: #fff; color: #000; }
               <div id="ft-force-refresh-status" style="margin-top:4px;font-size:var(--f-xs);color:var(--ink3)"></div>
             </div>
           </div>
-        </section>
+          </div>
+        </details>
 
       </div>
     </div>
@@ -5835,13 +5852,13 @@ body.dark .ft-fab { background: #fff; color: #000; }
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v124 · 2026-07-01 18:34</div>
-<script src="build-id.js?v=124"></script>
-<script src="app.js?v=124"></script>
-<script src="sync.js?v=124"></script>
-<script src="features.js?v=124"></script>
-<script src="extras.js?v=124"></script>
-<script src="import-inline.js?v=124"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v125 · 2026-07-01 18:41</div>
+<script src="build-id.js?v=125"></script>
+<script src="app.js?v=125"></script>
+<script src="sync.js?v=125"></script>
+<script src="features.js?v=125"></script>
+<script src="extras.js?v=125"></script>
+<script src="import-inline.js?v=125"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

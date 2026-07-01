@@ -816,3 +816,113 @@ body.dark .ft-calc-hint__dismiss { color: #041a17; }
 .exp-fold-card > .panel-bd {
   padding-top: 16px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS FOLDS (mobile progressive disclosure)
+   ═══════════════════════════════════════════════════════════════ */
+.settings-fold-card {
+  margin-bottom: 0;
+}
+
+.settings-fold-card__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 4px 10px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-radius: var(--radius-sm);
+}
+
+.settings-fold-card__summary::-webkit-details-marker { display: none; }
+
+.settings-fold-card__summary .settings-section__title {
+  margin: 0;
+}
+
+.settings-fold-card__summary::after {
+  content: '▸';
+  color: var(--ink3);
+  font-size: 14px;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.settings-fold-card[open] .settings-fold-card__summary::after {
+  transform: rotate(90deg);
+}
+
+.settings-fold-card__body {
+  padding-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACCESSIBILITY FOUNDATION (v125)
+   ═══════════════════════════════════════════════════════════════ */
+.ft-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 10000;
+  padding: 12px 20px;
+  background: var(--ft-forest);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--f-sm);
+  text-decoration: none;
+  border-radius: 0 0 12px 12px;
+}
+
+.ft-skip-link:focus {
+  position: fixed;
+  left: 12px;
+  top: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  box-shadow: var(--focus-ring);
+}
+
+.nav-item:focus-visible,
+.settings-quick-btn:focus-visible,
+.exp-fold-card__summary:focus-visible,
+.settings-fold-card__summary:focus-visible,
+.ft-calc-hint__dismiss:focus-visible,
+.fs-btn:focus-visible,
+.month-arrow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.fs-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exp-fold-card__summary::after,
+  .settings-fold-card__summary::after,
+  .btn,
+  .nav-item,
+  .mobile-nav-sheet__panel {
+    transition: none !important;
+  }
+}
