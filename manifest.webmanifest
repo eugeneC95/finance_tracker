@@ -4,8 +4,8 @@
   "description": "Personal finance tracker \u2014 expenses, income, budgets, sync to Google Sheets",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#0c1614",
+  "theme_color": "#0c1614",
   "orientation": "portrait",
   "icons": [
     {
