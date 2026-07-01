@@ -2964,6 +2964,37 @@ body.dark .fs-btn.active { color: #000; }
   color: var(--ink3);
   line-height: 1.5;
 }
+.pt-eff-range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: var(--s4);
+}
+.pt-eff-range-controls__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+.pt-eff-range-field { min-width: 140px; flex: 1; }
+.pt-eff-range-field input[type="date"] {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font: inherit;
+  background: var(--card-bg2);
+  color: var(--ink);
+}
+.pt-eff-range-controls__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 #page-petrol .pt-form-actions {
   display: flex;
   flex-direction: column;
@@ -4096,7 +4127,7 @@ body.dark .fs-btn.active { color: #000; }
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v112 · 2026-07-01 12:38</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v113 · 2026-07-01 12:43</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -4141,9 +4172,25 @@ body.dark .fs-btn.active { color: #000; }
       <div class="card mb-5 pt-eff-card">
         <div class="panel-hd"><span class="panel-title">Efficiency trend (L/100 km &amp; km/L)</span></div>
         <div class="panel-bd">
+          <div class="pt-eff-range-controls">
+            <div class="pt-eff-range-controls__fields">
+              <div class="pt-eff-range-field">
+                <label class="lbl" for="pt-eff-from">From</label>
+                <input type="date" id="pt-eff-from" aria-label="Efficiency range start date">
+              </div>
+              <div class="pt-eff-range-field">
+                <label class="lbl" for="pt-eff-to">To</label>
+                <input type="date" id="pt-eff-to" aria-label="Efficiency range end date">
+              </div>
+            </div>
+            <div class="pt-eff-range-controls__actions">
+              <button type="button" class="btn-ghost" id="pt-eff-range-month">This month</button>
+              <button type="button" class="btn-ghost" id="pt-eff-range-reset">All time</button>
+            </div>
+          </div>
           <div id="pt-eff-range-summary"></div>
           <div id="pt-eff-chart"></div>
-          <p class="ft-note" style="margin-top:8px">Monthly trend (last 6 months). All-time average uses every odometer fill from first to last date.</p>
+          <p class="ft-note" style="margin-top:8px">Pick a date range above, or leave blank for all-time. Chart shows monthly trend (last 6 months).</p>
         </div>
       </div>
 
@@ -4199,8 +4246,8 @@ body.dark .fs-btn.active { color: #000; }
             <summary>How cost/km, L/100 km, and km/L are calculated</summary>
             <div class="assets-help__body">
               <p><strong>This fill:</strong> if you enter odometer, we show km since your last reading, L/100 km, and km/L for this tank.</p>
-              <p style="margin-top:8px"><strong>All-time average:</strong> total litres ÷ total km across your full log (first odometer date to last). First fill’s litres are excluded; each later fill’s litres count toward the km since the previous reading.</p>
-              <p style="margin-top:8px"><strong>Summary chips:</strong> spend and litres follow the sidebar month; L/100 km and km/L chips show the all-time average. km/L = 100 ÷ L/100 km.</p>
+              <p style="margin-top:8px"><strong>Date range average:</strong> choose From/To on the efficiency card, or tap This month / All time. Only fill-ups with odometer inside the range are counted.</p>
+              <p style="margin-top:8px"><strong>Summary chips:</strong> spend and litres follow the sidebar month; L/100 km and km/L follow your chosen efficiency date range.</p>
             </div>
           </details>
 
@@ -4334,11 +4381,11 @@ body.dark .fs-btn.active { color: #000; }
 
 
 <div class="toast" id="toast"></div>
-<script src="build-id.js?v=112"></script>
-<script src="app.js?v=112"></script>
-<script src="sync.js?v=112"></script>
-<script src="features.js?v=112"></script>
-<script src="extras.js?v=112"></script>
-<script src="import-inline.js?v=112"></script>
+<script src="build-id.js?v=113"></script>
+<script src="app.js?v=113"></script>
+<script src="sync.js?v=113"></script>
+<script src="features.js?v=113"></script>
+<script src="extras.js?v=113"></script>
+<script src="import-inline.js?v=113"></script>
 </body>
 </html>

@@ -166,24 +166,73 @@ function petrolAvgL100(withOdo) {
 }
 
 /** Weighted average L/100 km over a date range (default: all odometer fill-ups). */
-function petrolEfficiencyRangeSummary_(withOdo) {
+function getPetrolEffRange_() {
+  if (typeof settings === 'undefined' || !settings.petrolEffRange) return { from: '', to: '' };
+  var r = settings.petrolEffRange;
+  return {
+    from: String(r.from || '').slice(0, 10),
+    to: String(r.to || '').slice(0, 10),
+  };
+}
+
+function savePetrolEffRange_(from, to) {
+  if (typeof settings === 'undefined' || typeof saveSets !== 'function') return;
+  settings.petrolEffRange = {
+    from: from ? String(from).slice(0, 10) : '',
+    to: to ? String(to).slice(0, 10) : '',
+  };
+  saveSets();
+}
+
+function petrolOdoDateBounds_() {
+  var list = petrolOdoSorted();
+  if (!list.length) return null;
+  return {
+    min: String(list[0].date || '').slice(0, 10),
+    max: String(list[list.length - 1].date || '').slice(0, 10),
+  };
+}
+
+function petrolEfficiencyRangeSummary_(withOdo, rangeOpts) {
   var list = withOdo || petrolOdoSorted();
+  var range = rangeOpts || getPetrolEffRange_();
+  var from = range.from || '';
+  var to = range.to || '';
+  var customRange = !!(from || to);
   if (list.length < 2) {
-    return { ok: false, fills: list.length, trips: 0, totalKm: 0, totalLitres: 0 };
+    return { ok: false, fills: list.length, trips: 0, totalKm: 0, totalLitres: 0, customRange: customRange };
   }
   var totalKm = 0;
   var totalL = 0;
   var trips = 0;
+  var fillsInRange = 0;
+  var actualFrom = '';
+  var actualTo = '';
   for (var i = 1; i < list.length; i++) {
+    var fillDate = String(list[i].date || '').slice(0, 10);
+    if (from && fillDate < from) continue;
+    if (to && fillDate > to) continue;
     var km = list[i].odo - list[i - 1].odo;
     if (km > 0) {
       totalKm += km;
       totalL += list[i].litres;
       trips++;
+      fillsInRange++;
+      if (!actualFrom) actualFrom = fillDate;
+      actualTo = fillDate;
     }
   }
   if (totalKm <= 0 || totalL <= 0) {
-    return { ok: false, fills: list.length, trips: trips, totalKm: 0, totalLitres: 0 };
+    return {
+      ok: false,
+      fills: fillsInRange,
+      trips: trips,
+      totalKm: 0,
+      totalLitres: 0,
+      customRange: customRange,
+      rangeFrom: from,
+      rangeTo: to,
+    };
   }
   var avgL100 = (totalL / totalKm) * 100;
   return {
@@ -193,12 +242,101 @@ function petrolEfficiencyRangeSummary_(withOdo) {
     totalKm: totalKm,
     totalLitres: totalL,
     trips: trips,
-    fills: list.length,
-    fromDate: list[0].date,
-    toDate: list[list.length - 1].date,
+    fills: fillsInRange,
+    fromDate: actualFrom,
+    toDate: actualTo,
     fromOdo: list[0].odo,
     toOdo: list[list.length - 1].odo,
+    customRange: customRange,
+    rangeFrom: from,
+    rangeTo: to,
   };
+}
+
+function wirePetrolEffRangeUi_() {
+  if (document.body.dataset.ptEffRangeWired) return;
+  document.body.dataset.ptEffRangeWired = '1';
+
+  var fromEl = document.getElementById('pt-eff-from');
+  var toEl = document.getElementById('pt-eff-to');
+  var resetBtn = document.getElementById('pt-eff-range-reset');
+  var monthBtn = document.getElementById('pt-eff-range-month');
+
+  function applyRange_() {
+    var from = fromEl ? String(fromEl.value || '').slice(0, 10) : '';
+    var to = toEl ? String(toEl.value || '').slice(0, 10) : '';
+    if (from && to && from > to) {
+      if (document.activeElement === fromEl && toEl) toEl.value = from;
+      else if (fromEl) fromEl.value = to;
+      from = fromEl ? fromEl.value : from;
+      to = toEl ? toEl.value : to;
+    }
+    savePetrolEffRange_(from, to);
+    renderPetrolLog();
+  }
+
+  if (fromEl) fromEl.addEventListener('change', applyRange_);
+  if (toEl) toEl.addEventListener('change', applyRange_);
+  if (resetBtn) resetBtn.addEventListener('click', function() {
+    if (fromEl) fromEl.value = '';
+    if (toEl) toEl.value = '';
+    savePetrolEffRange_('', '');
+    renderPetrolLog();
+  });
+  if (monthBtn) monthBtn.addEventListener('click', function() {
+    if (typeof viewMonth === 'undefined' || !viewMonth) return;
+    var y = viewMonth.getFullYear();
+    var m = viewMonth.getMonth();
+    var first = y + '-' + String(m + 1).padStart(2, '0') + '-01';
+    var lastDay = new Date(y, m + 1, 0).getDate();
+    var last = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+    if (fromEl) fromEl.value = first;
+    if (toEl) toEl.value = last;
+    savePetrolEffRange_(first, last);
+    renderPetrolLog();
+  });
+}
+
+function syncPetrolEffRangeInputs_() {
+  wirePetrolEffRangeUi_();
+  var fromEl = document.getElementById('pt-eff-from');
+  var toEl = document.getElementById('pt-eff-to');
+  if (!fromEl && !toEl) return;
+  var bounds = petrolOdoDateBounds_();
+  var range = getPetrolEffRange_();
+  if (bounds) {
+    if (fromEl) {
+      fromEl.min = bounds.min;
+      fromEl.max = bounds.max;
+      if (document.activeElement !== fromEl) fromEl.value = range.from || '';
+    }
+    if (toEl) {
+      toEl.min = bounds.min;
+      toEl.max = bounds.max;
+      if (document.activeElement !== toEl) toEl.value = range.to || '';
+    }
+  } else {
+    if (fromEl && document.activeElement !== fromEl) fromEl.value = '';
+    if (toEl && document.activeElement !== toEl) toEl.value = '';
+  }
+}
+
+function petrolEffRangeTitle_(summary) {
+  if (!summary || !summary.customRange) return 'All-time average';
+  if (summary.rangeFrom && summary.rangeTo) return 'Average efficiency';
+  if (summary.rangeFrom) return 'Average since ' + petrolFmtRangeDate_(summary.rangeFrom);
+  if (summary.rangeTo) return 'Average until ' + petrolFmtRangeDate_(summary.rangeTo);
+  return 'Average efficiency';
+}
+
+function petrolEffRangeDatesLabel_(summary) {
+  if (!summary || !summary.ok) return '';
+  if (summary.customRange) {
+    var fromLbl = summary.rangeFrom ? petrolFmtRangeDate_(summary.rangeFrom) : 'start';
+    var toLbl = summary.rangeTo ? petrolFmtRangeDate_(summary.rangeTo) : 'now';
+    return fromLbl + ' \u2013 ' + toLbl;
+  }
+  return petrolFmtRangeDate_(summary.fromDate) + ' \u2013 ' + petrolFmtRangeDate_(summary.toDate);
 }
 
 function petrolFmtRangeDate_(dateStr) {
@@ -387,10 +525,11 @@ function renderPetrolLog() {
   var avgPpl = totalLitres > 0 ? totalSpent / totalLitres : 0;
 
   var withOdo = petrolOdoSorted();
-  var allTime = petrolEfficiencyRangeSummary_(withOdo);
+  var rangeSummary = petrolEfficiencyRangeSummary_(withOdo);
   var cpk = petrolCostPerKm(withOdo, avgPpl);
-  var avgL100 = petrolAvgL100(withOdo);
+  var avgL100 = rangeSummary.ok ? rangeSummary.avgL100 : 0;
   var viewYm = petrolViewYm();
+  syncPetrolEffRangeInputs_();
 
   function setEl(id, txt) {
     var e = document.getElementById(id);
@@ -408,9 +547,10 @@ function renderPetrolLog() {
   setEl('pt-kml', avgL100 > 0 ? petrolKmPerL(avgL100).toFixed(2) + ' km/L' : '—');
   var effChipNote = document.getElementById('pt-eff-chip-note');
   if (effChipNote) {
-    if (allTime.ok) {
-      effChipNote.textContent = 'All-time avg · ' + petrolFmtRangeDate_(allTime.fromDate) +
-        ' – ' + petrolFmtRangeDate_(allTime.toDate);
+    if (rangeSummary.ok) {
+      effChipNote.textContent = petrolEffRangeTitle_(rangeSummary) + ' · ' + petrolEffRangeDatesLabel_(rangeSummary);
+    } else if (rangeSummary.customRange) {
+      effChipNote.textContent = 'No odometer trips in selected date range';
     } else {
       effChipNote.textContent = 'All-time avg (needs 2+ odometer fills)';
     }
@@ -530,28 +670,31 @@ function petrolEfficiencyByMonth() {
 function renderPetrolEfficiencyChart() {
   var el = document.getElementById('pt-eff-chart');
   if (!el) return;
+  syncPetrolEffRangeInputs_();
   var rangeEl = document.getElementById('pt-eff-range-summary');
-  var allTime = petrolEfficiencyRangeSummary_();
+  var summary = petrolEfficiencyRangeSummary_();
   if (rangeEl) {
-    if (!allTime.ok) {
+    if (!summary.ok) {
+      var emptyMsg = summary.customRange
+        ? 'No odometer fill-ups fall in this date range. Try widening the range or tap All time.'
+        : 'Log odometer on at least two fill-ups to see your average over the full date range.';
       rangeEl.innerHTML =
         '<div class="pt-eff-range pt-eff-range--empty">' +
-        '<div class="pt-eff-range__title">All-time average</div>' +
-        '<p class="ft-note">Log odometer on at least two fill-ups to see your average over the full date range.</p></div>';
+        '<div class="pt-eff-range__title">' + esc(petrolEffRangeTitle_(summary)) + '</div>' +
+        '<p class="ft-note">' + esc(emptyMsg) + '</p></div>';
     } else {
       rangeEl.innerHTML =
         '<div class="pt-eff-range">' +
         '<div class="pt-eff-range__head">' +
-        '<div class="pt-eff-range__title">All-time average</div>' +
-        '<div class="pt-eff-range__dates">' + esc(petrolFmtRangeDate_(allTime.fromDate)) +
-        ' \u2013 ' + esc(petrolFmtRangeDate_(allTime.toDate)) + '</div></div>' +
+        '<div class="pt-eff-range__title">' + esc(petrolEffRangeTitle_(summary)) + '</div>' +
+        '<div class="pt-eff-range__dates">' + esc(petrolEffRangeDatesLabel_(summary)) + '</div></div>' +
         '<div class="pt-eff-range__main">' +
-        '<strong class="pt-eff-range__value">' + petrolFmtEfficiency(allTime.avgL100) + '</strong></div>' +
+        '<strong class="pt-eff-range__value">' + petrolFmtEfficiency(summary.avgL100) + '</strong></div>' +
         '<div class="pt-eff-range__meta">' +
-        allTime.totalKm.toLocaleString() + ' km tracked \u00b7 ' +
-        allTime.totalLitres.toFixed(1) + ' L \u00b7 ' +
-        allTime.trips + ' trip' + (allTime.trips === 1 ? '' : 's') + ' \u00b7 ' +
-        allTime.fills + ' fill-up' + (allTime.fills === 1 ? '' : 's') +
+        summary.totalKm.toLocaleString() + ' km tracked \u00b7 ' +
+        summary.totalLitres.toFixed(1) + ' L \u00b7 ' +
+        summary.trips + ' trip' + (summary.trips === 1 ? '' : 's') + ' \u00b7 ' +
+        summary.fills + ' fill-up' + (summary.fills === 1 ? '' : 's') +
         '</div></div>';
     }
   }
