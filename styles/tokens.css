@@ -1,0 +1,80 @@
+DESIGN TOKENS — Ledger Green (see theme-modern.css for heroes/chrome)
+   ============================================================ */
+:root {
+  /* Colours —light */
+  --page-bg  : #f3f6f4;
+  --card-bg  : #ffffff;
+  --card-bg2 : #eef4f1;
+  --line     : rgba(12, 22, 20, 0.09);
+  --line2    : rgba(12, 22, 20, 0.16);
+  --ink      : #0c1a17;
+  --ink2     : #3d524c;
+  --ink3     : #5c6f68;
+  --brand    : #134e4a;
+  --primary  : #0d9488;
+  --primary-dk: #0f766e;
+  --green    : #059669;
+  --red      : #dc2626;
+  --blue     : #0284c7;
+
+  /* Sidebar */
+  --sb-bg    : #0c1614;
+  --sb-w     : 248px;
+
+  /* Space scale */
+  --s1  : 4px;
+  --s2  : 8px;
+  --s3  : 14px;
+  --s4  : 18px;
+  --s5  : 24px;
+  --s6  : 28px;
+  --s8  : 36px;
+  --s10 : 48px;
+
+  /* Type scale —16px base avoids iOS input zoom */
+  --f-xs : 12px;
+  --f-sm : 14px;
+  --f-md : 16px;
+  --f-lg : 18px;
+  --f-xl : 24px;
+  --f-2xl: 30px;
+
+  /* Touch-friendly controls */
+  --field-h: 48px;
+  --btn-h: 48px;
+
+  /* Misc */
+  --radius  : 18px;
+  --radius-sm: 12px;
+  --shadow  : 0 1px 2px rgba(12, 22, 20, 0.04), 0 8px 26px rgba(12, 22, 20, 0.07);
+  --focus-ring: 0 0 0 3px rgba(13, 148, 136, 0.24);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+/* ── Dark theme ── */
+body.dark {
+  --page-bg  : #070d0b;
+  --card-bg  : #101916;
+  --card-bg2 : #16221e;
+  --line     : rgba(148, 175, 165, 0.12);
+  --line2    : rgba(148, 175, 165, 0.2);
+  --ink      : #ecf3f0;
+  --ink2     : #b8cbc3;
+  --ink3     : #7a948c;
+  --brand    : #99f6e4;
+  --primary  : #2dd4bf;
+  --primary-dk: #14b8a6;
+  --green    : #34d399;
+  --red      : #f87171;
+  --blue     : #38bdf8;
+  --sb-bg    : #040a08;
+  --focus-ring: 0 0 0 3px rgba(45, 212, 191, 0.26);
+}
+
+/* ── Font size modes ── */
+body.fs-sm { --f-xs:11px; --f-sm:13px; --f-md:14px; --f-lg:16px; --f-xl:20px; --f-2xl:26px; }
+body.fs-md { --f-xs:12px; --f-sm:14px; --f-md:16px; --f-lg:18px; --f-xl:24px; --f-2xl:30px; }
+body.fs-lg { --f-xs:13px; --f-sm:15px; --f-md:17px; --f-lg:20px; --f-xl:26px; --f-2xl:34px; }
+
+/* ============================================================

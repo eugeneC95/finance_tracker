@@ -1,16 +1,29 @@
-const CACHE = 'ft-v127';
+const CACHE = 'ft-v128';
 const SHELL = [
   './build-id.js',
   './lock.html',
   './index.html',
+  './styles/fonts.css',
+  './styles/reset.css',
+  './styles/tokens.css',
+  './styles/base.css',
+  './styles/components.css',
+  './styles/mobile.css',
   './theme-modern.css',
   './assets/brand-logo.svg',
   './assets/ft-icons.svg',
-  './app.js',
-  './features.js',
-  './extras.js',
-  './sync.js',
-  './import-inline.js',
+  './assets/fonts/plus-jakarta-sans-400.woff2',
+  './assets/fonts/plus-jakarta-sans-500.woff2',
+  './assets/fonts/plus-jakarta-sans-600.woff2',
+  './assets/fonts/plus-jakarta-sans-700.woff2',
+  './assets/fonts/plus-jakarta-sans-800.woff2',
+  './icons/icon192.png',
+  './icons/icon512.png',
+  './shared/app.js',
+  './shared/features.js',
+  './shared/extras.js',
+  './shared/sync.js',
+  './shared/import-inline.js',
 ];
 
 self.addEventListener('install', e => {

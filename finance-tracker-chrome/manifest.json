@@ -36,13 +36,13 @@
     {
       "resources": [
         "app.html",
-        "app.js",
-        "features.js",
-        "import-inline.js",
+        "../shared/app.js",
+        "../shared/features.js",
+        "../shared/import-inline.js",
         "import.html",
         "import.js",
-        "extras.js",
-        "sync.js"
+        "../shared/extras.js",
+        "../shared/sync.js"
       ],
       "matches": [
         "<all_urls>"

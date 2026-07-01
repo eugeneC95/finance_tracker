@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Bump FT_BUILD across PWA + service worker script tags.
+ * Bump FT_BUILD across PWA + service worker + asset ?v= tags.
  * Usage: node scripts/bump-build.mjs [versionNumber]
  */
 import fs from 'fs';
@@ -33,31 +33,17 @@ fs.writeFileSync(path.join(root, 'build-id.js'), buildIdJs, 'utf8');
 const swPath = path.join(root, 'service-worker.js');
 let sw = fs.readFileSync(swPath, 'utf8');
 sw = sw.replace(/const CACHE = 'ft-v\d+'/, `const CACHE = '${cache}'`);
-if (!sw.includes("build-id.js")) {
-  sw = sw.replace(
-    "const SHELL = [\n  './lock.html',",
-    "const SHELL = [\n  './build-id.js',\n  './lock.html',"
-  );
-}
 fs.writeFileSync(swPath, sw, 'utf8');
 
 function bumpHtml(file) {
   let s = fs.readFileSync(file, 'utf8');
   s = s.replace(/var BUILD_VERSION\s*=\s*'[^']+'/, `var BUILD_VERSION    = '${stamp}'`);
-  s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/motion>)/, `$1${stamp}$2`);
-  s = s.replace(/(<motion id="ft-build"[^>]*>)[^<]+(<\/motion>)/, `$1${stamp}$2`);
-  s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/motion>)/, `$1${stamp}$2`);
-  s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/div>)/, `$1${stamp}$2`);
-  s = s.replace(
-    /(<span id="ft-build-stamp"[^>]*>)[^<]+(<\/span>)/,
-    `$1${stamp}$2`
-  );
-  s = s.replace(/build-id\.js\?v=\d+/g, `build-id.js?v=${ver}`);
-  s = s.replace(/(src="[^"]+\.js)\?v=\d+"/g, `$1?v=${ver}"`);
+  s = s.replace(/(<span id="ft-build-stamp"[^>]*>)[^<]+(<\/span>)/, `$1${stamp}$2`);
+  s = s.replace(/\?v=\d+/g, `?v=${ver}`);
   if (!s.includes('build-id.js')) {
     s = s.replace(
-      /<script src="app\.js\?v=\d+"><\/script>/,
-      `<script src="build-id.js?v=${ver}"></script>\n<script src="app.js?v=${ver}"></script>`
+      /<script src="(?:\.\.\/)?build-id\.js/,
+      `<script src="build-id.js?v=${ver}"></script>\n<script src="shared/app.js`
     );
   }
   fs.writeFileSync(file, s, 'utf8');

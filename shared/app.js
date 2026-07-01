@@ -2007,22 +2007,61 @@ function makeDraggable(el, list, arr, save) {
 }
 
 // ── Render ─────────────────────────────────────────────────
-function render() {
-  utCarryForwardNavSnapshotForToday();
-  const me       = mExp(), mi = mInc(), today = todayStr();
-  const totalExp = me.reduce((a,e)=>a+e.amount, 0);
-  const todayExp = expenses.filter(e=>e.date===today).reduce((a,e)=>a+e.amount, 0);
-  const totalInc = mi.reduce((a,i)=>a+i.amount, 0);
-  const totalBanks = totalBanksBase();
-  const net = totalInc - totalExp;
+function monthTotals_() {
+  const me = mExp();
+  const mi = mInc();
+  const today = todayStr();
+  const totalExp = me.reduce((a, e) => a + e.amount, 0);
+  const todayExp = expenses.filter(e => e.date === today).reduce((a, e) => a + e.amount, 0);
+  const totalInc = mi.reduce((a, i) => a + i.amount, 0);
+  return {
+    me, mi, today, totalExp, todayExp, totalInc,
+    totalBanks: totalBanksBase(),
+    net: totalInc - totalExp,
+  };
+}
 
-  document.getElementById('month-label').textContent =
-    viewMonth.toLocaleString('default',{month:'short',year:'numeric'});
+function syncMonthLabel_() {
+  const el = document.getElementById('month-label');
+  if (el) {
+    el.textContent = viewMonth.toLocaleString('default', { month: 'short', year: 'numeric' });
+  }
+  if (typeof syncMobileMonthNav_ === 'function') syncMobileMonthNav_();
+}
 
-  // Expense stats
-  document.getElementById('c-total').textContent = fmt(totalExp);
-  document.getElementById('c-today').textContent = fmt(todayExp);
-  document.getElementById('c-count').textContent = me.length;
+function ftActiveTab_() {
+  const page = document.querySelector('.page.active');
+  return page && page.id ? page.id.replace(/^page-/, '') : '';
+}
+
+function renderExpenseFilterOnly_() {
+  const me = mExp();
+  const fb = document.getElementById('filter-bar');
+  if (fb) {
+    fb.querySelectorAll('.pill').forEach(function(b) {
+      b.classList.toggle('active', b.textContent === activeFilter);
+    });
+  }
+  const filtered = activeFilter === 'All' ? me : me.filter(e => e.cat === activeFilter);
+  renderTxList(
+    'expense-list',
+    [...filtered].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id),
+    EXP_CATS,
+    false
+  );
+}
+
+function renderExpensesPanel_(t) {
+  t = t || monthTotals_();
+  const me = t.me;
+
+  const cTotal = document.getElementById('c-total');
+  if (cTotal) cTotal.textContent = fmt(t.totalExp);
+  const cToday = document.getElementById('c-today');
+  if (cToday) cToday.textContent = fmt(t.todayExp);
+  const cCount = document.getElementById('c-count');
+  if (cCount) cCount.textContent = me.length;
+
   const expPtEl = document.getElementById('exp-petrol-metrics');
   if (expPtEl) {
     const ym = viewYM();
@@ -2060,20 +2099,26 @@ function render() {
     expPtEl.hidden = !expPtEl.textContent;
   }
 
-  // Filter pills
-  const usedCats = [...new Set(me.map(e=>e.cat))];
+  const usedCats = [...new Set(me.map(e => e.cat))];
   const fb = document.getElementById('filter-bar');
-  fb.innerHTML = '';
-  ['All', ...usedCats].forEach(c => {
-    const b = document.createElement('button');
-    b.className = 'pill' + (activeFilter===c ? ' active' : '');
-    b.textContent = c;
-    b.addEventListener('click', () => { activeFilter = c; render(); });
-    fb.appendChild(b);
-  });
+  if (fb) {
+    fb.innerHTML = '';
+    ['All', ...usedCats].forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'pill' + (activeFilter === c ? ' active' : '');
+      b.textContent = c;
+      b.addEventListener('click', () => { activeFilter = c; renderExpenseFilterOnly_(); });
+      fb.appendChild(b);
+    });
+  }
 
-  const filtered = activeFilter==='All' ? me : me.filter(e=>e.cat===activeFilter);
-  renderTxList('expense-list', [...filtered].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id), EXP_CATS, false);
+  const filtered = activeFilter === 'All' ? me : me.filter(e => e.cat === activeFilter);
+  renderTxList(
+    'expense-list',
+    [...filtered].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id),
+    EXP_CATS,
+    false
+  );
   renderBarChart('bar-chart', me, EXP_CATS, false);
   const expDailyEl = document.getElementById('exp-daily-chart');
   if (expDailyEl) {
@@ -2082,27 +2127,49 @@ function render() {
     renderMonthDailyLineChart(expDailyEl, dayKeys, dayTotals, { stroke: '#E24B4A', label: 'Spent' });
   }
 
-  // Income stats
-  document.getElementById('ic-total').textContent = fmt(totalInc);
-  document.getElementById('ic-exp').textContent   = fmt(totalExp);
-  const nel = document.getElementById('ic-net');
-  nel.textContent = fmt(Math.abs(net));
-  nel.className   = 'ft-page-hero__value ' + (net >= 0 ? 'green' : 'red');
-  renderTxList('income-list', [...mi].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id), INC_CATS, true);
-  renderBarChart('inc-chart', mi, INC_CATS, true);
+  if (typeof renderMoMDeltas === 'function') renderMoMDeltas();
+  if (typeof renderExpMonthSummary === 'function') renderExpMonthSummary();
+  if (typeof renderBudgets === 'function') renderBudgets();
+  if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
+  if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
+  refreshExpensePlaceDatalist_();
+}
 
-  // Assets
-  const totalBanksVal = totalBanks;
+function renderIncomePanel_(t) {
+  t = t || monthTotals_();
+  const mi = t.mi;
+
+  const icTotal = document.getElementById('ic-total');
+  if (icTotal) icTotal.textContent = fmt(t.totalInc);
+  const icExp = document.getElementById('ic-exp');
+  if (icExp) icExp.textContent = fmt(t.totalExp);
+  const nel = document.getElementById('ic-net');
+  if (nel) {
+    nel.textContent = fmt(Math.abs(t.net));
+    nel.className = 'ft-page-hero__value ' + (t.net >= 0 ? 'green' : 'red');
+  }
+  renderTxList(
+    'income-list',
+    [...mi].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id),
+    INC_CATS,
+    true
+  );
+  renderBarChart('inc-chart', mi, INC_CATS, true);
+}
+
+function renderAssetsSummaries_(t) {
+  t = t || monthTotals_();
+  const totalBanksVal = t.totalBanks;
   const utMv = computeUtTotalMarketValue();
   const portfolioTotal = totalBanksVal + utMv;
-  const monthCashflow = totalInc - totalExp;
+  const monthCashflow = t.totalInc - t.totalExp;
 
   const nsBanks = document.getElementById('ns-banks');
   if (nsBanks) nsBanks.textContent = fmt(totalBanksVal);
   const nsIncome = document.getElementById('ns-income');
-  if (nsIncome) nsIncome.textContent = fmt(totalInc);
+  if (nsIncome) nsIncome.textContent = fmt(t.totalInc);
   const nsExp = document.getElementById('ns-exp');
-  if (nsExp) nsExp.textContent = fmt(totalExp);
+  if (nsExp) nsExp.textContent = fmt(t.totalExp);
 
   const nsPortfolio = document.getElementById('ns-portfolio');
   if (nsPortfolio) {
@@ -2133,6 +2200,14 @@ function render() {
 
   const utSumEl = document.getElementById('ut-summary-mv');
   if (utSumEl) utSumEl.textContent = fmt(utMv);
+}
+
+function renderActivePagePanels_(t) {
+  t = t || monthTotals_();
+  const tab = ftActiveTab_();
+  if (!tab || tab === 'expenses') renderExpensesPanel_(t);
+  if (!tab || tab === 'income') renderIncomePanel_(t);
+  if (!tab || tab === 'assets' || tab === 'home') renderAssetsSummaries_(t);
 
   const pageAssets = document.getElementById('page-assets');
   if (pageAssets && pageAssets.classList.contains('active')) {
@@ -2141,16 +2216,33 @@ function render() {
     if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
   }
 
-  // Feature hooks (defined in other files)
-  if (typeof renderMoMDeltas  === 'function') renderMoMDeltas();
-  if (typeof renderExpMonthSummary === 'function') renderExpMonthSummary();
-  if (typeof renderBudgets    === 'function') renderBudgets();
-  if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
-  if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
+  if (!tab || tab === 'home') {
+    if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
+  }
+  if (!tab || tab === 'recurring') {
+    if (typeof renderRecurring === 'function') renderRecurring();
+  }
   if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+}
+
+function render() {
+  utCarryForwardNavSnapshotForToday();
+  syncMonthLabel_();
+  const t = monthTotals_();
+  renderExpensesPanel_(t);
+  renderIncomePanel_(t);
+  renderAssetsSummaries_(t);
+
+  const pageAssets = document.getElementById('page-assets');
+  if (pageAssets && pageAssets.classList.contains('active')) {
+    renderBankList();
+    renderUnitTrustPanel();
+    if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
+  }
+
   if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
-  if (typeof renderRecurring  === 'function') renderRecurring();
-  refreshExpensePlaceDatalist_();
+  if (typeof renderRecurring === 'function') renderRecurring();
+  if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
   refreshActiveTabPanels();
 }
 
@@ -3124,6 +3216,7 @@ function activateNavTab(tab) {
   scrollNavItemIntoView(document.querySelector('.nav-item.active'));
   closeMobileNavMore();
   runTabOpenHooks(tab);
+  renderActivePagePanels_(monthTotals_());
   if (ftIsMobileLayout_()) {
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
   }
