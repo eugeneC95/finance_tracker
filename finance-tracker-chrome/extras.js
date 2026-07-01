@@ -260,7 +260,7 @@ function wirePetrolEffRangeUi_() {
   var fromEl = document.getElementById('pt-eff-from');
   var toEl = document.getElementById('pt-eff-to');
   var resetBtn = document.getElementById('pt-eff-range-reset');
-  var monthBtn = document.getElementById('pt-eff-range-month');
+  var lastMonthBtn = document.getElementById('pt-eff-range-last-month');
 
   function applyRange_() {
     var from = fromEl ? String(fromEl.value || '').slice(0, 10) : '';
@@ -283,10 +283,11 @@ function wirePetrolEffRangeUi_() {
     savePetrolEffRange_('', '');
     renderPetrolLog();
   });
-  if (monthBtn) monthBtn.addEventListener('click', function() {
-    if (typeof viewMonth === 'undefined' || !viewMonth) return;
-    var y = viewMonth.getFullYear();
-    var m = viewMonth.getMonth();
+  if (lastMonthBtn) lastMonthBtn.addEventListener('click', function() {
+    var base = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+    var lastMonth = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+    var y = lastMonth.getFullYear();
+    var m = lastMonth.getMonth();
     var first = y + '-' + String(m + 1).padStart(2, '0') + '-01';
     var lastDay = new Date(y, m + 1, 0).getDate();
     var last = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
