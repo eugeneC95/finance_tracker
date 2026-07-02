@@ -1158,53 +1158,124 @@ body.dark .empty .empty-icon {
     -webkit-text-size-adjust: 100%;
   }
 
-  body {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(13, 148, 136, 0.14);
-    padding-bottom: var(--ft-mobile-chrome-bottom) !important;
-  }
-
-  /* ── Chrome extension: bottom dock (PWA has its own inline rules) ── */
-  body:not(.ft-pwa-shell) {
+  /* ── Mobile shell: PWA + Chrome extension (single-column, bottom nav) ── */
+  body,
+  body.ft-pwa-shell {
     display: block !important;
+    flex-direction: unset !important;
     min-height: 100vh;
     padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+    padding-bottom: var(--ft-mobile-chrome-bottom) !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(13, 148, 136, 0.14);
   }
-  body:not(.ft-pwa-shell) .sb {
+
+  body .sb,
+  body.ft-pwa-shell .sb {
     position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0 !important;
+    left: 8px !important;
+    right: 8px !important;
     top: auto !important;
-    width: 100% !important;
+    width: auto !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     flex-direction: row !important;
+    flex-shrink: 0;
     z-index: 100;
-    padding-bottom: var(--ft-mobile-safe-bottom);
+    padding-bottom: var(--ft-mobile-safe-bottom) !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+    border-right: none !important;
   }
-  body:not(.ft-pwa-shell) .sb-brand,
-  body:not(.ft-pwa-shell) .sb-month,
-  body:not(.ft-pwa-shell) .nav-spacer {
+
+  body .sb-brand,
+  body .sb-month,
+  body .nav-spacer,
+  body .nav-section-label {
     display: none !important;
   }
-  body:not(.ft-pwa-shell) .sb-nav {
+
+  body .sb-nav,
+  body.ft-pwa-shell .sb-nav {
     flex-direction: row !important;
     flex: 1;
     width: 100%;
+    height: auto !important;
     overflow-x: auto;
+    overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding: 2px 4px 0 !important;
     gap: 0 !important;
+    justify-content: space-between !important;
   }
-  body:not(.ft-pwa-shell) .sb-nav::-webkit-scrollbar { display: none; }
-  body:not(.ft-pwa-shell) .main {
+
+  body .sb-nav::-webkit-scrollbar { display: none; }
+
+  body .main,
+  body.ft-pwa-shell .main {
+    display: block !important;
     width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
     height: auto !important;
     overflow: visible !important;
+    min-height: 0 !important;
   }
-  body:not(.ft-pwa-shell) .page.active { display: block; }
-  body:not(.ft-pwa-shell) .page { display: none; }
+
+  body .page.active { display: block !important; }
+  body .page { display: none !important; }
+
+  body .main .page-body,
+  body .main .page-header {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  body .page-header {
+    padding-top: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  body .nav-item[data-mobile-overflow="1"] {
+    display: none !important;
+  }
+
+  body .nav-item--mobile-only {
+    display: flex !important;
+  }
+
+  body .page-header::before {
+    display: none !important;
+  }
+
+  body .home-body {
+    gap: 12px !important;
+  }
+
+  body .home-hero-card {
+    margin-bottom: 0 !important;
+    padding: 18px 16px !important;
+    border-radius: 18px !important;
+  }
+
+  body .home-hero-card__value {
+    font-size: clamp(1.65rem, 7.5vw, 2.15rem) !important;
+  }
+
+  body .home-quick-actions {
+    gap: 8px !important;
+  }
+
+  body .home-quick-btn {
+    min-height: 72px !important;
+    padding: 10px 6px !important;
+  }
 
   /* ── Sticky month picker ── */
   #mobile-month-nav,
@@ -1219,22 +1290,22 @@ body.dark .empty .empty-icon {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin: 0 12px 12px;
-    padding: 10px 12px !important;
+    margin: 0 16px 12px;
+    padding: 8px 10px !important;
   }
 
   .month-controls .month-arrow,
   #mobile-month-nav .month-arrow,
   .month-arrow {
-    min-width: 44px !important;
-    min-height: 44px !important;
-    width: 44px !important;
-    height: 44px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0;
-    font-size: 20px !important;
+    font-size: 18px !important;
     border-radius: 999px !important;
     -webkit-tap-highlight-color: transparent;
   }
@@ -1264,7 +1335,7 @@ body.dark .empty .empty-icon {
 
   /* ── Content clearance above FAB + nav ── */
   .page-body {
-    padding-bottom: calc(100px + var(--ft-mobile-safe-bottom)) !important;
+    padding-bottom: calc(88px + var(--ft-mobile-safe-bottom)) !important;
   }
 
   body:has(#page-petrol.active) .page-body {
