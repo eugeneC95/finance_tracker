@@ -105,13 +105,14 @@ function iwParseCSVRow(line) {
   return [...r,c];
 }
 function iwParseBankCSV(text) {
-  const rows=[], lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if (text && text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows=[], lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   let hi=0;
   for(let i=0;i<Math.min(25,lines.length);i++){
     const low=lines[i].toLowerCase();
-    const hasDate=low.includes('date')||low.includes('tarikh')||low.includes('posting')||low.includes('value date');
-    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark')||low.includes('reference');
-    const hasAmt=low.includes('withdraw')||low.includes('debit')||low.includes('credit')||low.includes('deposit')||low.includes('amount')||low.includes('jumlah')||low==='dr'||low==='cr'||low.includes('keluar')||low.includes('masuk');
+    const hasDate=low.includes('date')||low.includes('tarikh')||low.includes('posting')||low.includes('value date')||low.includes('transaction date');
+    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark')||low.includes('reference')||low.includes('description');
+    const hasAmt=low.includes('withdraw')||low.includes('debit')||low.includes('credit')||low.includes('deposit')||low.includes('amount')||low.includes('jumlah')||low==='dr'||low==='cr'||low.includes('keluar')||low.includes('masuk')||low.includes('money out')||low.includes('money in');
     if(hasDate&&hasDesc&&hasAmt){hi=i;break;}
   }
   const hdrs=iwParseCSVRow(lines[hi]).map(h=>h.toLowerCase().trim());
@@ -123,7 +124,10 @@ function iwParseBankCSV(text) {
   for(let i=hi+1;i<lines.length;i++){
     const cols=iwParseCSVRow(lines[i]); if(cols.length<3) continue;
     const dateStr=iwParseDateStr((cols[di>=0?di:0]||'').trim()); if(!dateStr) continue;
-    const desc=(cols[xi>=0?xi:1]||'').replace(/"/g,'').trim(); if(!desc) continue;
+    const desc=(cols[xi>=0?xi:1]||'').replace(/"/g,'').trim();
+    if(!desc) continue;
+    const descLow = desc.toLowerCase();
+    if (/^(opening|closing)\s+balance/.test(descLow) || descLow === 'balance b/f' || descLow === 'balance c/f') continue;
     let amount=0,type='exp';
     if(dri>=0&&cols[dri]&&parseFloat(cols[dri].replace(/[^0-9.]/g,''))>0){amount=parseFloat(cols[dri].replace(/[^0-9.]/g,''));type='exp';}
     else if(cri>=0&&cols[cri]&&parseFloat(cols[cri].replace(/[^0-9.]/g,''))>0){amount=parseFloat(cols[cri].replace(/[^0-9.]/g,''));type='inc';}
@@ -398,12 +402,12 @@ iwDrop.addEventListener('drop',e=>{
   if(f){
     const dt=new DataTransfer(); dt.items.add(f);
     document.getElementById('iw-file').files=dt.files;
-    document.getElementById('iw-drop-lbl').textContent='📄 '+f.name;
+    document.getElementById('iw-drop-lbl').textContent = f.name;
   }
 });
 document.getElementById('iw-drop').addEventListener('click',()=>document.getElementById('iw-file').click());
 document.getElementById('iw-file').addEventListener('change',e=>{
-  if(e.target.files[0]) document.getElementById('iw-drop-lbl').textContent='📄 '+e.target.files[0].name;
+  if(e.target.files[0]) document.getElementById('iw-drop-lbl').textContent = e.target.files[0].name;
 });
 }
 

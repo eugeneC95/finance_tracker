@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"/>
 <script>
 // On-screen JS error reporter —mirrors index.html (PWA). DevTools is the
 // primary debug surface in the extension, but a visible banner is useful
@@ -35,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=134"/>
-<link rel="stylesheet" href="../styles/reset.css?v=134"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=134"/>
-<link rel="stylesheet" href="../styles/base.css?v=134"/>
-<link rel="stylesheet" href="../styles/components.css?v=134"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=134"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=135"/>
+<link rel="stylesheet" href="../styles/reset.css?v=135"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=135"/>
+<link rel="stylesheet" href="../styles/base.css?v=135"/>
+<link rel="stylesheet" href="../styles/components.css?v=135"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=135"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=134"/>
+<link rel="stylesheet" href="../theme-modern.css?v=135"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -147,6 +148,7 @@
           <div class="home-hero-card__sub" id="home-month-sub"></div>
         </div>
         <div class="home-stat-grid" id="home-stat-grid"></div>
+        <div class="home-hero-week" id="home-hero-week" hidden aria-label="This week"></div>
       </section>
 
       <div class="home-quick-actions" id="home-quick-actions" aria-label="Quick navigation"></div>
@@ -157,7 +159,7 @@
 
       <div class="card mb-5" id="home-budget-pace" hidden></div>
 
-      <div class="card mb-5" id="home-week-digest"></div>
+      <div class="card mb-5 home-week-digest-card" id="home-week-digest"></div>
 
       <details class="home-explore-fold" id="home-explore-fold">
         <summary class="home-explore-fold__summary">
@@ -210,7 +212,13 @@
     </div>
     <div class="page-body">
 
-      <section class="card ft-page-hero" aria-label="Expense summary">
+      <div class="exp-summary-strip" id="exp-summary-strip" hidden aria-label="Expense summary">
+        <div class="exp-summary-strip__item"><span class="exp-summary-strip__lbl">Today</span><strong class="exp-summary-strip__val" id="exp-strip-today">RM 0</strong></div>
+        <div class="exp-summary-strip__item"><span class="exp-summary-strip__lbl">Month</span><strong class="exp-summary-strip__val red" id="exp-strip-month">RM 0</strong></div>
+        <div class="exp-summary-strip__item"><span class="exp-summary-strip__lbl">Entries</span><strong class="exp-summary-strip__val" id="exp-strip-count">0</strong></div>
+      </div>
+
+      <section class="card ft-page-hero exp-page-hero" aria-label="Expense summary">
         <div class="ft-page-hero__row">
           <div class="ft-page-hero__main">
             <div class="ft-page-hero__label">Spent this month</div>
@@ -793,6 +801,11 @@
     <div class="page-body">
       <div class="settings-stack">
 
+        <div class="settings-search-wrap">
+          <label class="sr-only" for="settings-search">Search settings</label>
+          <input type="search" id="settings-search" class="settings-search" placeholder="Search settings…" autocomplete="off" enterkeyhint="search"/>
+        </div>
+
         <section class="card ft-page-hero settings-hero" aria-label="Data &amp; sync summary">
           <div id="settings-sync-pill" class="settings-sync-pill">○ Sync</div>
           <div class="settings-hero__status" id="settings-hero-status">Your data stays on this device until you sync.</div>
@@ -842,6 +855,7 @@
                 <div><div class="s-lbl">Dark mode schedule</div><div class="s-sub">Auto 7pm–7am</div></div>
                 <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
                   <option value="off">Off</option>
+                  <option value="system">Match system</option>
                   <option value="night">Night (7pm-7am)</option>
                 </select>
               </div>
@@ -1149,7 +1163,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v134 · 2026-07-02 12:34</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v135 · 2026-07-02 13:21</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1443,11 +1457,11 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=134"></script>
-<script type="module" src="../shared/main.js?v=134"></script>
-<script defer src="../shared/app.js?v=134"></script>
-<script defer src="../shared/sync.js?v=134"></script>
-<script defer src="../shared/features.js?v=134"></script>
-<script defer src="../shared/extras.js?v=134"></script>
+<script src="../build-id.js?v=135"></script>
+<script type="module" src="../shared/main.js?v=135"></script>
+<script defer src="../shared/app.js?v=135"></script>
+<script defer src="../shared/sync.js?v=135"></script>
+<script defer src="../shared/features.js?v=135"></script>
+<script defer src="../shared/extras.js?v=135"></script>
 </body>
 </html>

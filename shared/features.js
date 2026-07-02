@@ -334,8 +334,16 @@ function homeSumExpBetween_(fromStr, toStr) {
 }
 
 function renderHomeWeekDigest_() {
-  var el = document.getElementById('home-week-digest');
+  var mobile = typeof ftIsMobileLayout_ === 'function' && ftIsMobileLayout_();
+  var heroWeek = document.getElementById('home-hero-week');
+  var standCard = document.getElementById('home-week-digest');
+  var el = mobile && heroWeek ? heroWeek : standCard;
   if (!el) return;
+  if (standCard) standCard.hidden = mobile;
+  if (heroWeek) {
+    heroWeek.hidden = !mobile;
+    if (!mobile) { heroWeek.innerHTML = ''; }
+  }
   var today = todayStr();
   var weekStart = homeDateOffsetStr_(-6);
   var prevEnd = homeDateOffsetStr_(-7);
@@ -373,6 +381,12 @@ function renderHomeWeekDigest_() {
       '<div class="home-week-digest__row home-week-digest__row--warn"><span>Missed bills</span><strong class="red">' +
       missed.length + ' due</strong></div>'
     );
+  }
+  if (mobile && heroWeek) {
+    el.innerHTML =
+      '<div class="home-hero-week__title">This week</div>' +
+      '<div class="home-hero-week__grid home-week-digest">' + rows.join('') + '</div>';
+    return;
   }
   el.innerHTML =
     '<div class="panel-hd"><span class="panel-title">This week</span></div>' +
@@ -572,7 +586,7 @@ function renderHomeDashboard() {
         row.tabIndex = 0;
         row.innerHTML =
           '<div class="home-tx-row__ico">' +
-          (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(e.cat, catMap, 'ft-cat-badge--row') : esc(info.icon || '')) +
+          (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(e.cat, catMap, 'ft-cat-badge--row') : '') +
           '</div>' +
           '<div class="home-tx-row__body">' +
           '<div class="home-tx-row__name">' + esc(e.name || '') + '</div>' +
@@ -803,7 +817,7 @@ function renderHomeDashboard() {
         return (
           '<div class="ft-budget-item" style="margin-bottom:10px">' +
           '<div class="ft-budget-item__head">' +
-          '<span>' + r.info.icon + ' ' + esc(r.cat) + '</span>' +
+          '<span>' + (typeof ftCatLabelHtml_ === 'function' ? ftCatLabelHtml_(r.cat, EXP_CATS, 'ft-cat-badge--sm') : esc(r.cat)) + '</span>' +
           '<span class="ft-budget-item__nums">' + fmt(r.spent) + ' / ' + fmt(r.limit) + '</span></div>' +
           '<div class="ft-budget-track"><div class="ft-budget-fill" style="width:' + r.pct + '%;background:' + r.color + '"></div></div></div>'
         );
@@ -1019,7 +1033,7 @@ function renderBudgetPaceCard_(elId) {
       : (r.left >= 0 ? fmt(r.left) + ' left' : 'Over ' + fmt(Math.abs(r.left)));
     return (
       '<div class="budget-pace__row">' +
-      '<span>' + info.icon + ' ' + esc(r.cat) + '</span>' +
+      '<span>' + (typeof ftCatLabelHtml_ === 'function' ? ftCatLabelHtml_(r.cat, EXP_CATS, 'ft-cat-badge--sm') : esc(r.cat)) + '</span>' +
       '<span class="budget-pace__nums">' + fmt(r.spent) + ' / ' + fmt(r.limit) + ' · ' + pct + '%</span>' +
       '<span class="budget-pace__daily ' + (r.over ? 'red' : '') + '">' + dailyTxt + '</span></div>'
     );
@@ -1085,7 +1099,9 @@ function renderHomeRecentMerchants_() {
       var info = EXP_CATS[m.cat] || { icon: '\u{1F4E6}' };
       return (
         '<button type="button" class="home-merchant-chip" data-merchant="' + esc(m.name) + '" data-cat="' + esc(m.cat) + '" data-amt="' + m.amount + '">' +
-        '<span class="home-merchant-chip__ico">' + info.icon + '</span>' +
+        '<span class="home-merchant-chip__ico">' +
+        (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(m.cat, EXP_CATS, 'ft-cat-badge--sm') : '') +
+        '</span>' +
         '<span class="home-merchant-chip__name">' + esc(m.name) + '</span>' +
         (m.amount > 0 ? '<span class="home-merchant-chip__amt">' + fmt(m.amount) + '</span>' : '') +
         '</button>'
@@ -1121,7 +1137,9 @@ function renderCatRulesPanel_() {
       '<div class="cat-rule-row">' +
       '<span class="cat-rule-row__pattern">' + esc(k) + '</span>' +
       '<span class="cat-rule-row__arrow">\u2192</span>' +
-      '<span class="cat-rule-row__cat">' + info.icon + ' ' + esc(cat) + '</span>' +
+      '<span class="cat-rule-row__cat">' +
+      (typeof ftCatLabelHtml_ === 'function' ? ftCatLabelHtml_(cat, EXP_CATS, 'ft-cat-badge--sm') : esc(cat)) +
+      '</span>' +
       '<button type="button" class="assets-icon-btn del cat-rule-del" data-rule-key="' + esc(k) + '" title="Remove rule">\u2715</button></div>'
     );
   }).join('');
@@ -1431,8 +1449,9 @@ function renderSearch() {
 
     var ico = document.createElement('div');
     ico.className = 'tx-icon';
-    ico.style.background = cat.color+'22';
-    ico.textContent = cat.icon;
+    ico.innerHTML = typeof ftCatBadgeHtml_ === 'function'
+      ? ftCatBadgeHtml_(entry.cat, catMap, 'ft-cat-badge--tx')
+      : '';
     row.appendChild(ico);
 
     var info = document.createElement('div');
@@ -2064,7 +2083,9 @@ function renderTrendIncBreakdown() {
     var lbl = document.createElement('div');
     lbl.className = 'bar-label';
     lbl.style.cssText = 'width:auto;min-width:88px';
-    lbl.textContent = info.icon + ' ' + r.cat;
+    lbl.innerHTML = typeof ftCatLabelHtml_ === 'function'
+      ? ftCatLabelHtml_(r.cat, INC_CATS, 'ft-cat-badge--sm')
+      : esc(r.cat);
     var track = document.createElement('div');
     track.className = 'bar-track';
     var fill = document.createElement('div');

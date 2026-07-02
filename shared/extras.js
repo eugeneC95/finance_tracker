@@ -68,7 +68,7 @@ function buildCatSelects() {
     incCat.innerHTML = '';
     Object.keys(INC_CATS).forEach(function(c) {
       var o = document.createElement('option');
-      o.value = c; o.textContent = INC_CATS[c].icon + ' ' + c;
+      o.value = c; o.textContent = c;
       incCat.appendChild(o);
     });
   }
@@ -79,7 +79,7 @@ function buildCatSelects() {
     budCat.innerHTML = '';
     Object.keys(EXP_CATS).forEach(function(c) {
       var o = document.createElement('option');
-      o.value = c; o.textContent = EXP_CATS[c].icon + ' ' + c;
+      o.value = c; o.textContent = c;
       budCat.appendChild(o);
     });
   }
@@ -92,14 +92,14 @@ function buildCatSelects() {
     expGrp.label = 'Expense';
     Object.keys(EXP_CATS).forEach(function(c) {
       var o = document.createElement('option');
-      o.value = c; o.textContent = EXP_CATS[c].icon + ' ' + c;
+      o.value = c; o.textContent = c;
       expGrp.appendChild(o);
     });
     var incGrp = document.createElement('optgroup');
     incGrp.label = 'Income';
     Object.keys(INC_CATS).forEach(function(c) {
       var o = document.createElement('option');
-      o.value = c; o.textContent = INC_CATS[c].icon + ' ' + c;
+      o.value = c; o.textContent = c;
       incGrp.appendChild(o);
     });
     recCat.appendChild(expGrp);
@@ -893,9 +893,11 @@ function renderReport() {
     s.appendChild(h); el.appendChild(s); return s;
   }
 
-  function addRow(sec, label, value, cls) {
+  function addRow(sec, label, value, cls, labelIsHtml) {
     var row = document.createElement('div'); row.className = 'report-row';
-    var lb  = document.createElement('span'); lb.className = 'rr-label'; lb.textContent = label;
+    var lb  = document.createElement('span'); lb.className = 'rr-label';
+    if (labelIsHtml) lb.innerHTML = label;
+    else lb.textContent = label;
     var vl  = document.createElement('span'); vl.className = 'rr-val' + (cls ? ' '+cls : ''); vl.textContent = value;
     row.appendChild(lb); row.appendChild(vl); sec.appendChild(row);
   }
@@ -986,8 +988,10 @@ function renderReport() {
     if (overRows.length || underRows.length) {
       var secBud = section('Budget vs actual');
       overRows.concat(underRows).forEach(function(row) {
-        var info = EXP_CATS[row.cat] || { icon: '📦' };
-        addRow(secBud, info.icon + ' ' + row.cat, row.msg, row.cls);
+        var catLbl = typeof ftCatLabelHtml_ === 'function'
+          ? ftCatLabelHtml_(row.cat, EXP_CATS, 'ft-cat-badge--sm')
+          : row.cat;
+        addRow(secBud, catLbl, row.msg, row.cls, !!ftCatLabelHtml_);
       });
     }
   }
@@ -1008,8 +1012,10 @@ function renderReport() {
   if (anomalies.length) {
     var secAn = section('Anomaly alerts');
     anomalies.forEach(function(a) {
-      var info = EXP_CATS[a.cat] || { icon: '📦' };
-      addRow(secAn, info.icon + ' ' + a.cat, fmt(a.cur) + ' (avg ' + fmt(a.avg) + ')', 'red');
+      var anLbl = typeof ftCatLabelHtml_ === 'function'
+        ? ftCatLabelHtml_(a.cat, EXP_CATS, 'ft-cat-badge--sm')
+        : a.cat;
+      addRow(secAn, anLbl, fmt(a.cur) + ' (avg ' + fmt(a.avg) + ')', 'red', !!ftCatLabelHtml_);
     });
   }
 
@@ -1025,13 +1031,15 @@ function renderReport() {
     catDisplay.forEach(function(entry) {
       var cat = entry.cat;
       var amt = entry.amt;
-      var info = entry.isOthers ? { icon: '\u{1F4E6}' } : (EXP_CATS[cat] || { icon: '\u{1F4E6}' });
+      var info = entry.isOthers ? null : (EXP_CATS[cat] || null);
       var pct = totalExp > 0 ? ((amt / totalExp) * 100).toFixed(1) : 0;
       var label = entry.isOthers
-        ? info.icon + ' Others (' + entry.count + ' categories)'
-        : info.icon + ' ' + cat;
+        ? ('Others (' + entry.count + ' categories)')
+        : (typeof ftCatLabelHtml_ === 'function' ? ftCatLabelHtml_(cat, EXP_CATS, 'ft-cat-badge--sm') : cat);
       var row = document.createElement('div'); row.className = 'report-row';
-      var lb = document.createElement('span'); lb.className = 'rr-label'; lb.textContent = label;
+      var lb = document.createElement('span'); lb.className = 'rr-label';
+      if (!entry.isOthers && typeof ftCatLabelHtml_ === 'function') lb.innerHTML = label;
+      else lb.textContent = label;
       var rv = document.createElement('span'); rv.style.display = 'flex'; rv.style.gap = '16px';
       var pctS = document.createElement('span'); pctS.style.cssText = 'color:var(--ink3);font-size:var(--f-xs)'; pctS.textContent = pct + '%';
       var amtS = document.createElement('span'); amtS.className = 'rr-val red'; amtS.textContent = fmt(amt);
@@ -1045,8 +1053,10 @@ function renderReport() {
     var sec3 = section('Income breakdown');
     Object.entries(incBySource).forEach(function(entry) {
       var cat = entry[0], amt = entry[1];
-      var info = INC_CATS[cat] || {icon:'📦'};
-      addRow(sec3, info.icon + ' ' + cat, fmt(amt), 'green');
+      var incLbl = typeof ftCatLabelHtml_ === 'function'
+        ? ftCatLabelHtml_(cat, INC_CATS, 'ft-cat-badge--sm')
+        : cat;
+      addRow(sec3, incLbl, fmt(amt), 'green', !!ftCatLabelHtml_);
     });
   }
 
@@ -1054,12 +1064,16 @@ function renderReport() {
   if (top5.length) {
     var sec4 = section('Top 5 expenses');
     top5.forEach(function(e, i) {
-      var info = EXP_CATS[e.cat] || {icon:'📦'};
       var _pd = typeof parseTxDate === 'function' ? parseTxDate(e.date) : null;
-      var dlbl = _pd ? _pd.toLocaleDateString('en-MY',{day:'numeric',month:'short'}) : String(e.date || '');
+      var dlbl = _pd ? _pd.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : String(e.date || '');
       var row  = document.createElement('div'); row.className = 'report-row';
       var lb   = document.createElement('span'); lb.className = 'rr-label';
-      lb.textContent = (i+1) + '. ' + info.icon + ' ' + e.name + ' · ' + dlbl;
+      if (typeof ftCatLabelHtml_ === 'function') {
+        lb.innerHTML = (i + 1) + '. ' + ftCatLabelHtml_(e.cat, EXP_CATS, 'ft-cat-badge--sm') +
+          ' ' + esc(e.name) + ' · ' + esc(dlbl);
+      } else {
+        lb.textContent = (i + 1) + '. ' + e.name + ' · ' + dlbl;
+      }
       var vl   = document.createElement('span'); vl.className = 'rr-val red'; vl.textContent = fmt(e.amount);
       row.appendChild(lb); row.appendChild(vl); sec4.appendChild(row);
     });
