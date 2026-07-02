@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=136"/>
-<link rel="stylesheet" href="../styles/reset.css?v=136"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=136"/>
-<link rel="stylesheet" href="../styles/base.css?v=136"/>
-<link rel="stylesheet" href="../styles/components.css?v=136"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=136"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=137"/>
+<link rel="stylesheet" href="../styles/reset.css?v=137"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=137"/>
+<link rel="stylesheet" href="../styles/base.css?v=137"/>
+<link rel="stylesheet" href="../styles/components.css?v=137"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=137"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=136"/>
+<link rel="stylesheet" href="../theme-modern.css?v=137"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -148,6 +148,7 @@
           <div class="home-hero-card__sub" id="home-month-sub"></div>
         </div>
         <div class="home-stat-grid" id="home-stat-grid"></div>
+        <div class="home-hero-progress" id="home-hero-progress"></div>
         <div class="home-hero-week" id="home-hero-week" hidden aria-label="This week"></div>
       </section>
 
@@ -838,7 +839,14 @@
           <input type="file" id="import-file" accept=".json" style="display:none"/>
         </div>
 
-        <section aria-labelledby="settings-personalize-title">
+        <div class="settings-tabs" role="tablist" aria-label="Settings groups">
+          <button type="button" class="settings-tab active" role="tab" aria-selected="true" data-settings-tab="all">All</button>
+          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="personalization">Personalization</button>
+          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="sync">Sync & import</button>
+          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="about">About</button>
+        </div>
+
+        <section aria-labelledby="settings-personalize-title" data-settings-group="personalization">
           <h3 class="settings-section__title" id="settings-personalize-title">Personalization</h3>
           <div class="card settings-card">
             <div class="panel-bd">
@@ -935,7 +943,7 @@
           </div>
         </section>
 
-        <details class="settings-fold-card" id="settings-catrules-fold">
+        <details class="settings-fold-card" id="settings-catrules-fold" data-settings-group="personalization">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-catrules-title">Category rules</span>
           </summary>
@@ -973,7 +981,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-sync-fold">
+        <details class="settings-fold-card" id="settings-sync-fold" data-settings-group="sync">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-sync-title">Google Sheets sync</span>
           </summary>
@@ -1016,7 +1024,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-import-fold">
+        <details class="settings-fold-card" id="settings-import-fold" data-settings-group="sync">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-import-title">Import from bank / TNG</span>
           </summary>
@@ -1155,7 +1163,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-about-fold">
+        <details class="settings-fold-card" id="settings-about-fold" data-settings-group="about">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-about-title">About</span>
           </summary>
@@ -1163,7 +1171,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v136 · 2026-07-02 15:05</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v137 · 2026-07-02 15:14</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1457,11 +1465,11 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=136"></script>
-<script type="module" src="../shared/main.js?v=136"></script>
-<script defer src="../shared/app.js?v=136"></script>
-<script defer src="../shared/sync.js?v=136"></script>
-<script defer src="../shared/features.js?v=136"></script>
-<script defer src="../shared/extras.js?v=136"></script>
+<script src="../build-id.js?v=137"></script>
+<script type="module" src="../shared/main.js?v=137"></script>
+<script defer src="../shared/app.js?v=137"></script>
+<script defer src="../shared/sync.js?v=137"></script>
+<script defer src="../shared/features.js?v=137"></script>
+<script defer src="../shared/extras.js?v=137"></script>
 </body>
 </html>

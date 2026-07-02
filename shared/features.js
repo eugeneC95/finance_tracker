@@ -334,15 +334,13 @@ function homeSumExpBetween_(fromStr, toStr) {
 }
 
 function renderHomeWeekDigest_() {
-  var mobile = typeof ftIsMobileLayout_ === 'function' && ftIsMobileLayout_();
   var heroWeek = document.getElementById('home-hero-week');
   var standCard = document.getElementById('home-week-digest');
-  var el = mobile && heroWeek ? heroWeek : standCard;
+  var el = heroWeek || standCard;
   if (!el) return;
-  if (standCard) standCard.hidden = mobile;
+  if (standCard) standCard.hidden = true;
   if (heroWeek) {
-    heroWeek.hidden = !mobile;
-    if (!mobile) { heroWeek.innerHTML = ''; }
+    heroWeek.hidden = false;
   }
   var today = todayStr();
   var weekStart = homeDateOffsetStr_(-6);
@@ -382,7 +380,7 @@ function renderHomeWeekDigest_() {
       missed.length + ' due</strong></div>'
     );
   }
-  if (mobile && heroWeek) {
+  if (heroWeek) {
     el.innerHTML =
       '<div class="home-hero-week__title">This week</div>' +
       '<div class="home-hero-week__grid home-week-digest">' + rows.join('') + '</div>';
@@ -549,16 +547,22 @@ function renderHomeDashboard() {
   renderHomeRecentMerchants_();
 
   var prog = document.getElementById('home-month-progress');
+  var heroProg = document.getElementById('home-hero-progress');
+  var progressHtml =
+    '<div class="home-progress-card__head">' +
+    '<span>Month progress</span><span>Day ' + dayOfMonth + ' / ' + lastDay + '</span></div>' +
+    '<div class="home-progress-track"><div class="home-progress-fill" style="width:' + monthPct + '%"></div></div>' +
+    '<div class="home-progress-note">' +
+    (isCurrentVm
+      ? monthPct + '% through the month · ' + me.length + ' expenses, ' + mi.length + ' income entries'
+      : 'Historical view — ' + me.length + ' expenses, ' + mi.length + ' income in ' + monthLbl) +
+    '</div>';
+  if (heroProg) {
+    heroProg.innerHTML = progressHtml;
+  }
   if (prog) {
-    prog.innerHTML =
-      '<div class="home-progress-card__head">' +
-      '<span>Month progress</span><span>Day ' + dayOfMonth + ' / ' + lastDay + '</span></div>' +
-      '<div class="home-progress-track"><div class="home-progress-fill" style="width:' + monthPct + '%"></div></div>' +
-      '<div class="home-progress-note">' +
-      (isCurrentVm
-        ? monthPct + '% through the month \u00b7 ' + me.length + ' expenses, ' + mi.length + ' income entries'
-        : 'Historical view \u2014 ' + me.length + ' expenses, ' + mi.length + ' income in ' + monthLbl) +
-      '</div>';
+    prog.hidden = true;
+    prog.innerHTML = '';
   }
 
   var recentEl = document.getElementById('home-recent');

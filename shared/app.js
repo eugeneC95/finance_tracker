@@ -30,52 +30,52 @@ var chromeStorage = {
 // ── Category definitions ───────────────────────────────────
 const EXP_CATS = {
   // Food & drink
-  'Food':          { icon:'🍜', color:'#1D9E75' },
-  'Groceries':     { icon:'🛒', color:'#2D9E5A' },
-  'Eating out':    { icon:'🍽', color:'#3DBE7A' },
-  'Coffee':        { icon:'☕', color:'#7B5EA7' },
+  'Food':          { icon:'FD', color:'#1D9E75' },
+  'Groceries':     { icon:'GR', color:'#2D9E5A' },
+  'Eating out':    { icon:'EO', color:'#3DBE7A' },
+  'Coffee':        { icon:'CF', color:'#7B5EA7' },
   // Shopping
-  'Shopping':      { icon:'🛍', color:'#D85A30' },
-  'Clothing':      { icon:'👕', color:'#E07040' },
-  'Electronics':   { icon:'📱', color:'#3A86FF' },
+  'Shopping':      { icon:'SH', color:'#D85A30' },
+  'Clothing':      { icon:'CL', color:'#E07040' },
+  'Electronics':   { icon:'EL', color:'#3A86FF' },
   // Home
-  'Rent':          { icon:'🏠', color:'#BA7517' },
-  'Utilities':     { icon:'💡', color:'#D4A017' },
-  'Internet':      { icon:'📶', color:'#5B8DEF' },
-  'Renovation':    { icon:'🔨', color:'#8B6914' },
+  'Rent':          { icon:'RE', color:'#BA7517' },
+  'Utilities':     { icon:'UT', color:'#D4A017' },
+  'Internet':      { icon:'IN', color:'#5B8DEF' },
+  'Renovation':    { icon:'RN', color:'#8B6914' },
   // Health
-  'Health':        { icon:'💊', color:'#D4537E' },
-  'Fitness':       { icon:'🏋', color:'#E8547E' },
-  'Grooming':      { icon:'💈', color:'#C4678E' },
+  'Health':        { icon:'HE', color:'#D4537E' },
+  'Fitness':       { icon:'FI', color:'#E8547E' },
+  'Grooming':      { icon:'GO', color:'#C4678E' },
   // Bills & finance
-  'Bills':         { icon:'🧾', color:'#8B6220' },
-  'Insurance':     { icon:'🛡', color:'#6B7DB3' },
-  'Loan payment':  { icon:'🏦', color:'#4A6FA5' },
-  'Tax':           { icon:'📋', color:'#666666' },
+  'Bills':         { icon:'BI', color:'#8B6220' },
+  'Insurance':     { icon:'IS', color:'#6B7DB3' },
+  'Loan payment':  { icon:'LP', color:'#4A6FA5' },
+  'Tax':           { icon:'TX', color:'#666666' },
   // Car
-  'Petrol':        { icon:'⛽', color:'#E24B4A' },
-  'Car Service':   { icon:'🔧', color:'#378ADD' },
-  'Car Repair Labour': { icon:'🧰', color:'#2E7DCE' },
-  'Car Parts':     { icon:'⚙️', color:'#5D7FA3' },
-  'Tyre Service':  { icon:'🛞', color:'#6D7A86' },
-  'Toll':          { icon:'🛣', color:'#888780' },
-  'Parking':       { icon:'🅿️', color:'#78909C' },
-  'Car Expenses':  { icon:'🚗', color:'#5F5E5A' },
-  'Car Insurance': { icon:'🚘', color:'#4472CA' },
+  'Petrol':        { icon:'PT', color:'#E24B4A' },
+  'Car Service':   { icon:'CS', color:'#378ADD' },
+  'Car Repair Labour': { icon:'CR', color:'#2E7DCE' },
+  'Car Parts':     { icon:'CP', color:'#5D7FA3' },
+  'Tyre Service':  { icon:'TS', color:'#6D7A86' },
+  'Toll':          { icon:'TL', color:'#888780' },
+  'Parking':       { icon:'PK', color:'#78909C' },
+  'Car Expenses':  { icon:'CE', color:'#5F5E5A' },
+  'Car Insurance': { icon:'CI', color:'#4472CA' },
   // Transport
-  'Transport':     { icon:'🚌', color:'#63A0C8' },
-  'Flight':        { icon:'✈', color:'#1A73E8' },
+  'Transport':     { icon:'TR', color:'#63A0C8' },
+  'Flight':        { icon:'FL', color:'#1A73E8' },
   // Entertainment
-  'Entertainment': { icon:'🎬', color:'#7F77DD' },
-  'Subscription':  { icon:'📺', color:'#9B59B6' },
-  'Travel':        { icon:'🌍', color:'#1ABC9C' },
-  'Hobbies':       { icon:'🎮', color:'#E91E63' },
+  'Entertainment': { icon:'EN', color:'#7F77DD' },
+  'Subscription':  { icon:'SU', color:'#9B59B6' },
+  'Travel':        { icon:'TV', color:'#1ABC9C' },
+  'Hobbies':       { icon:'HB', color:'#E91E63' },
   // Family
-  'Education':     { icon:'📚', color:'#2196F3' },
+  'Education':     { icon:'ED', color:'#2196F3' },
   
   // Other
-  'Other':         { icon:'📦', color:'#B4B2A9' },
-  'Pet care':      { icon:'🐾', color:'#795548' },
+  'Other':         { icon:'OT', color:'#B4B2A9' },
+  'Pet care':      { icon:'PC', color:'#795548' },
 };
 
 /** Display order for “Add expense” category chips: frequent / similar items first. */
@@ -92,19 +92,19 @@ const EXP_CAT_GROUPS = [
 ];
 
 const INC_CATS = {
-  'Salary':      { icon:'💼', color:'#1D9E75' },
-  'Bonus':       { icon:'🎯', color:'#2DBE8A' },
-  'Freelance':   { icon:'💻', color:'#378ADD' },
-  'Business':    { icon:'🏪', color:'#BA7517' },
-  'Unit Trust':  { icon:'📊', color:'#7F77DD' },
-  'Dividend':    { icon:'💹', color:'#9B59B6' },
-  'Investment':  { icon:'📈', color:'#5B4DB5' },
-  'Rental':      { icon:'🏠', color:'#D85A30' },
-  'Side income': { icon:'💡', color:'#FF9800' },
-  'Cashback':    { icon:'💳', color:'#00BCD4' },
-  'Gift':        { icon:'🎁', color:'#D4537E' },
-  'Refund':      { icon:'↩', color:'#607D8B' },
-  'Other':       { icon:'📦', color:'#B4B2A9' },
+  'Salary':      { icon:'SA', color:'#1D9E75' },
+  'Bonus':       { icon:'BO', color:'#2DBE8A' },
+  'Freelance':   { icon:'FR', color:'#378ADD' },
+  'Business':    { icon:'BU', color:'#BA7517' },
+  'Unit Trust':  { icon:'UT', color:'#7F77DD' },
+  'Dividend':    { icon:'DV', color:'#9B59B6' },
+  'Investment':  { icon:'IV', color:'#5B4DB5' },
+  'Rental':      { icon:'RE', color:'#D85A30' },
+  'Side income': { icon:'SI', color:'#FF9800' },
+  'Cashback':    { icon:'CB', color:'#00BCD4' },
+  'Gift':        { icon:'GF', color:'#D4537E' },
+  'Refund':      { icon:'RF', color:'#607D8B' },
+  'Other':       { icon:'OT', color:'#B4B2A9' },
 };
 
 // ── Storage keys ───────────────────────────────────────────
@@ -3692,14 +3692,37 @@ function wireSettingsSearch_() {
   var input = document.getElementById('settings-search');
   if (!input || input.dataset.ftWired === '1') return;
   input.dataset.ftWired = '1';
+  var activeGroup = 'all';
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.settings-tab'));
+  function applySettingsGroupFilter_() {
+    var blocks = document.querySelectorAll('#page-settings [data-settings-group]');
+    blocks.forEach(function(block) {
+      var group = String(block.getAttribute('data-settings-group') || '');
+      var show = activeGroup === 'all' || group === activeGroup;
+      block.classList.toggle('settings-tab-hidden', !show);
+    });
+    tabs.forEach(function(tab) {
+      var isActive = String(tab.getAttribute('data-settings-tab') || '') === activeGroup;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+  }
   function filterSettings_(q) {
     q = String(q || '').trim().toLowerCase();
     var stack = document.querySelector('#page-settings .settings-stack');
     if (!stack) return;
+    if (!q) {
+      stack.querySelectorAll('.settings-search-hidden').forEach(function(node) {
+        node.classList.remove('settings-search-hidden');
+      });
+      applySettingsGroupFilter_();
+      return;
+    }
     stack.querySelectorAll('.settings-fold-card, section[aria-labelledby]').forEach(function(block) {
       if (block.classList.contains('settings-search-wrap') || block.querySelector('.settings-search')) return;
       var text = (block.textContent || '').toLowerCase();
       var show = !q || text.indexOf(q) >= 0;
+      block.classList.remove('settings-tab-hidden');
       block.classList.toggle('settings-search-hidden', !show);
     });
     stack.querySelectorAll('.setting-row').forEach(function(row) {
@@ -3708,6 +3731,16 @@ function wireSettingsSearch_() {
       row.classList.toggle('settings-search-hidden', !show);
     });
   }
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      activeGroup = String(tab.getAttribute('data-settings-tab') || 'all');
+      if (input.value) {
+        input.value = '';
+      }
+      filterSettings_('');
+    });
+  });
+  applySettingsGroupFilter_();
   input.addEventListener('input', function() { filterSettings_(input.value); });
 }
 

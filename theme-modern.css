@@ -2325,6 +2325,25 @@ body.dark .pill.active {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.home-hero-progress {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.home-hero-progress .home-progress-card__head,
+.home-hero-progress .home-progress-note {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.home-hero-progress .home-progress-track {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.home-hero-progress .home-progress-fill {
+  background: rgba(255, 255, 255, 0.9);
+}
+
 .home-hero-week__title {
   font-size: 11px;
   font-weight: 700;
@@ -2450,6 +2469,38 @@ body.dark .ft-fab-tip {
 }
 
 .settings-search-hidden {
+  display: none !important;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--s4);
+}
+
+.settings-tab {
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink2);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+body.dark .settings-tab.active {
+  color: #041a17;
+}
+
+.settings-tab-hidden {
   display: none !important;
 }
 
