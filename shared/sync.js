@@ -6,7 +6,6 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_STATE = 'sync_state_v1';
-var KEY_SYNC_TOKEN = 'sync_token_v1';
 /** When true, every auto-sync session wipes local/session cache and loads the Sheet (full replace). */
 var FT_FORCE_SHEET_SOURCE = true;
 window.__ftForceSheetSource = FT_FORCE_SHEET_SOURCE;
@@ -43,7 +42,6 @@ var APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbw-crW39LqE5JSpgg6pwHzkfuZbY3ZY0prLYDSv1OTjr8Dnfrk8ozAOn3fIxZd5ISg0/exec';
 
 var syncUrl   = '';
-var syncToken = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
 
 function applyHardcodedSyncUrl_() {
@@ -68,10 +66,16 @@ function loadSyncSettings(cb) {
   try {
     chromeStorage.local.remove('sync_url_v1');
   } catch (e) {}
-  chromeStorage.local.get([KEY_SYNC_STATE, KEY_SYNC_TOKEN], function(r) {
+  chromeStorage.local.get([KEY_SYNC_STATE], function(r) {
     applyHardcodedSyncUrl_();
     syncState = r[KEY_SYNC_STATE] || syncState;
-    syncToken = String(r[KEY_SYNC_TOKEN] || '').trim();
+    if (window.ftSyncAuth && typeof window.ftSyncAuth.loadToken === 'function') {
+      window.ftSyncAuth.loadToken(chromeStorage, function() {
+        updateSyncUI();
+        if (cb) cb();
+      });
+      return;
+    }
     updateSyncUI();
     if (cb) cb();
   });
@@ -79,10 +83,6 @@ function loadSyncSettings(cb) {
 
 function persistSyncState() {
   chromeStorage.local.set({ [KEY_SYNC_STATE]: syncState });
-}
-
-function persistSyncToken_() {
-  chromeStorage.local.set({ [KEY_SYNC_TOKEN]: syncToken || '' });
 }
 
 // ── Build payload ──────────────────────────────────────────
@@ -210,6 +210,9 @@ function syncCountSummaryText(data) {
 function scriptFetch(url, params, body) {
   url = canonicalSyncExecUrl(url);
   var reqParams = Object.assign({}, params || {});
+  var syncToken = window.ftSyncAuth && typeof window.ftSyncAuth.getToken === 'function'
+    ? window.ftSyncAuth.getToken()
+    : '';
   if (syncToken) reqParams.token = syncToken;
   var qs = Object.keys(reqParams)
     .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(reqParams[k]); })
@@ -1092,6 +1095,9 @@ function updateSyncUI() {
   var tokenState = document.getElementById('sync-token-state');
 
   if (disp) disp.textContent = syncUrl || '';
+  var syncToken = window.ftSyncAuth && typeof window.ftSyncAuth.getToken === 'function'
+    ? window.ftSyncAuth.getToken()
+    : '';
   if (tokenInput && document.activeElement !== tokenInput) tokenInput.value = syncToken || '';
   if (tokenState) tokenState.textContent = syncToken ? 'Token configured' : 'No token set';
 
@@ -1235,10 +1241,17 @@ function wireSyncUI() {
   if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
   if (tokenSaveBtn && tokenInput) {
     tokenSaveBtn.addEventListener('click', function() {
-      syncToken = String(tokenInput.value || '').trim();
-      persistSyncToken_();
+      if (window.ftSyncAuth && typeof window.ftSyncAuth.setToken === 'function') {
+        window.ftSyncAuth.setToken(tokenInput.value);
+        if (typeof window.ftSyncAuth.persistToken === 'function') {
+          window.ftSyncAuth.persistToken(chromeStorage);
+        }
+      }
       updateSyncUI();
-      showToast(syncToken ? 'Sync token saved' : 'Sync token cleared');
+      var tok = window.ftSyncAuth && typeof window.ftSyncAuth.getToken === 'function'
+        ? window.ftSyncAuth.getToken()
+        : '';
+      showToast(tok ? 'Sync token saved' : 'Sync token cleared');
     });
   }
 
