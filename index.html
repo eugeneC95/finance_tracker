@@ -110,13 +110,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=132"/>
-<link rel="stylesheet" href="styles/reset.css?v=132"/>
-<link rel="stylesheet" href="styles/tokens.css?v=132"/>
-<link rel="stylesheet" href="styles/base.css?v=132"/>
-<link rel="stylesheet" href="styles/components.css?v=132"/>
-<link rel="stylesheet" href="styles/mobile.css?v=132"/>
-<link rel="stylesheet" href="theme-modern.css?v=132"/>
+<link rel="stylesheet" href="styles/fonts.css?v=133"/>
+<link rel="stylesheet" href="styles/reset.css?v=133"/>
+<link rel="stylesheet" href="styles/tokens.css?v=133"/>
+<link rel="stylesheet" href="styles/base.css?v=133"/>
+<link rel="stylesheet" href="styles/components.css?v=133"/>
+<link rel="stylesheet" href="styles/mobile.css?v=133"/>
+<link rel="stylesheet" href="theme-modern.css?v=133"/>
 
 
 </head>
@@ -210,7 +210,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v132 · 2026-07-02 12:19';
+  var BUILD_VERSION    = 'v133 · 2026-07-02 12:27';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -422,6 +422,12 @@
 
       <div class="card mb-5" id="home-week-digest"></div>
 
+      <details class="home-explore-fold" id="home-explore-fold">
+        <summary class="home-explore-fold__summary">
+          <span class="home-explore-fold__title">More detail</span>
+          <span class="home-explore-fold__hint">Recent activity, categories, budgets</span>
+        </summary>
+        <div class="home-explore-fold__body">
       <div class="home-grid">
         <div class="home-col">
           <div class="card mb-5" id="home-recent"></div>
@@ -440,6 +446,8 @@
       </div>
 
       <div class="card mb-5" id="home-checklist"></div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -451,7 +459,7 @@
           <h2>Expenses</h2>
           <p class="sub">Track spending for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>. Use search to find any transaction.</p>
         </div>
-        <button type="button" class="exp-search-toggle" id="exp-search-toggle" aria-expanded="false" aria-controls="exp-search-pop" title="Search all months (Ctrl+F)">🔍</button>
+        <button type="button" class="exp-search-toggle" id="exp-search-toggle" aria-expanded="false" aria-controls="exp-search-pop" title="Search all months (Ctrl+F)"><svg class="ft-ico ft-ico--btn" aria-hidden="true"><use href="assets/ft-icons.svg#ft-icon-search"/></svg><span class="sr-only">Search</span></button>
       </div>
     </div>
     <div id="exp-search-pop" class="exp-search-pop" aria-hidden="true" role="dialog" aria-label="Search transactions">
@@ -491,17 +499,17 @@
       <div id="exp-month-summary" class="exp-month-summary-wrap" hidden aria-label="Month summary"></div>
       <div id="exp-budget-chips" class="exp-budget-chips-wrap" hidden aria-label="Budget alerts"></div>
 
-      <div class="card mb-5 exp-daily-card">
-        <div class="panel-hd"><span class="panel-title">Spending by day this month</span></div>
+      <details class="card mb-5 exp-daily-card exp-mobile-fold" id="exp-daily-fold">
+        <summary class="exp-mobile-fold__summary"><span class="panel-title">Spending by day</span></summary>
         <div class="panel-bd">
           <p class="ft-note">Daily totals for the selected month — <span class="ft-month-hint ft-month-hint--desk">use the sidebar arrows</span><span class="ft-month-hint ft-month-hint--mob">tap ‹ › above</span> to change month.</p>
           <div id="exp-daily-chart" style="min-height:150px"></div>
         </div>
-      </div>
+      </details>
 
       <!-- Add expense card -->
-      <div class="card mb-6 exp-add-card">
-        <div class="panel-hd"><span class="panel-title">Add expense</span></div>
+      <details class="card mb-6 exp-add-card exp-mobile-fold" id="exp-add-fold" open>
+        <summary class="exp-mobile-fold__summary"><span class="panel-title">Add expense</span></summary>
         <div class="panel-bd">
           <div class="cat-groups" id="cat-btns"></div>
           <div class="ft-calc-hint" id="ft-calc-hint" hidden role="note">
@@ -542,7 +550,7 @@
             <span>Save as recurring monthly</span>
           </label>
         </div>
-      </div>
+      </details>
 
       <div class="cols-2">
         <!-- Left: transaction list -->
@@ -1405,7 +1413,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v132 · 2026-07-02 12:19</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v133 · 2026-07-02 12:27</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1723,13 +1731,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v132 · 2026-07-02 12:19</div>
-<script src="build-id.js?v=132"></script>
-<script type="module" src="shared/main.js?v=132"></script>
-<script defer src="shared/app.js?v=132"></script>
-<script defer src="shared/sync.js?v=132"></script>
-<script defer src="shared/features.js?v=132"></script>
-<script defer src="shared/extras.js?v=132"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v133 · 2026-07-02 12:27</div>
+<script src="build-id.js?v=133"></script>
+<script type="module" src="shared/main.js?v=133"></script>
+<script defer src="shared/app.js?v=133"></script>
+<script defer src="shared/sync.js?v=133"></script>
+<script defer src="shared/features.js?v=133"></script>
+<script defer src="shared/extras.js?v=133"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

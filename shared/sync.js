@@ -1052,6 +1052,10 @@ function setSyncStatus(status, message) {
     syncState.counts = syncDataCounts();
   }
   persistSyncState();
+  if (document.body) {
+    document.body.classList.toggle('ft-sync-loading', status === 'loading');
+    if (status !== 'loading' && typeof renderHomeDashboard === 'function') renderHomeDashboard();
+  }
   updateSyncUI();
 }
 

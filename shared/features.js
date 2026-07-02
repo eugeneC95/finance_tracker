@@ -403,8 +403,13 @@ function renderHomeDashboard() {
 
   var netEl = document.getElementById('home-month-net');
   if (netEl) {
-    netEl.textContent = (monthNet >= 0 ? '+' : '\u2212') + fmt(Math.abs(monthNet));
-    netEl.className = 'home-hero-card__value ' + (monthNet >= 0 ? 'green' : 'red');
+    if (document.body.classList.contains('ft-sync-loading')) {
+      netEl.className = 'home-hero-card__value ft-skeleton';
+      netEl.textContent = '\u00a0';
+    } else {
+      netEl.textContent = (monthNet >= 0 ? '+' : '\u2212') + fmt(Math.abs(monthNet));
+      netEl.className = 'home-hero-card__value ' + (monthNet >= 0 ? 'green' : 'red');
+    }
   }
   var subEl = document.getElementById('home-month-sub');
   if (subEl) {
@@ -428,11 +433,11 @@ function renderHomeDashboard() {
 
   var statGrid = document.getElementById('home-stat-grid');
   if (statGrid) {
-    function statTile(lbl, val, cls, hint) {
+    function statTile(lbl, val, mod, hint) {
       return (
-        '<div class="home-stat">' +
+        '<div class="home-stat home-stat--' + mod + '">' +
         '<div class="home-stat__lbl">' + esc(lbl) + '</div>' +
-        '<div class="home-stat__val ' + (cls || '') + '">' + esc(val) + '</div>' +
+        '<div class="home-stat__val">' + esc(val) + '</div>' +
         (hint ? '<div class="home-stat__hint">' + esc(hint) + '</div>' : '') +
         '</div>'
       );
@@ -440,23 +445,30 @@ function renderHomeDashboard() {
     var expHint = prvExp > 0 ? (monthExp >= prvExp ? '\u2191' : '\u2193') + ' vs last mo' : me.length + ' txns';
     var incHint = prvInc > 0 ? (monthInc >= prvInc ? '\u2191' : '\u2193') + ' vs last mo' : mi.length + ' txns';
     statGrid.innerHTML =
-      statTile('Today spent', fmt(todayExp), 'red', todayExp > 0 ? 'Net today ' + fmt(todayNet) : 'No spend yet') +
-      statTile('Today income', fmt(todayInc), 'green', todayInc > 0 ? '' : 'No income yet') +
-      statTile('Month spend', fmt(monthExp), 'red', expHint) +
-      statTile('Assets', fmt(assetsTotal), 'green', banks.length + ' bank' + (banks.length === 1 ? '' : 's') + (utMv > 0 ? ' + funds' : ''));
+      statTile('Today spent', fmt(todayExp), 'spend', todayExp > 0 ? 'Net today ' + fmt(todayNet) : 'No spend yet') +
+      statTile('Today income', fmt(todayInc), 'income', todayInc > 0 ? '' : 'No income yet') +
+      statTile('Month spend', fmt(monthExp), 'month', expHint) +
+      statTile('Assets', fmt(assetsTotal), 'assets', banks.length + ' bank' + (banks.length === 1 ? '' : 's') + (utMv > 0 ? ' + funds' : ''));
+    if (document.body.classList.contains('ft-sync-loading')) {
+      statGrid.querySelectorAll('.home-stat__val').forEach(function(el) { el.classList.add('ft-skeleton'); });
+    }
   }
 
   var qa = document.getElementById('home-quick-actions');
   if (qa) {
+    var iconMap = { expenses: 'expenses', income: 'income', assets: 'assets', report: 'report' };
     var actions = [
-      { tab: 'expenses', ico: '\u{1F4B8}', lbl: 'Expense' },
-      { tab: 'income', ico: '\u{1F4B5}', lbl: 'Income' },
-      { tab: 'assets', ico: '\u{1F3E6}', lbl: 'Assets' },
-      { tab: 'report', ico: '\u{1F4C4}', lbl: 'Report' },
+      { tab: 'expenses', lbl: 'Expense' },
+      { tab: 'income', lbl: 'Income' },
+      { tab: 'assets', lbl: 'Assets' },
+      { tab: 'report', lbl: 'Report' },
     ];
     qa.innerHTML = actions.map(function(a) {
+      var ico = typeof ftIconHtml_ === 'function'
+        ? ftIconHtml_(iconMap[a.tab], 'home-quick-btn__svg')
+        : '';
       return '<button type="button" class="home-quick-btn" data-home-tab="' + a.tab + '">' +
-        '<span class="home-quick-btn__ico">' + a.ico + '</span>' + esc(a.lbl) + '</button>';
+        '<span class="home-quick-btn__ico" aria-hidden="true">' + ico + '</span>' + esc(a.lbl) + '</button>';
     }).join('');
     qa.querySelectorAll('[data-home-tab]').forEach(function(btn) {
       btn.addEventListener('click', function() { homeNavTab_(btn.getAttribute('data-home-tab')); });
@@ -1260,7 +1272,8 @@ function renderSearch() {
 
   var q = searchQuery.trim().toLowerCase();
   if (!q) {
-    el.innerHTML = '<div class="empty" style="padding:24px 0"><div class="empty-icon">🔍</div>Type to search all transactions across every month</div>';
+    var searchIco = typeof ftIconHtml_ === 'function' ? ftIconHtml_('search', 'ft-empty-state__svg') : '';
+    el.innerHTML = '<div class="empty" style="padding:24px 0"><div class="empty-icon">' + searchIco + '</div>Type to search all transactions across every month</div>';
     return;
   }
 
@@ -1292,7 +1305,8 @@ function renderSearch() {
   el.innerHTML = '';
 
   if (!all.length) {
-    el.innerHTML = '<div class="empty" style="padding:24px 0"><div class="empty-icon">🔍</div>No results for "' + esc(q) + '"</div>';
+    var noIco = typeof ftIconHtml_ === 'function' ? ftIconHtml_('search', 'ft-empty-state__svg') : '';
+    el.innerHTML = '<div class="empty" style="padding:24px 0"><div class="empty-icon">' + noIco + '</div>No results for "' + esc(q) + '"</div>';
     return;
   }
 

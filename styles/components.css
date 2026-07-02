@@ -1875,11 +1875,11 @@ td select { height: 28px; font-size: var(--f-xs); width: 130px; }
   min-width: 0;
 }
 .settings-section__title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--ink3);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink2);
   margin: 0 0 8px 4px;
 }
 .settings-hero {
@@ -2023,9 +2023,8 @@ body.dark #page-settings .src-card.active {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--card-bg);
-  font-size: 18px;
   line-height: 1;
   cursor: pointer;
   color: var(--ink2);

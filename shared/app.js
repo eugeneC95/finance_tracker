@@ -1278,11 +1278,11 @@ var _ftUxLayoutMode_ = null;
 function applyFoldCardsForLayout_() {
   var expCards = document.querySelectorAll('.exp-fold-card');
   var setCards = document.querySelectorAll('.settings-fold-card');
-  if (!expCards.length && !setCards.length) return;
-
   var mobile = ftIsMobileLayout_();
   var mode = mobile ? 'mobile' : 'desktop';
-  if (_ftUxLayoutMode_ === mode) return;
+  if (_ftUxLayoutMode_ === mode && _ftUxLayoutMode_ !== null) {
+    return;
+  }
   _ftUxLayoutMode_ = mode;
 
   expCards.forEach(function(card) {
@@ -1293,6 +1293,29 @@ function applyFoldCardsForLayout_() {
     if (mobile) card.removeAttribute('open');
     else card.setAttribute('open', '');
   });
+
+  var homeExplore = document.getElementById('home-explore-fold');
+  if (homeExplore) {
+    if (mobile) homeExplore.removeAttribute('open');
+    else homeExplore.setAttribute('open', '');
+  }
+
+  var dailyFold = document.getElementById('exp-daily-fold');
+  if (dailyFold) {
+    if (mobile) dailyFold.removeAttribute('open');
+    else dailyFold.setAttribute('open', '');
+  }
+
+  var addFold = document.getElementById('exp-add-fold');
+  if (addFold) {
+    if (mobile) {
+      var hasMany = typeof mExp === 'function' && mExp().length > 3;
+      if (hasMany) addFold.removeAttribute('open');
+      else addFold.setAttribute('open', '');
+    } else {
+      addFold.setAttribute('open', '');
+    }
+  }
 }
 
 function initExpFoldCards_() {
