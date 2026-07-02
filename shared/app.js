@@ -488,6 +488,7 @@ function deleteUtHolding(id) {
   utNavPoints = utNavPoints.filter(p => p.fundId !== id);
   saveUtHoldings();
   saveUtNav();
+  ftHaptic_('medium');
   render();
   registerUndoDelete('Fund', () => {
     utHoldings.splice(Math.min(hIdx, utHoldings.length), 0, removedHold);
@@ -714,8 +715,8 @@ function renderUnitTrustPanel() {
     em.className = 'empty';
     em.style.padding = 'var(--s6) 0';
     const ico = document.createElement('div');
-    ico.className = 'empty-icon';
-    ico.textContent = '📊';
+    ico.className = 'empty-icon ft-empty-state__ico';
+    ico.innerHTML = ftIconHtml_('chart', 'ft-empty-state__svg');
     em.appendChild(ico);
     em.appendChild(document.createTextNode('No unit trust holdings yet — add a fund below'));
     root.appendChild(em);
@@ -951,8 +952,9 @@ function buildCatButtons() {
     btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
     btn.dataset.cat = name;
     const iconEl = document.createElement('span');
-    iconEl.className = 'ci';
-    iconEl.textContent = icon;
+    iconEl.className = 'ci ft-cat-badge';
+    iconEl.textContent = name.charAt(0).toUpperCase();
+    iconEl.style.setProperty('--ft-cat-color', meta.color || '#B4B2A9');
     btn.appendChild(iconEl);
     btn.appendChild(document.createTextNode(name));
     btn.addEventListener('click', () => {
@@ -1207,6 +1209,39 @@ function ftIconHtml_(id, extraClass) {
   return '<svg class="' + cls + '" aria-hidden="true"><use href="' + ftAssetBase_() + 'ft-icons.svg#ft-icon-' + id + '"/></svg>';
 }
 
+function ftHaptic_(kind) {
+  try {
+    if (!navigator.vibrate) return;
+    if (kind === 'success') navigator.vibrate(14);
+    else if (kind === 'medium') navigator.vibrate([8, 24, 8]);
+    else navigator.vibrate(6);
+  } catch (e) {}
+}
+
+function ftCatBadgeHtml_(catName, catMap, extraClass) {
+  var map = catMap || {};
+  var info = map[catName] || map['Other'] || { color: '#B4B2A9' };
+  var cls = 'ft-cat-badge' + (extraClass ? ' ' + extraClass : '');
+  var letter = String(catName || '?').trim().charAt(0).toUpperCase() || '?';
+  return '<span class="' + cls + '" style="--ft-cat-color:' + (info.color || '#B4B2A9') + '">' + letter + '</span>';
+}
+
+function syncMonthChip_() {
+  var chip = document.getElementById('ft-month-chip');
+  if (!chip) return;
+  var lbl = document.getElementById('month-label');
+  var days = document.getElementById('home-days-left');
+  var monthText = lbl ? lbl.textContent : '';
+  if (!monthText || monthText === '—') {
+    chip.hidden = true;
+    return;
+  }
+  var daysText = days ? days.textContent : '';
+  chip.innerHTML = '<span class="ft-month-chip__label">' + monthText + '</span>' +
+    (daysText ? '<span class="ft-month-chip__days">' + daysText + '</span>' : '');
+  chip.hidden = !ftIsMobileLayout_() || !monthText || monthText === '—';
+}
+
 function buildEmptyState_(opts) {
   opts = opts || {};
   var wrap = document.createElement('div');
@@ -1250,8 +1285,8 @@ function syncMobileMonthNav_() {
   var lblM = document.getElementById('month-label-m');
   if (lblM && lbl) lblM.textContent = lbl.textContent;
   var nav = document.getElementById('mobile-month-nav');
-  if (!nav) return;
-  nav.hidden = !ftIsMobileLayout_();
+  if (nav) nav.hidden = !ftIsMobileLayout_();
+  syncMonthChip_();
 }
 
 function ftMonthChangeHint_() {
@@ -1405,6 +1440,7 @@ function addExpense() {
   lastExpenseTpl = { name, amount, cat: selectedCat, place: place || undefined };
   chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
   saveExp();
+  ftHaptic_('success');
   nEl.value = '';
   if (pEl) pEl.value = '';
   moneyClearInput(aEl);
@@ -1672,6 +1708,7 @@ function deleteExpense(id) {
   const removed = expenses[idx];
   expenses.splice(idx, 1);
   saveExp();
+  ftHaptic_('medium');
   render();
   registerUndoDelete('Expense', () => {
     expenses.splice(Math.min(idx, expenses.length), 0, removed);
@@ -1697,6 +1734,7 @@ function addIncome() {
   lastIncomeTpl = { name, amount, cat };
   chromeStorage.local.set({ [KEY_LAST_INC]: lastIncomeTpl });
   saveInc();
+  ftHaptic_('success');
   nEl.value = '';
   moneyClearInput(aEl);
   render();
@@ -1727,6 +1765,7 @@ function deleteIncome(id) {
   const removed = incomes[idx];
   incomes.splice(idx, 1);
   saveInc();
+  ftHaptic_('medium');
   render();
   registerUndoDelete('Income', () => {
     incomes.splice(Math.min(idx, incomes.length), 0, removed);
@@ -1763,6 +1802,7 @@ function deleteBank(id) {
   banks.splice(idx, 1);
   saveBanks();
   maybeSnapshotNetWorth();
+  ftHaptic_('medium');
   render();
   registerUndoDelete('Bank account', () => {
     banks.splice(Math.min(idx, banks.length), 0, removed);
@@ -1844,6 +1884,7 @@ function saveEdit() {
 
   if (editCtx.type === 'exp') saveExp(); else saveInc();
   closeEditModal();
+  ftHaptic_('success');
   render();
   showToast('Entry updated');
 }
@@ -2320,7 +2361,9 @@ function buildTxRow_(entry, catMap, isIncome, arr, save, opts) {
   const ico = document.createElement('div');
   ico.className = 'tx-icon';
   ico.style.background = cat.color + '22';
-  ico.textContent = cat.icon;
+  ico.innerHTML = typeof ftCatBadgeHtml_ === 'function'
+    ? ftCatBadgeHtml_(entry.cat, catMap, 'ft-cat-badge--tx')
+    : esc(cat.icon || '');
   item.appendChild(ico);
 
   const info = document.createElement('div');
@@ -2680,8 +2723,8 @@ function renderBankList() {
     em.className = 'empty';
     em.style.padding = 'var(--s4) 0';
     const ico = document.createElement('div');
-    ico.className = 'empty-icon';
-    ico.textContent = '🏦';
+    ico.className = 'empty-icon ft-empty-state__ico';
+    ico.innerHTML = ftIconHtml_('wallet', 'ft-empty-state__svg');
     em.appendChild(ico);
     em.appendChild(document.createTextNode('No bank accounts yet'));
     el.appendChild(em);
@@ -2697,7 +2740,7 @@ function renderBankList() {
 
     const ico = document.createElement('div');
     ico.className = 'assets-acct-row__ico';
-    ico.textContent = '🏦';
+    ico.innerHTML = ftIconHtml_('wallet', 'ft-ico ft-ico--sm');
 
     const body = document.createElement('div');
     body.className = 'assets-acct-row__body';
@@ -3159,6 +3202,13 @@ function openFabSheet() {
   sheet.classList.add('open');
   sheet.setAttribute('aria-hidden', 'false');
   document.body.classList.add('ft-fab-sheet-open');
+  ftHaptic_('light');
+  const fab = document.getElementById('ft-fab');
+  if (fab) {
+    fab.classList.remove('ft-fab--pulse');
+    void fab.offsetWidth;
+    fab.classList.add('ft-fab--pulse');
+  }
   const repExp = document.getElementById('fab-repeat-exp');
   const repInc = document.getElementById('fab-repeat-inc');
   const repPet = document.getElementById('fab-repeat-petrol');
@@ -3368,6 +3418,16 @@ function activateNavTab(tab) {
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
   }
   syncMobileMonthNav_();
+  pulseFabOnTab_();
+}
+
+function pulseFabOnTab_() {
+  if (!ftIsMobileLayout_()) return;
+  var fab = document.getElementById('ft-fab');
+  if (!fab) return;
+  fab.classList.remove('ft-fab--pulse');
+  void fab.offsetWidth;
+  fab.classList.add('ft-fab--pulse');
 }
 
 function scrollNavItemIntoView(btn) {
@@ -3541,3 +3601,23 @@ window.addEventListener('resize', scheduleUxLayoutCards_);
 })();
 syncMobileMonthNav_();
 window.addEventListener('resize', syncMobileMonthNav_);
+
+function wireHomeOnboarding_() {
+  var card = document.getElementById('home-onboarding');
+  var cta = document.getElementById('home-onboarding-cta');
+  var dismiss = document.getElementById('home-onboarding-dismiss');
+  if (!card) return;
+  if (cta) {
+    cta.addEventListener('click', function() {
+      if (typeof activateNavTab === 'function') activateNavTab('expenses');
+      if (typeof focusExpenseForm === 'function') setTimeout(focusExpenseForm, 80);
+    });
+  }
+  if (dismiss) {
+    dismiss.addEventListener('click', function() {
+      try { localStorage.setItem('ft-onboarding-dismissed-v1', '1'); } catch (e) {}
+      card.hidden = true;
+    });
+  }
+}
+wireHomeOnboarding_();

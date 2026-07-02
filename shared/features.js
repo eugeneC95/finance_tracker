@@ -250,6 +250,58 @@ function homeNavTab_(tab) {
   if (typeof activateNavTab === 'function') activateNavTab(tab);
 }
 
+function listOverBudgetCats_() {
+  var results = [];
+  if (typeof budgets === 'undefined') return results;
+  var me = typeof mExp === 'function' ? mExp() : [];
+  var catTotals = {};
+  me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  Object.keys(budgets || {}).forEach(function(cat) {
+    var baseLimit = Number(budgets[cat]) || 0;
+    var limit = baseLimit + budgetCarryFromPrevMonth(cat, baseLimit);
+    var spent = catTotals[cat] || 0;
+    if (limit > 0 && spent > limit) {
+      results.push({ cat: cat, spent: spent, limit: limit, over: spent - limit });
+    }
+  });
+  return results.sort(function(a, b) { return b.over - a.over; });
+}
+
+function renderHomeBudgetAlert_() {
+  var el = document.getElementById('home-budget-alert');
+  if (!el) return;
+  var over = listOverBudgetCats_();
+  if (!over.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  var top = over[0];
+  var more = over.length > 1 ? ' (+ ' + (over.length - 1) + ' more)' : '';
+  el.hidden = false;
+  el.innerHTML =
+    '<div class="ft-budget-alert__text"><strong>' + esc(top.cat) + '</strong> is over budget by ' +
+    fmt(top.over) + more + '</div>' +
+    '<button type="button" class="ft-budget-alert__btn" data-bud-cat="' + esc(top.cat) + '">View</button>';
+  var btn = el.querySelector('[data-bud-cat]');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      if (typeof activateNavTab === 'function') activateNavTab('expenses');
+      if (typeof activeFilter !== 'undefined') activeFilter = btn.getAttribute('data-bud-cat');
+      if (typeof render === 'function') render();
+    });
+  }
+}
+
+function renderHomeOnboarding_() {
+  var card = document.getElementById('home-onboarding');
+  if (!card) return;
+  var dismissed = false;
+  try { dismissed = localStorage.getItem('ft-onboarding-dismissed-v1') === '1'; } catch (e) {}
+  var empty = (!expenses || !expenses.length) && (!incomes || !incomes.length);
+  card.hidden = dismissed || !empty;
+}
+
 function homePanel_(title, bodyHtml) {
   return (
     '<div class="panel-hd"><span class="panel-title">' + esc(title) + '</span></div>' +
@@ -298,7 +350,6 @@ function renderHomeWeekDigest_() {
     byCat[e.cat] = (byCat[e.cat] || 0) + Number(e.amount || 0);
   });
   var topCat = Object.keys(byCat).sort(function(a, b) { return byCat[b] - byCat[a]; })[0];
-  var topInfo = topCat ? (EXP_CATS[topCat] || { icon: '\u{1F4E6}' }) : null;
   var missed = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
   var rows = [
     '<div class="home-week-digest__row"><span>This week spent</span><strong class="red">' + fmt(thisWeek) + '</strong></div>',
@@ -310,10 +361,11 @@ function renderHomeWeekDigest_() {
       (delta >= 0 ? 'red' : 'green') + '">' + (delta >= 0 ? '+' : '') + delta + '%</strong></div>'
     );
   }
-  if (topCat && topInfo) {
+  if (topCat) {
+    var topBadge = typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(topCat, EXP_CATS, 'ft-cat-badge--sm') : '';
     rows.push(
       '<div class="home-week-digest__row"><span>Top category</span><strong>' +
-      topInfo.icon + ' ' + esc(topCat) + ' · ' + fmt(byCat[topCat]) + '</strong></div>'
+      topBadge + ' ' + esc(topCat) + ' · ' + fmt(byCat[topCat]) + '</strong></div>'
     );
   }
   if (missed.length) {
@@ -346,11 +398,12 @@ function anomalyInsightLines_(ym, vm) {
     if (avg <= 0) return;
     var ratio = cur / avg;
     if (ratio >= 1.8) {
-      var info = EXP_CATS[cat] || { icon: '\u{1F4E6}' };
+      var badge = typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(cat, EXP_CATS, 'ft-cat-badge--sm') : '';
       lines.push({
-        icon: '\u{1F6A8}',
+        icon: 'chart',
         label: 'Unusual spending',
-        value: info.icon + ' ' + cat + ' +' + Math.round((ratio - 1) * 100) + '%',
+        value: badge + ' ' + esc(cat) + ' +' + Math.round((ratio - 1) * 100) + '%',
+        valueIsHtml: true,
         note: 'Vs your 3-month average'
       });
     }
@@ -359,6 +412,10 @@ function anomalyInsightLines_(ym, vm) {
 }
 
 function renderHomeDashboard() {
+  renderHomeOnboarding_();
+  renderHomeBudgetAlert_();
+  if (typeof syncMonthChip_ === 'function') syncMonthChip_();
+
   var today = todayStr();
   var td = new Date();
   var me = typeof mExp === 'function' ? mExp() : [];
@@ -514,7 +571,9 @@ function renderHomeDashboard() {
         row.setAttribute('role', 'button');
         row.tabIndex = 0;
         row.innerHTML =
-          '<div class="home-tx-row__ico">' + info.icon + '</div>' +
+          '<div class="home-tx-row__ico">' +
+          (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(e.cat, catMap, 'ft-cat-badge--row') : esc(info.icon || '')) +
+          '</div>' +
           '<div class="home-tx-row__body">' +
           '<div class="home-tx-row__name">' + esc(e.name || '') + '</div>' +
           '<div class="home-tx-row__meta">' +
@@ -551,7 +610,9 @@ function renderHomeDashboard() {
         var pct = monthExp > 0 ? Math.round((t.amt / monthExp) * 100) : 0;
         return (
           '<div class="home-cat-row">' +
-          '<span>' + info.icon + ' ' + esc(t.cat) + '</span>' +
+          '<span>' +
+          (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(t.cat, EXP_CATS, 'ft-cat-badge--sm') : '') +
+          ' ' + esc(t.cat) + '</span>' +
           '<strong class="red">' + fmt(t.amt) + '</strong>' +
           '<div class="home-cat-row__bar"><div class="home-cat-row__fill" style="width:' + pct + '%;background:' + (info.color || '#888') + '"></div></div>' +
           '<span class="ft-note" style="grid-column:1/-1;margin-top:-2px">' + pct + '% of month spend</span></div>'
@@ -563,13 +624,15 @@ function renderHomeDashboard() {
   var insEl = document.getElementById('home-insights');
   if (insEl) {
     var cards = [];
-    function insightCard(icon, label, value, tone, note) {
+    function insightCard(iconId, label, value, tone, note, valueIsHtml) {
+      var ico = typeof ftIconHtml_ === 'function' ? ftIconHtml_(iconId, 'home-insight-card__svg') : '';
+      var valCell = valueIsHtml ? value : esc(value);
       return (
         '<div class="home-insight-card ' + (tone || '') + '">' +
-        '<div class="home-insight-card__icon">' + icon + '</div>' +
+        '<div class="home-insight-card__icon">' + ico + '</div>' +
         '<div class="home-insight-card__body">' +
         '<div class="home-insight-card__label">' + esc(label) + '</div>' +
-        '<div class="home-insight-card__value">' + esc(value) + '</div>' +
+        '<div class="home-insight-card__value">' + valCell + '</div>' +
         (note ? '<div class="home-insight-card__note">' + esc(note) + '</div>' : '') +
         '</div></div>'
       );
@@ -577,7 +640,7 @@ function renderHomeDashboard() {
     if (prvExp > 0) {
       var expDelta = Math.round(((monthExp - prvExp) / prvExp) * 100);
       cards.push(insightCard(
-        expDelta >= 0 ? '\u{1F4C8}' : '\u{1F4C9}',
+        expDelta >= 0 ? 'trends' : 'chart',
         'Spending trend',
         (expDelta >= 0 ? 'Up ' : 'Down ') + Math.abs(expDelta) + '%',
         expDelta >= 0 ? 'warn' : 'good',
@@ -587,7 +650,7 @@ function renderHomeDashboard() {
     if (prvInc > 0) {
       var incDelta = Math.round(((monthInc - prvInc) / prvInc) * 100);
       cards.push(insightCard(
-        incDelta >= 0 ? '\u{1F4BC}' : '\u{1F9FE}',
+        incDelta >= 0 ? 'income' : 'wallet',
         'Income trend',
         (incDelta >= 0 ? 'Up ' : 'Down ') + Math.abs(incDelta) + '%',
         incDelta >= 0 ? 'good' : 'warn',
@@ -597,7 +660,7 @@ function renderHomeDashboard() {
     var savRate = monthInc > 0 ? Math.round((monthNet / monthInc) * 100) : null;
     if (savRate != null) {
       cards.push(insightCard(
-        '\u{1F3AF}',
+        'target',
         'Savings rate',
         savRate + '%',
         savRate >= 20 ? 'good' : (savRate < 0 ? 'bad' : ''),
@@ -610,7 +673,7 @@ function renderHomeDashboard() {
       if (pt.length) {
         var ptSum = pt.reduce(function(a, p) { return a + (Number(p.total) || 0); }, 0);
         cards.push(insightCard(
-          '\u26FD',
+          'petrol',
           'Petrol spend',
           fmt(ptSum),
           '',
@@ -619,12 +682,12 @@ function renderHomeDashboard() {
       }
     }
     anomalyInsightLines_(curYM, vm).forEach(function(a) {
-      cards.push(insightCard(a.icon, a.label, a.value, 'warn', a.note));
+      cards.push(insightCard(a.icon, a.label, a.value, 'warn', a.note, a.valueIsHtml));
     });
     var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
     if (missedRec.length) {
       cards.push(insightCard(
-        '\u26A0\uFE0F',
+        'recurring',
         'Missed recurring',
         missedRec.length + ' bill' + (missedRec.length === 1 ? '' : 's'),
         'warn',
@@ -857,7 +920,8 @@ function renderExpBudgetChips() {
     var cls = over ? 'ft-budget-chip ft-budget-chip--over' : 'ft-budget-chip ft-budget-chip--warn';
     chips.push(
       '<button type="button" class="' + cls + '" data-bud-cat="' + esc(cat) + '" title="Show ' + esc(cat) + ' transactions">' +
-      esc(info.icon + ' ' + cat) + ' ' + pct + '% · ' + fmt(spent) + '/' + fmt(limit) +
+      (typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(cat, EXP_CATS, 'ft-cat-badge--sm') : '') +
+      ' ' + esc(cat) + ' ' + pct + '% · ' + fmt(spent) + '/' + fmt(limit) +
       '</button>'
     );
   });
@@ -1103,7 +1167,7 @@ function renderBudgets() {
 
   var keys = Object.keys(budgets);
   if (!keys.length) {
-    el.innerHTML = '<div class="empty" style="padding:12px 0"><div class="empty-icon">🎯</div>No budgets set. Add limits below.</div>';
+    el.innerHTML = homeEmpty_('target', 'No budgets set. Add limits below.');
     renderExpBudgetChips();
     renderBudgetPaceCard_('exp-budget-pace');
     return;
@@ -1120,7 +1184,7 @@ function renderBudgets() {
     var over  = spent > limit;
     var warn  = pct >= 75 && !over;
     var color = over ? '#E24B4A' : warn ? '#BA7517' : '#1A9E6E';
-    var catInfo = EXP_CATS[cat] || {icon:'📦'};
+    var catBadge = typeof ftCatBadgeHtml_ === 'function' ? ftCatBadgeHtml_(cat, EXP_CATS, 'ft-cat-badge--sm') : '';
 
     var row = document.createElement('div');
     row.className = 'ft-budget-item';
@@ -1128,7 +1192,7 @@ function renderBudgets() {
     var header = document.createElement('div');
     header.className = 'ft-budget-item__head';
     header.innerHTML =
-      '<span style="font-size:18px" aria-hidden="true">' + catInfo.icon + '</span>' +
+      catBadge +
       '<span class="ft-budget-item__cat">' + esc(cat) + '</span>' +
       '<span class="ft-budget-item__nums">' + fmt(spent) + ' / ' + fmt(limit) + '</span>' +
       '<span class="ft-budget-item__pct" style="color:' + color + '">' + pct + '%</span>' +
@@ -1694,7 +1758,7 @@ function renderRecurring() {
   }
 
   if (!recurring.length && !missedRec.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔁</div>No recurring entries yet.</div>';
+    el.innerHTML = homeEmpty_('recurring', 'No recurring entries yet.');
     return;
   }
   if (!recurring.length) return;
@@ -1711,8 +1775,9 @@ function renderRecurring() {
 
     var ico = document.createElement('div');
     ico.className = 'rec-icon';
-    ico.style.background = catInfo.color+'22';
-    ico.textContent = catInfo.icon;
+    ico.innerHTML = typeof ftCatBadgeHtml_ === 'function'
+      ? ftCatBadgeHtml_(r.cat, catMap, 'ft-cat-badge--row')
+      : '';
 
     var info = document.createElement('div');
     info.className = 'rec-info';

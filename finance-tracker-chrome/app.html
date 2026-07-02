@@ -35,14 +35,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=133"/>
-<link rel="stylesheet" href="../styles/reset.css?v=133"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=133"/>
-<link rel="stylesheet" href="../styles/base.css?v=133"/>
-<link rel="stylesheet" href="../styles/components.css?v=133"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=133"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=134"/>
+<link rel="stylesheet" href="../styles/reset.css?v=134"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=134"/>
+<link rel="stylesheet" href="../styles/base.css?v=134"/>
+<link rel="stylesheet" href="../styles/components.css?v=134"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=134"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=133"/>
+<link rel="stylesheet" href="../theme-modern.css?v=134"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -110,6 +110,8 @@
     <button type="button" class="month-arrow" id="next-month-m" aria-label="Next month">›</button>
   </div>
 
+  <div class="ft-month-chip" id="ft-month-chip" role="status" aria-live="polite" hidden></div>
+
   <!-- ── EXPENSES ── -->
   <div class="page active" id="page-home">
     <div class="page-header">
@@ -117,6 +119,20 @@
       <p class="sub" id="home-header-sub">Your financial snapshot for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
     <div class="page-body home-body">
+      <section class="ft-onboarding card" id="home-onboarding" hidden aria-label="Get started">
+        <div class="ft-onboarding__body">
+          <div class="ft-onboarding__ico" aria-hidden="true"><svg class="ft-ico"><use href="../assets/ft-icons.svg#ft-icon-expenses"/></svg></div>
+          <div>
+            <h3 class="ft-onboarding__title">Welcome to Finance Tracker</h3>
+            <p class="ft-onboarding__text">Log your first expense to start tracking spending and see your month at a glance.</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary ft-onboarding__cta" id="home-onboarding-cta">Add first expense</button>
+        <button type="button" class="ft-onboarding__dismiss" id="home-onboarding-dismiss" aria-label="Dismiss">Not now</button>
+      </section>
+
+      <div class="ft-budget-alert" id="home-budget-alert" hidden role="alert"></div>
+
       <section class="card home-hero-card" aria-label="Month overview">
         <div class="home-hero-card__top">
           <div>
@@ -1133,7 +1149,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v133 · 2026-07-02 12:27</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v134 · 2026-07-02 12:34</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1329,6 +1345,7 @@
 ══════════════════════════════════════════ -->
 <div class="overlay" id="edit-overlay">
   <div class="modal modal--edit" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <div class="modal-sheet-grab" aria-hidden="true"></div>
     <div class="modal-hd">
       <div class="modal-title" id="edit-title">Edit entry</div>
       <button type="button" class="modal-close" id="edit-close" aria-label="Close">✕</button>
@@ -1426,11 +1443,11 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=133"></script>
-<script type="module" src="../shared/main.js?v=133"></script>
-<script defer src="../shared/app.js?v=133"></script>
-<script defer src="../shared/sync.js?v=133"></script>
-<script defer src="../shared/features.js?v=133"></script>
-<script defer src="../shared/extras.js?v=133"></script>
+<script src="../build-id.js?v=134"></script>
+<script type="module" src="../shared/main.js?v=134"></script>
+<script defer src="../shared/app.js?v=134"></script>
+<script defer src="../shared/sync.js?v=134"></script>
+<script defer src="../shared/features.js?v=134"></script>
+<script defer src="../shared/extras.js?v=134"></script>
 </body>
 </html>
