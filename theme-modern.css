@@ -176,8 +176,10 @@ body.dark .sb {
   margin-bottom: var(--s5);
 }
 
-.page-header::before {
-  display: none;
+@media (max-width: 680px) {
+  .page-header::before {
+    display: none;
+  }
 }
 
 .page-header h2 {
@@ -264,6 +266,12 @@ body.dark .sb {
   background: linear-gradient(180deg, var(--card-bg) 0%, var(--card-bg2) 100%);
   box-shadow: var(--shadow);
   color: var(--ink);
+}
+
+@media (min-width: 681px) {
+  .settings-hero {
+    margin-bottom: 0;
+  }
 }
 
 .ft-page-hero::before,
@@ -710,6 +718,85 @@ body.dark .ft-fab {
 
   body.dark .sb {
     box-shadow: 8px 0 48px rgba(0, 0, 0, 0.48);
+  }
+
+  /* Readable content width on wide monitors */
+  .main .page-body {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--s8);
+    padding-right: var(--s8);
+  }
+
+  .page-header {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: calc(var(--s8) + 6px);
+    padding-right: var(--s8);
+    width: 100%;
+  }
+
+  .page-header::before {
+    display: block;
+  }
+
+  /* Two-column pages: give chart column room without squashing the list */
+  .cols-2 {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: var(--s6);
+  }
+
+  /* Fold cards → static sections (match Personalization pattern) */
+  .settings-fold-card {
+    display: block;
+  }
+
+  .settings-fold-card__summary,
+  .exp-fold-card__summary {
+    cursor: default;
+    pointer-events: none;
+    list-style: none;
+  }
+
+  .settings-fold-card__summary::after,
+  .exp-fold-card__summary::after {
+    display: none;
+  }
+
+  .settings-fold-card__summary {
+    display: block;
+    padding: 0 0 8px 4px;
+  }
+
+  .settings-fold-card__body {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: var(--s5) var(--s6);
+    box-shadow: var(--shadow);
+  }
+
+  .exp-fold-card__summary {
+    padding: var(--s5) var(--s6);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .exp-fold-card > .panel-bd {
+    padding: var(--s5) var(--s6);
+  }
+
+  /* Virtual lists: page scroll, not inner cage */
+  .tx-list--virtual .tx-list__viewport {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  #page-petrol .pt-list-scroll {
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -1356,12 +1443,14 @@ body.dark .empty .empty-icon {
   display: block;
 }
 
-.tx-list--virtual .tx-list__viewport {
-  max-height: min(70vh, 520px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  border-radius: var(--radius, 12px);
+@media (max-width: 680px) {
+  .tx-list--virtual .tx-list__viewport {
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius, 12px);
+  }
 }
 
 .tx-list--virtual .tx-list__spacer {

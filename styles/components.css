@@ -39,7 +39,7 @@ SIDEBAR
   margin: 0;
   pointer-events: none;
 }
-@media (min-width: 641px) {
+@media (min-width: 681px) {
   .nav-section-label { display: block; }
 }
 
@@ -228,7 +228,7 @@ body.mobile-nav-sheet-open {
   background: linear-gradient(180deg, var(--primary), var(--green));
   opacity: 0.85;
 }
-@media (max-width: 640px) {
+@media (max-width: 680px) {
   .page-header { padding-left: 18px; }
   .page-header::before { left: 10px; }
 }

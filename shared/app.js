@@ -1273,24 +1273,34 @@ function wireCalcAmountHint_() {
   });
 }
 
-function initExpFoldCards_() {
-  var cards = document.querySelectorAll('.exp-fold-card');
-  if (!cards.length) return;
+var _ftUxLayoutMode_ = null;
+
+function applyFoldCardsForLayout_() {
+  var expCards = document.querySelectorAll('.exp-fold-card');
+  var setCards = document.querySelectorAll('.settings-fold-card');
+  if (!expCards.length && !setCards.length) return;
+
   var mobile = ftIsMobileLayout_();
-  cards.forEach(function(card) {
+  var mode = mobile ? 'mobile' : 'desktop';
+  if (_ftUxLayoutMode_ === mode) return;
+  _ftUxLayoutMode_ = mode;
+
+  expCards.forEach(function(card) {
+    if (mobile) card.removeAttribute('open');
+    else card.setAttribute('open', '');
+  });
+  setCards.forEach(function(card) {
     if (mobile) card.removeAttribute('open');
     else card.setAttribute('open', '');
   });
 }
 
+function initExpFoldCards_() {
+  applyFoldCardsForLayout_();
+}
+
 function initSettingsFoldCards_() {
-  var cards = document.querySelectorAll('.settings-fold-card');
-  if (!cards.length) return;
-  var mobile = ftIsMobileLayout_();
-  cards.forEach(function(card) {
-    if (mobile) card.removeAttribute('open');
-    else card.setAttribute('open', '');
-  });
+  applyFoldCardsForLayout_();
 }
 
 function ftEnsureImportWizard_() {
@@ -2392,8 +2402,16 @@ function renderTxListVirtual_(el, items, catMap, isIncome, arr, save, useSwipe) 
 
   function paint() {
     rafPending = false;
-    const scrollTop = viewport.scrollTop;
-    const viewH = viewport.clientHeight || 400;
+    var scrollTop;
+    var viewH;
+    if (ftIsMobileLayout_()) {
+      scrollTop = viewport.scrollTop;
+      viewH = viewport.clientHeight || 400;
+    } else {
+      var rect = viewport.getBoundingClientRect();
+      scrollTop = Math.max(0, -rect.top);
+      viewH = window.innerHeight || 400;
+    }
     const start = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer);
     const end = Math.min(items.length, Math.ceil((scrollTop + viewH) / rowHeight) + buffer);
 
@@ -2425,6 +2443,8 @@ function renderTxListVirtual_(el, items, catMap, isIncome, arr, save, useSwipe) 
 
   measure();
   viewport.addEventListener('scroll', schedulePaint, { passive: true });
+  window.addEventListener('scroll', schedulePaint, { passive: true });
+  window.addEventListener('resize', schedulePaint, { passive: true });
   if (typeof ResizeObserver !== 'undefined') {
     const ro = new ResizeObserver(schedulePaint);
     ro.observe(viewport);
