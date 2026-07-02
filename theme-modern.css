@@ -1507,6 +1507,219 @@ body.dark .empty .empty-icon {
     width: 100%;
     max-width: 240px;
   }
+
+  /* ── Mobile comfort: readable type, touch fields, breathing room (v132) ── */
+  body {
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  body .main .page-body,
+  body .main .page-header {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  body .page-header {
+    padding-top: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  body .page-header h2 {
+    font-size: clamp(1.5rem, 6vw, 1.95rem) !important;
+  }
+
+  body .page-header .sub {
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    margin-top: 6px !important;
+  }
+
+  .page-body {
+    padding-top: 4px !important;
+    padding-bottom: calc(96px + var(--ft-mobile-safe-bottom)) !important;
+  }
+
+  body .home-body {
+    gap: 16px !important;
+  }
+
+  #mobile-month-nav {
+    margin: 0 20px 14px !important;
+    padding: 10px 12px !important;
+  }
+
+  .card .panel-bd,
+  .settings-fold-card__body,
+  .settings-card .panel-bd {
+    padding: 20px !important;
+  }
+
+  .panel-hd {
+    padding: 18px 20px !important;
+  }
+
+  .panel-title,
+  .settings-section__title {
+    font-size: 13px !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea {
+    font-size: 17px !important;
+    min-height: 50px !important;
+    height: auto !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  textarea {
+    min-height: 96px !important;
+    line-height: 1.45 !important;
+  }
+
+  .cur-input {
+    width: auto !important;
+    min-width: 88px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    font-size: 17px !important;
+    padding: 0 14px !important;
+  }
+
+  #page-settings select.cur-input {
+    width: 100% !important;
+    max-width: 200px !important;
+    text-align: start !important;
+  }
+
+  .lbl,
+  .s-lbl,
+  .exp-add-field .lbl {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .s-sub,
+  .ft-field-hint,
+  .assets-field-hint,
+  .exp-add-field .s-sub {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  .setting-row {
+    padding: 16px 0 !important;
+    gap: 14px !important;
+  }
+
+  .settings-group__label {
+    font-size: 13px !important;
+    margin: 16px 0 10px !important;
+  }
+
+  .btn,
+  .btn-ghost,
+  .btn-primary {
+    min-height: 50px !important;
+    padding: 12px 18px !important;
+    font-size: 16px !important;
+  }
+
+  .exp-add-field {
+    gap: 8px !important;
+  }
+
+  .exp-add-mid {
+    gap: 16px !important;
+  }
+
+  .exp-input--amount {
+    font-size: 26px !important;
+    min-height: 56px !important;
+    padding: 12px 14px !important;
+  }
+
+  .exp-quick-amt {
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+
+  .exp-quick-amt .exp-quick-btn {
+    min-height: 38px !important;
+    height: auto !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+
+  .cat-btn {
+    font-size: 11px !important;
+    min-height: 60px !important;
+    padding: 10px 6px !important;
+    gap: 4px !important;
+  }
+
+  .cat-btn .ci {
+    font-size: 20px !important;
+  }
+
+  .cat-group__label {
+    font-size: 13px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .cat-groups {
+    gap: 16px !important;
+  }
+
+  .pill {
+    min-height: 40px !important;
+    padding: 9px 16px !important;
+    font-size: 13px !important;
+  }
+
+  .stat-card .s-label,
+  .home-stat .s-label {
+    font-size: 12px !important;
+  }
+
+  .stat-card .s-value,
+  .home-stat .s-value {
+    font-size: 1.125rem !important;
+  }
+
+  .settings-quick-btn {
+    font-size: 16px !important;
+    min-height: 64px !important;
+    padding: 18px !important;
+  }
+
+  .settings-quick-btn span {
+    font-size: 13px !important;
+  }
+
+  .fx-rates-grid {
+    gap: 12px !important;
+  }
+
+  .fx-rates-grid label {
+    font-size: 13px !important;
+    gap: 6px !important;
+  }
+
+  .edit-field input,
+  .edit-field select {
+    min-height: 50px !important;
+    font-size: 17px !important;
+  }
+
+  .ft-check-label {
+    font-size: 15px !important;
+    gap: 10px !important;
+  }
 }
 
 /* ── Virtualized transaction lists (100+ rows) ── */
