@@ -1,4 +1,4 @@
-const CACHE = 'ft-v137';
+const CACHE = 'ft-v138';
 const SHELL = [
   './build-id.js',
   './lock.html',

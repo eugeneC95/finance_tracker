@@ -226,7 +226,9 @@ function scriptFetch(url, params, body) {
 
   // Log URL length so users can diagnose 414/CORS easily via console.
   try { if (fullUrl.length > 6000) console.log('[sync] URL ' + fullUrl.length + ' chars'); } catch (e) {}
-
+  if (typeof window !== 'undefined' && typeof window.ftSyncTransportFetch === 'function') {
+    return window.ftSyncTransportFetch(fullUrl, opts);
+  }
   return fetch(fullUrl, opts).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status + ' from Apps Script');
     return r.text().then(function(text) {

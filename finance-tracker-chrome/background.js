@@ -22,14 +22,16 @@ chrome.commands.onCommand.addListener(command => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type !== 'SYNC_FETCH') return false;
 
-  const { url, method, body } = msg;
+  const { url, method, body, headers } = msg;
 
   const opts = { method: method || 'GET' };
+  const reqHeaders = Object.assign({}, headers || {});
   if (body) {
     // Apps Script requires Content-Type text/plain to skip CORS preflight
-    opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    if (!reqHeaders['Content-Type']) reqHeaders['Content-Type'] = 'text/plain;charset=utf-8';
     opts.body    = body;
   }
+  if (Object.keys(reqHeaders).length) opts.headers = reqHeaders;
 
   fetch(url, opts)
     .then(r => {
