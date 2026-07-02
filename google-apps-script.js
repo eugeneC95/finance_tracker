@@ -16,6 +16,28 @@
 
 var SHEET_NAME = 'Finance Tracker';
 var API_VERSION = 9;
+var SYNC_TOKEN_PROP = 'FT_SYNC_TOKEN';
+
+function configuredSyncToken_() {
+  var p = PropertiesService.getScriptProperties();
+  var v = p ? p.getProperty(SYNC_TOKEN_PROP) : '';
+  return String(v || '').replace(/^\s+|\s+$/g, '');
+}
+
+function requestSyncToken_(e) {
+  var tok = '';
+  if (e && e.parameter && e.parameter.token != null) tok = String(e.parameter.token);
+  if (!tok && e && e.headers) {
+    tok = String(e.headers['X-FT-Sync-Token'] || e.headers['x-ft-sync-token'] || '');
+  }
+  return tok.replace(/^\s+|\s+$/g, '');
+}
+
+function ensureAuthorized_(e) {
+  var expected = configuredSyncToken_();
+  if (!expected) return true; // Backward compatible: no token configured on script.
+  return requestSyncToken_(e) === expected;
+}
 
 // ── Get or create spreadsheet ──────────────────────────────
 function getOrCreateSheet(tabName) {
@@ -127,6 +149,12 @@ function doGet(e) {
   var result;
 
   try {
+    if (!ensureAuthorized_(e)) {
+      result = { ok: false, error: 'Unauthorized: invalid sync token' };
+      return ContentService
+        .createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     if (action === 'ping') {
       result = {
         ok: true,
@@ -169,6 +197,11 @@ function doGet(e) {
 // drops POST bodies when following Apps Script's 302.
 function doPost(e) {
   try {
+    if (!ensureAuthorized_(e)) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: 'Unauthorized: invalid sync token' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     var action = normalizeAction_(e);
     if (action === 'save' && e.postData && e.postData.contents) {
       var payload = JSON.parse(e.postData.contents);

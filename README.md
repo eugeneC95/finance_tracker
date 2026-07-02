@@ -49,7 +49,8 @@ Follow the same steps as the Chrome extension:
    - Execute as: **Me**
    - Who has access: **Anyone**
 4. Copy the `/exec` URL
-5. Open the PWA → Settings → Google Sheets Sync → paste URL → Test connection
+5. (Recommended security) In Apps Script: **Project Settings → Script properties** add key `FT_SYNC_TOKEN` with a long random value
+6. Open the PWA → Settings → Google Sheets Sync → paste URL, enter the same token in **Sync shared token**, then **Save token** and **Test connection**
 
 Your data syncs automatically every time you add or edit anything.
 

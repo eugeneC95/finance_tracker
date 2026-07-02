@@ -1,5 +1,7 @@
 # ── Node (dev tooling) ─────────────────────────────────────
 node_modules/
+dist/
+*.tsbuildinfo
 
 # ── OS / editor noise ──────────────────────────────────────
 .DS_Store

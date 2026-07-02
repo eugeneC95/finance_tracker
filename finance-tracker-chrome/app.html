@@ -999,6 +999,14 @@
               <div id="sync-detail" class="sync-detail" style="margin-bottom:12px;font-size:var(--f-xs);color:var(--ink3);line-height:1.5"></div>
               <label class="lbl">Apps Script web app (built into this app)</label>
               <div id="sync-url-display" style="font-size:var(--f-xs);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.45;word-break:break-all;color:var(--ink2);padding:10px 12px;background:var(--card-bg2);border-radius:var(--radius-sm);border:1px solid var(--line);margin-top:6px"></div>
+              <div style="margin-top:12px">
+                <label class="lbl" for="sync-token-input">Sync shared token (optional but recommended)</label>
+                <input type="password" id="sync-token-input" placeholder="Must match Apps Script FT_SYNC_TOKEN" autocomplete="off"/>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px">
+                  <span id="sync-token-state" class="ft-note">No token set</span>
+                  <button type="button" class="btn-ghost" id="sync-token-save-btn">Save token</button>
+                </div>
+              </div>
               <div style="margin-top:14px">
                 <button type="button" class="btn-ghost" id="sync-ping-btn" style="width:100%">🔌 Test connection</button>
               </div>

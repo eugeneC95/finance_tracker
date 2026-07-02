@@ -6,6 +6,7 @@
 // ╚══════════════════════════════════════════════════════════╝
 
 var KEY_SYNC_STATE = 'sync_state_v1';
+var KEY_SYNC_TOKEN = 'sync_token_v1';
 /** When true, every auto-sync session wipes local/session cache and loads the Sheet (full replace). */
 var FT_FORCE_SHEET_SOURCE = true;
 window.__ftForceSheetSource = FT_FORCE_SHEET_SOURCE;
@@ -42,6 +43,7 @@ var APPS_SCRIPT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbw-crW39LqE5JSpgg6pwHzkfuZbY3ZY0prLYDSv1OTjr8Dnfrk8ozAOn3fIxZd5ISg0/exec';
 
 var syncUrl   = '';
+var syncToken = '';
 var syncState = { lastSaved: null, lastLoaded: null, status: 'idle', message: '' };
 
 function applyHardcodedSyncUrl_() {
@@ -66,9 +68,10 @@ function loadSyncSettings(cb) {
   try {
     chromeStorage.local.remove('sync_url_v1');
   } catch (e) {}
-  chromeStorage.local.get([KEY_SYNC_STATE], function(r) {
+  chromeStorage.local.get([KEY_SYNC_STATE, KEY_SYNC_TOKEN], function(r) {
     applyHardcodedSyncUrl_();
     syncState = r[KEY_SYNC_STATE] || syncState;
+    syncToken = String(r[KEY_SYNC_TOKEN] || '').trim();
     updateSyncUI();
     if (cb) cb();
   });
@@ -76,6 +79,10 @@ function loadSyncSettings(cb) {
 
 function persistSyncState() {
   chromeStorage.local.set({ [KEY_SYNC_STATE]: syncState });
+}
+
+function persistSyncToken_() {
+  chromeStorage.local.set({ [KEY_SYNC_TOKEN]: syncToken || '' });
 }
 
 // ── Build payload ──────────────────────────────────────────
@@ -202,8 +209,10 @@ function syncCountSummaryText(data) {
 // because Apps Script returns a 302 and fetch drops the body on redirect.
 function scriptFetch(url, params, body) {
   url = canonicalSyncExecUrl(url);
-  var qs = Object.keys(params)
-    .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
+  var reqParams = Object.assign({}, params || {});
+  if (syncToken) reqParams.token = syncToken;
+  var qs = Object.keys(reqParams)
+    .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(reqParams[k]); })
     .join('&');
   var fullUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + qs;
   var hasBody = typeof body === 'string' && body.length > 0;
@@ -211,6 +220,7 @@ function scriptFetch(url, params, body) {
   var opts = { method: hasBody ? 'POST' : 'GET', redirect: 'follow' };
   if (hasBody) {
     opts.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+    if (syncToken) opts.headers['X-FT-Sync-Token'] = syncToken;
     opts.body = body;
   }
 
@@ -1076,8 +1086,12 @@ function updateSyncUI() {
   var msg = document.getElementById('sync-msg');
   var detail = document.getElementById('sync-detail');
   var disp = document.getElementById('sync-url-display');
+  var tokenInput = document.getElementById('sync-token-input');
+  var tokenState = document.getElementById('sync-token-state');
 
   if (disp) disp.textContent = syncUrl || '';
+  if (tokenInput && document.activeElement !== tokenInput) tokenInput.value = syncToken || '';
+  if (tokenState) tokenState.textContent = syncToken ? 'Token configured' : 'No token set';
 
   var counts = syncState.counts || syncDataCounts();
   var expEl = document.getElementById('settings-count-exp');
@@ -1180,6 +1194,7 @@ function updateSyncUI() {
     if (syncPendingSave && syncLocalDirty) {
       parts.push('Pending sync (waiting for Sheet)');
     }
+    parts.push(syncToken ? 'Sync token enabled' : 'Sync token not set');
     var ob = loadSyncOutbox_();
     if (ob && ob.pending) {
       parts.push('Outbox: retry when online');
@@ -1210,10 +1225,20 @@ function wireSyncUI() {
   var pingBtn = document.getElementById('sync-ping-btn');
   var saveBtn = document.getElementById('sync-save-btn');
   var loadBtn = document.getElementById('sync-load-btn');
+  var tokenInput = document.getElementById('sync-token-input');
+  var tokenSaveBtn = document.getElementById('sync-token-save-btn');
 
   if (pingBtn) pingBtn.addEventListener('click', syncPing);
   if (saveBtn) saveBtn.addEventListener('click', function() { syncSave(false); });
   if (loadBtn) loadBtn.addEventListener('click', function() { syncLoad(); });
+  if (tokenSaveBtn && tokenInput) {
+    tokenSaveBtn.addEventListener('click', function() {
+      syncToken = String(tokenInput.value || '').trim();
+      persistSyncToken_();
+      updateSyncUI();
+      showToast(syncToken ? 'Sync token saved' : 'Sync token cleared');
+    });
+  }
 
   window.addEventListener('online', function() {
     var ob = loadSyncOutbox_();
