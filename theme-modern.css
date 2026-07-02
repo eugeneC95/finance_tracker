@@ -1351,6 +1351,29 @@ body.dark .empty .empty-icon {
   }
 }
 
+/* ── Virtualized transaction lists (100+ rows) ── */
+.tx-list--virtual {
+  display: block;
+}
+
+.tx-list--virtual .tx-list__viewport {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius, 12px);
+}
+
+.tx-list--virtual .tx-list__spacer {
+  width: 100%;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.tx-list--virtual .tx-list__window {
+  width: 100%;
+}
+
 @media (max-width: 380px) {
   .nav-item {
     font-size: 10px !important;

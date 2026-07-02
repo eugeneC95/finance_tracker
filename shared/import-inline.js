@@ -286,6 +286,11 @@ function iwSelectSource(src) {
   if(helpMbb) helpMbb.style.display=(src==='mbb'||src==='cimb'||src==='bank')?'':'none';
 }
 
+// ── Wire up source cards (lazy-loaded via main.js) ─────────
+function initImportWizard_() {
+  if (globalThis.__iwInited) return;
+  globalThis.__iwInited = true;
+
 document.getElementById('iw-tng-card').addEventListener('click',()=>iwSelectSource('tng'));
 document.getElementById('iw-uob-card').addEventListener('click',()=>iwSelectSource('uob'));
 const iwMbbCard=document.getElementById('iw-mbb-card');
@@ -400,3 +405,6 @@ document.getElementById('iw-drop').addEventListener('click',()=>document.getElem
 document.getElementById('iw-file').addEventListener('change',e=>{
   if(e.target.files[0]) document.getElementById('iw-drop-lbl').textContent='📄 '+e.target.files[0].name;
 });
+}
+
+globalThis.initImportWizard_ = initImportWizard_;

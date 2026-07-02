@@ -36,6 +36,11 @@
     {
       "resources": [
         "app.html",
+        "../shared/main.js",
+        "../shared/core/index.js",
+        "../shared/core/format.js",
+        "../shared/core/dom.js",
+        "../shared/core/dates.js",
         "../shared/app.js",
         "../shared/features.js",
         "../shared/import-inline.js",

@@ -1,4 +1,4 @@
-const CACHE = 'ft-v128';
+const CACHE = 'ft-v129';
 const SHELL = [
   './build-id.js',
   './lock.html',
@@ -19,11 +19,15 @@ const SHELL = [
   './assets/fonts/plus-jakarta-sans-800.woff2',
   './icons/icon192.png',
   './icons/icon512.png',
+  './shared/main.js',
+  './shared/core/index.js',
+  './shared/core/format.js',
+  './shared/core/dom.js',
+  './shared/core/dates.js',
   './shared/app.js',
   './shared/features.js',
   './shared/extras.js',
   './shared/sync.js',
-  './shared/import-inline.js',
 ];
 
 self.addEventListener('install', e => {

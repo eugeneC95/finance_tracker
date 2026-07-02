@@ -132,13 +132,17 @@ let viewMonth = new Date(); viewMonth.setDate(1);
 let activeFilter = 'All';
 let selectedCat  = 'Food';
 
-// ── Helpers ────────────────────────────────────────────────
+// ── Helpers (pure utils from shared/core via main.js) ───────
+function ftCore_() {
+  return globalThis.ftCore || {};
+}
 function todayStr() {
-  const d = new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const fn = ftCore_().todayStr;
+  return fn ? fn() : new Date().toISOString().slice(0, 10);
 }
 function fmt(n) {
-  return (settings.currency||'RM')+' '+Number(n).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fn = ftCore_().fmtAmount;
+  return fn ? fn(n, settings.currency || 'RM') : String(n);
 }
 
 const BANK_CURRENCIES = {
@@ -210,20 +214,13 @@ function fillBankCurrencySelect(sel, selected) {
   });
 }
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const fn = ftCore_().esc;
+  return fn ? fn(s) : String(s);
 }
 function shake(el) { el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),300); }
-/** Plain YYYY-MM-DD or Google Sheets datetime ISO (e.g. …T16:00:00.000Z). */
 function parseTxDate(dateStr) {
-  if (dateStr === undefined || dateStr === null || dateStr === '') return null;
-  const s = String(dateStr).trim();
-  if (!s) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    const d = new Date(s + 'T12:00:00');
-    return isNaN(d.getTime()) ? null : d;
-  }
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+  const fn = ftCore_().parseTxDate;
+  return fn ? fn(dateStr) : null;
 }
 function inVM(dateStr) {
   const d = parseTxDate(dateStr);
@@ -1296,6 +1293,22 @@ function initSettingsFoldCards_() {
   });
 }
 
+function ftEnsureImportWizard_() {
+  if (typeof globalThis.ftLoadImportWizard === 'function') {
+    return globalThis.ftLoadImportWizard();
+  }
+  return Promise.resolve();
+}
+
+function wireImportWizardLazy_() {
+  var fold = document.getElementById('settings-import-fold');
+  if (!fold) return;
+  fold.addEventListener('toggle', function() {
+    if (fold.open) ftEnsureImportWizard_();
+  });
+  if (fold.open) ftEnsureImportWizard_();
+}
+
 var expFoldResizeTimer_;
 function scheduleUxLayoutCards_() {
   clearTimeout(expFoldResizeTimer_);
@@ -2247,11 +2260,184 @@ function render() {
 }
 
 // ── Transaction list ───────────────────────────────────────
+const TX_VIRTUAL_THRESHOLD = 100;
+const TX_ROW_HEIGHT_EST = 56;
+
+function buildTxRow_(entry, catMap, isIncome, arr, save, opts) {
+  opts = opts || {};
+  const useSwipe = opts.useSwipe != null ? opts.useSwipe : ftUseSwipeRows();
+  const showDrag = opts.showDrag != null
+    ? opts.showDrag
+    : (settings.showDrag !== false && !useSwipe);
+  const cat = catMap[entry.cat] || catMap['Other'];
+  const pd = parseTxDate(entry.date);
+  const dlbl = pd ? pd.toLocaleDateString('en-MY', { month: 'short', day: 'numeric' }) : '';
+
+  const item = document.createElement('div');
+  item.className = 'tx-item' + (useSwipe ? ' tx-item__surface' : '');
+  item.dataset.id = entry.id;
+
+  if (showDrag) {
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    item.appendChild(handle);
+  }
+
+  const ico = document.createElement('div');
+  ico.className = 'tx-icon';
+  ico.style.background = cat.color + '22';
+  ico.textContent = cat.icon;
+  item.appendChild(ico);
+
+  const info = document.createElement('div');
+  info.className = 'tx-info';
+
+  const nm = document.createElement('div');
+  nm.className = 'tx-name';
+  nm.textContent = entry.name;
+  info.appendChild(nm);
+
+  const meta = document.createElement('div');
+  meta.className = 'tx-meta';
+  var metaParts = [];
+  if (!isIncome && entry.place) metaParts.push(entry.place);
+  metaParts.push(entry.cat);
+  metaParts.push(dlbl);
+  meta.textContent = metaParts.join(' · ');
+  if (entry.note) {
+    const noteSpan = document.createElement('span');
+    noteSpan.style.cssText = 'color:var(--ink3);font-style:italic';
+    noteSpan.textContent = ' · ' + entry.note;
+    meta.appendChild(noteSpan);
+  }
+  info.appendChild(meta);
+  item.appendChild(info);
+
+  const amt = document.createElement('div');
+  amt.className = 'tx-amount' + (isIncome ? ' green' : '');
+  amt.textContent = isIncome ? '+ ' + fmt(entry.amount) : fmt(entry.amount);
+  item.appendChild(amt);
+
+  const actions = document.createElement('div');
+  actions.className = 'tx-actions';
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'tx-action-btn edit';
+  editBtn.title = 'Edit';
+  editBtn.textContent = '✎';
+  editBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openEditModal(isIncome ? 'inc' : 'exp', entry.id);
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'tx-action-btn del';
+  delBtn.title = 'Delete';
+  delBtn.textContent = '✕';
+  delBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm('Delete this entry?')) {
+      if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
+    }
+  });
+
+  actions.appendChild(editBtn);
+  actions.appendChild(delBtn);
+
+  if (useSwipe) {
+    return ftMountSwipeRow(item, [
+      { label: 'Edit', kind: 'edit', onClick: () => openEditModal(isIncome ? 'inc' : 'exp', entry.id) },
+      { label: 'Delete', kind: 'del', onClick: () => {
+        if (confirm('Delete this entry?')) {
+          if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
+        }
+      }},
+    ]);
+  }
+
+  item.appendChild(actions);
+  return item;
+}
+
+function renderTxListVirtual_(el, items, catMap, isIncome, arr, save, useSwipe) {
+  el.classList.add('tx-list--virtual');
+  const viewport = document.createElement('div');
+  viewport.className = 'tx-list__viewport';
+
+  const spacerTop = document.createElement('div');
+  spacerTop.className = 'tx-list__spacer';
+  const windowEl = document.createElement('div');
+  windowEl.className = 'tx-list__window';
+  const spacerBottom = document.createElement('div');
+  spacerBottom.className = 'tx-list__spacer';
+
+  viewport.appendChild(spacerTop);
+  viewport.appendChild(windowEl);
+  viewport.appendChild(spacerBottom);
+  el.appendChild(viewport);
+
+  let rowHeight = TX_ROW_HEIGHT_EST;
+  const buffer = 6;
+  let rafPending = false;
+  const mounted = new Map();
+
+  function measure() {
+    if (!items.length) return;
+    const probe = buildTxRow_(items[0], catMap, isIncome, arr, save, { useSwipe: useSwipe, showDrag: false });
+    windowEl.appendChild(probe);
+    rowHeight = Math.max(44, probe.offsetHeight || TX_ROW_HEIGHT_EST);
+    windowEl.removeChild(probe);
+  }
+
+  function paint() {
+    rafPending = false;
+    const scrollTop = viewport.scrollTop;
+    const viewH = viewport.clientHeight || 400;
+    const start = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer);
+    const end = Math.min(items.length, Math.ceil((scrollTop + viewH) / rowHeight) + buffer);
+
+    spacerTop.style.height = (start * rowHeight) + 'px';
+    spacerBottom.style.height = ((items.length - end) * rowHeight) + 'px';
+
+    mounted.forEach(function(node, idx) {
+      if (idx < start || idx >= end) {
+        if (node.parentNode) node.parentNode.removeChild(node);
+        mounted.delete(idx);
+      }
+    });
+
+    for (let i = start; i < end; i++) {
+      if (!mounted.has(i)) {
+        const node = buildTxRow_(items[i], catMap, isIncome, arr, save, { useSwipe: useSwipe, showDrag: false });
+        mounted.set(i, node);
+        windowEl.appendChild(node);
+      }
+    }
+  }
+
+  function schedulePaint() {
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(paint);
+    }
+  }
+
+  measure();
+  viewport.addEventListener('scroll', schedulePaint, { passive: true });
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(schedulePaint);
+    ro.observe(viewport);
+  }
+  schedulePaint();
+}
+
 function renderTxList(id, items, catMap, isIncome) {
   const el   = document.getElementById(id);
   const arr  = isIncome ? incomes : expenses;
   const save = isIncome ? saveInc : saveExp;
   el.innerHTML = '';
+  el.classList.remove('tx-list--virtual');
 
   if (!items.length) {
     el.appendChild(buildEmptyState_({
@@ -2266,98 +2452,16 @@ function renderTxList(id, items, catMap, isIncome) {
 
   const useSwipe = ftUseSwipeRows();
 
+  if (items.length > TX_VIRTUAL_THRESHOLD) {
+    renderTxListVirtual_(el, items, catMap, isIncome, arr, save, useSwipe);
+    return;
+  }
+
+  const showDrag = settings.showDrag !== false && !useSwipe;
   items.forEach(entry => {
-    const cat      = catMap[entry.cat] || catMap['Other'];
-    const pd     = parseTxDate(entry.date);
-    const dlbl   = pd ? pd.toLocaleDateString('en-MY',{month:'short',day:'numeric'}) : '';
-    const showDrag = settings.showDrag !== false && !useSwipe;
-
-    const item = document.createElement('div');
-    item.className = 'tx-item' + (useSwipe ? ' tx-item__surface' : '');
-    item.dataset.id = entry.id;
-
-    if (showDrag) {
-      const handle = document.createElement('div');
-      handle.className = 'drag-handle';
-      handle.textContent = '⠿';
-      item.appendChild(handle);
-    }
-
-    const ico = document.createElement('div');
-    ico.className = 'tx-icon';
-    ico.style.background = cat.color + '22';
-    ico.textContent = cat.icon;
-    item.appendChild(ico);
-
-    const info = document.createElement('div');
-    info.className = 'tx-info';
-
-    const nm = document.createElement('div');
-    nm.className = 'tx-name';
-    nm.textContent = entry.name;
-    info.appendChild(nm);
-
-    const meta = document.createElement('div');
-    meta.className = 'tx-meta';
-    var metaParts = [];
-    if (!isIncome && entry.place) metaParts.push(entry.place);
-    metaParts.push(entry.cat);
-    metaParts.push(dlbl);
-    meta.textContent = metaParts.join(' · ');
-    if (entry.note) {
-      const noteSpan = document.createElement('span');
-      noteSpan.style.cssText = 'color:var(--ink3);font-style:italic';
-      noteSpan.textContent = ' · ' + entry.note;
-      meta.appendChild(noteSpan);
-    }
-    info.appendChild(meta);
-    item.appendChild(info);
-
-    const amt = document.createElement('div');
-    amt.className = 'tx-amount' + (isIncome ? ' green' : '');
-    amt.textContent = isIncome ? '+ ' + fmt(entry.amount) : fmt(entry.amount);
-    item.appendChild(amt);
-
-    const actions = document.createElement('div');
-    actions.className = 'tx-actions';
-
-    const editBtn = document.createElement('button');
-    editBtn.className = 'tx-action-btn edit';
-    editBtn.title = 'Edit';
-    editBtn.textContent = '✎';
-    editBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      openEditModal(isIncome ? 'inc' : 'exp', entry.id);
-    });
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'tx-action-btn del';
-    delBtn.title = 'Delete';
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (confirm('Delete this entry?')) {
-        if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
-      }
-    });
-
-    actions.appendChild(editBtn);
-    actions.appendChild(delBtn);
-
-    if (useSwipe) {
-      el.appendChild(ftMountSwipeRow(item, [
-        { label: 'Edit', kind: 'edit', onClick: () => openEditModal(isIncome ? 'inc' : 'exp', entry.id) },
-        { label: 'Delete', kind: 'del', onClick: () => {
-          if (confirm('Delete this entry?')) {
-            if (isIncome) deleteIncome(entry.id); else deleteExpense(entry.id);
-          }
-        }},
-      ]));
-    } else {
-      item.appendChild(actions);
-      el.appendChild(item);
-      if (showDrag) makeDraggable(item, el, arr, save);
-    }
+    const row = buildTxRow_(entry, catMap, isIncome, arr, save, { useSwipe: useSwipe, showDrag: showDrag });
+    el.appendChild(row);
+    if (!useSwipe && showDrag) makeDraggable(row, el, arr, save);
   });
 }
 
@@ -3368,6 +3472,7 @@ wireCalcAmountHint_();
 wireEmptyStateCtas_();
 initExpFoldCards_();
 initSettingsFoldCards_();
+wireImportWizardLazy_();
 window.addEventListener('resize', scheduleUxLayoutCards_);
 (function hookMobileMonthRender_() {
   if (typeof render !== 'function') return;

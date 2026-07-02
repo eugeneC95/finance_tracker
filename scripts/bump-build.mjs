@@ -40,6 +40,15 @@ function bumpHtml(file) {
   s = s.replace(/var BUILD_VERSION\s*=\s*'[^']+'/, `var BUILD_VERSION    = '${stamp}'`);
   s = s.replace(/(<span id="ft-build-stamp"[^>]*>)[^<]+(<\/span>)/, `$1${stamp}$2`);
   s = s.replace(/\?v=\d+/g, `?v=${ver}`);
+  if (!s.includes('shared/main.js')) {
+    s = s.replace(
+      /<script src="(?:\.\.\/)?build-id\.js\?v=\d+"><\/script>\n<script src="(?:\.\.\/)?shared\/app\.js/,
+      (m) => m.replace(
+        /<script src="((?:\.\.\/)?)shared\/app\.js/,
+        `<script src="$1build-id.js?v=${ver}"></script>\n<script type="module" src="$1shared/main.js?v=${ver}"></script>\n<script defer src="$1shared/app.js`
+      )
+    );
+  }
   if (!s.includes('build-id.js')) {
     s = s.replace(
       /<script src="(?:\.\.\/)?build-id\.js/,
