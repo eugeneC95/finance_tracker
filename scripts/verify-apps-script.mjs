@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Ping the hard-coded Finance Tracker Apps Script web app. */
 const EXEC =
-  'https://script.google.com/macros/s/AKfycbxquKbqVuXv24y2CFsx1-DO9g46EH38sVJDpJ4jCX5ZEQdX9YALAs5SOb16JLGOsfIx/exec';
+  'https://script.google.com/macros/s/AKfycbw-crW39LqE5JSpgg6pwHzkfuZbY3ZY0prLYDSv1OTjr8Dnfrk8ozAOn3fIxZd5ISg0/exec';
 
 const url = EXEC + (EXEC.includes('?') ? '&' : '?') + 'action=ping';
 

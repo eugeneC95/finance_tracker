@@ -1,8 +1,8 @@
-# Deploy Google Apps Script (v6 merge-on-save)
+# Deploy Google Apps Script (v9)
 
 Your web app URL (already built into the PWA / extension):
 
-https://script.google.com/macros/s/AKfycbyoAUYxXl55wCVZzuZ2e8nIWus2V0NeGxtUA4_vQucPWkeyl7XN88kGXkyIjEkB6TF8/exec
+https://script.google.com/macros/s/AKfycbw-crW39LqE5JSpgg6pwHzkfuZbY3ZY0prLYDSv1OTjr8Dnfrk8ozAOn3fIxZd5ISg0/exec
 
 **Do not change this URL in the app** after redeploying — only publish a **new version** of the same deployment.
 
@@ -25,11 +25,11 @@ From the repo root:
 node scripts/verify-apps-script.mjs
 ```
 
-Expected: `"apiVersion":6` and `"ok":true`.
+Expected: `"apiVersion":9` and `"ok":true`.
 
-Or in the app: **Settings → Test connection** — no hint to “redeploy v6”.
+Or in the app: **Settings → Test connection** — no hint to redeploy.
 
-## If ping still shows apiVersion 5
+## If ping still shows older apiVersion
 
 - You edited code but did not create a **New version** on the deployment.
 - You deployed a different project than the one tied to this `/exec` link.
