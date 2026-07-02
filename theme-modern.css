@@ -839,6 +839,14 @@ body.dark .ft-fab {
     box-shadow: var(--shadow);
   }
 
+  /* Avoid double-card effect inside desktop Settings folds. */
+  #page-settings .settings-fold-card__body > .card {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
   .exp-fold-card__summary {
     padding: var(--s5) var(--s6);
     border-bottom: 1px solid var(--line);
@@ -2179,11 +2187,22 @@ body.ft-sync-loading #c-today {
   flex-shrink: 0;
 }
 
+.ft-cat-badge__ico {
+  width: 15px;
+  height: 15px;
+  color: #fff;
+}
+
 .ft-cat-badge--sm {
   width: 22px;
   height: 22px;
   font-size: 10px;
   border-radius: 6px;
+}
+
+.ft-cat-badge--sm .ft-cat-badge__ico {
+  width: 12px;
+  height: 12px;
 }
 
 .ft-cat-badge--row,
@@ -2192,6 +2211,12 @@ body.ft-sync-loading #c-today {
   height: 36px;
   font-size: 14px;
   border-radius: 10px;
+}
+
+.ft-cat-badge--row .ft-cat-badge__ico,
+.ft-cat-badge--tx .ft-cat-badge__ico {
+  width: 18px;
+  height: 18px;
 }
 
 .cat-btn .ci.ft-cat-badge {
@@ -2277,41 +2302,28 @@ body.dark .pill.active {
   }
 
   #page-expenses .page-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-    column-gap: var(--s6);
-    row-gap: var(--s5);
-    align-items: start;
-  }
-
-  #page-expenses .page-body > .ft-page-hero,
-  #page-expenses .page-body > #today-widget,
-  #page-expenses .page-body > #exp-month-summary,
-  #page-expenses .page-body > #exp-budget-chips,
-  #page-expenses .page-body > .exp-daily-card,
-  #page-expenses .page-body > .exp-budget-card,
-  #page-expenses .page-body > .exp-savings-card {
-    grid-column: 1 / -1;
+    display: block;
   }
 
   #page-expenses .exp-add-card {
-    grid-column: 2;
-    position: sticky;
-    top: 12px;
-    z-index: 3;
-    align-self: start;
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin-bottom: var(--s5);
   }
 
   #page-expenses .cols-2 {
-    display: contents;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+    gap: var(--s6);
   }
 
   #page-expenses .cols-2 > div:first-child {
-    grid-column: 1;
+    min-width: 0;
   }
 
   #page-expenses .cols-2 > div:last-child {
-    grid-column: 2;
+    min-width: 0;
   }
 }
 

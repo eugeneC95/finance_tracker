@@ -91,6 +91,46 @@ const EXP_CAT_GROUPS = [
   { title: 'Other', cats: ['Other'] },
 ];
 
+/** Category-specific icon symbols for expense badges/chips. */
+const EXP_CAT_ICON_IDS = {
+  'Food': 'cat-food',
+  'Groceries': 'cat-groceries',
+  'Eating out': 'cat-eating',
+  'Coffee': 'cat-coffee',
+  'Shopping': 'cat-shopping',
+  'Clothing': 'cat-clothing',
+  'Electronics': 'cat-electronics',
+  'Rent': 'cat-home',
+  'Utilities': 'cat-utilities',
+  'Internet': 'cat-internet',
+  'Renovation': 'cat-renovation',
+  'Health': 'cat-health',
+  'Fitness': 'cat-fitness',
+  'Grooming': 'cat-grooming',
+  'Bills': 'cat-bills',
+  'Insurance': 'cat-insurance',
+  'Loan payment': 'cat-loan',
+  'Tax': 'cat-tax',
+  'Petrol': 'cat-petrol',
+  'Car Service': 'cat-car-service',
+  'Car Repair Labour': 'cat-car-service',
+  'Car Parts': 'cat-car-parts',
+  'Tyre Service': 'cat-tyre',
+  'Toll': 'cat-toll',
+  'Parking': 'cat-parking',
+  'Car Expenses': 'cat-car',
+  'Car Insurance': 'cat-car-insurance',
+  'Transport': 'cat-transport',
+  'Flight': 'cat-flight',
+  'Entertainment': 'cat-entertainment',
+  'Subscription': 'cat-subscription',
+  'Travel': 'cat-travel',
+  'Hobbies': 'cat-hobbies',
+  'Education': 'cat-education',
+  'Pet care': 'cat-pet',
+  'Other': 'cat-other',
+};
+
 const INC_CATS = {
   'Salary':      { icon:'SA', color:'#1D9E75' },
   'Bonus':       { icon:'BO', color:'#2DBE8A' },
@@ -946,14 +986,15 @@ function buildCatButtons() {
   function makeCatButton(name) {
     const meta = EXP_CATS[name];
     if (!meta) return null;
-    const { icon } = meta;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
     btn.dataset.cat = name;
     const iconEl = document.createElement('span');
     iconEl.className = 'ci ft-cat-badge';
-    iconEl.textContent = name.charAt(0).toUpperCase();
+    var catIconId = ftCatIconIdFor_(name, EXP_CATS);
+    if (catIconId) iconEl.innerHTML = ftIconHtml_(catIconId, 'ft-cat-badge__ico');
+    else iconEl.textContent = name.charAt(0).toUpperCase();
     iconEl.style.setProperty('--ft-cat-color', meta.color || '#B4B2A9');
     btn.appendChild(iconEl);
     btn.appendChild(document.createTextNode(name));
@@ -1215,6 +1256,11 @@ function ftIconHtml_(id, extraClass) {
   return '<svg class="' + cls + '" aria-hidden="true"><use href="' + ftAssetBase_() + 'ft-icons.svg#ft-icon-' + id + '"/></svg>';
 }
 
+function ftCatIconIdFor_(catName, catMap) {
+  if (catMap === EXP_CATS) return EXP_CAT_ICON_IDS[catName] || 'cat-other';
+  return null;
+}
+
 function ftHaptic_(kind) {
   try {
     if (!navigator.vibrate) return;
@@ -1228,8 +1274,14 @@ function ftCatBadgeHtml_(catName, catMap, extraClass) {
   var map = catMap || {};
   var info = map[catName] || map['Other'] || { color: '#B4B2A9' };
   var cls = 'ft-cat-badge' + (extraClass ? ' ' + extraClass : '');
-  var letter = String(catName || '?').trim().charAt(0).toUpperCase() || '?';
-  return '<span class="' + cls + '" style="--ft-cat-color:' + (info.color || '#B4B2A9') + '">' + letter + '</span>';
+  var iconId = ftCatIconIdFor_(catName, catMap);
+  if (iconId) {
+    return '<span class="' + cls + '" style="--ft-cat-color:' + (info.color || '#B4B2A9') + '">' +
+      ftIconHtml_(iconId, 'ft-cat-badge__ico') +
+      '</span>';
+  }
+  var fallback = String(catName || '?').trim().charAt(0).toUpperCase() || '?';
+  return '<span class="' + cls + '" style="--ft-cat-color:' + (info.color || '#B4B2A9') + '">' + fallback + '</span>';
 }
 
 function ftCatLabelHtml_(catName, catMap, extraClass) {

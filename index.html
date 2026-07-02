@@ -1770,7 +1770,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v133 · 2026-07-02 12:27</div>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v137 · 2026-07-02 15:14</div>
 <script src="build-id.js?v=137"></script>
 <script type="module" src="shared/main.js?v=137"></script>
 <script defer src="shared/app.js?v=137"></script>
@@ -1781,6 +1781,9 @@
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
+    // First-ever SW control handoff can fire controllerchange soon after login.
+    // Skip exactly that first event to avoid a surprising full-page reload.
+    var skipFirstControllerChange = !navigator.serviceWorker.controller;
     navigator.serviceWorker.register('./service-worker.js').then(function(reg) {
       try {
         reg.addEventListener('updatefound', function() {
@@ -1794,6 +1797,10 @@ if ('serviceWorker' in navigator) {
         });
         navigator.serviceWorker.addEventListener('controllerchange', function() {
           try {
+            if (skipFirstControllerChange) {
+              skipFirstControllerChange = false;
+              return;
+            }
             // After nosw.html / Force refresh: first activation must not reload or
             // some browsers loop (controllerchange ↁEreload ↁEnew SW ↁEcontrollerchange…).
             var qs = new URLSearchParams(window.location.search);
