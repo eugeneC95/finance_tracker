@@ -7,9 +7,18 @@ import fs from 'fs';
 import path from 'path';
 
 const root = path.resolve(import.meta.dirname, '..');
-const ver = parseInt(process.argv[2] || '78', 10);
+
+const buildIdPath = path.join(root, 'build-id.js');
+let currentVer = 0;
+try {
+  const existing = fs.readFileSync(buildIdPath, 'utf8');
+  const match = existing.match(/ver:\s*(\d+)/);
+  if (match) currentVer = parseInt(match[1], 10);
+} catch (_) {}
+
+const ver = parseInt(process.argv[2] || String(currentVer + 1), 10);
 if (!Number.isFinite(ver) || ver < 1) {
-  console.error('Usage: node scripts/bump-build.mjs <number>');
+  console.error('Usage: node scripts/bump-build.mjs [versionNumber]');
   process.exit(1);
 }
 
@@ -39,6 +48,7 @@ function bumpHtml(file) {
   let s = fs.readFileSync(file, 'utf8');
   s = s.replace(/var BUILD_VERSION\s*=\s*'[^']+'/, `var BUILD_VERSION    = '${stamp}'`);
   s = s.replace(/(<span id="ft-build-stamp"[^>]*>)[^<]+(<\/span>)/, `$1${stamp}$2`);
+  s = s.replace(/(<div id="ft-build"[^>]*>)[^<]+(<\/div>)/, `$1${stamp}$2`);
   s = s.replace(/\?v=\d+/g, `?v=${ver}`);
   if (!s.includes('shared/main.js')) {
     s = s.replace(
