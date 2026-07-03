@@ -1330,14 +1330,38 @@ function buildEmptyState_(opts) {
     btn.dataset.gotoTab = opts.ctaTab;
     btn.textContent = opts.ctaLabel || 'Get started';
     wrap.appendChild(btn);
+  } else if (opts.ctaFocus) {
+    var focusBtn = document.createElement('button');
+    focusBtn.type = 'button';
+    focusBtn.className = 'btn btn-primary ft-empty-state__cta';
+    focusBtn.dataset.focusTarget = opts.ctaFocus;
+    if (opts.ctaOpenFold) focusBtn.dataset.openFold = opts.ctaOpenFold;
+    focusBtn.textContent = opts.ctaLabel || 'Add entry';
+    wrap.appendChild(focusBtn);
   }
   return wrap;
 }
 
 function wireEmptyStateCtas_() {
   document.addEventListener('click', function(e) {
-    var btn = e.target.closest('[data-goto-tab]');
+    var btn = e.target.closest('[data-goto-tab], [data-focus-target]');
     if (!btn) return;
+    if (btn.dataset.openFold) {
+      var fold = document.getElementById(btn.dataset.openFold);
+      if (fold && fold.tagName === 'DETAILS') fold.open = true;
+    }
+    if (btn.dataset.focusTarget) {
+      var target = document.getElementById(btn.dataset.focusTarget);
+      if (target) {
+        target.focus({ preventScroll: true });
+        try {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+          target.scrollIntoView(true);
+        }
+      }
+      return;
+    }
     var tab = btn.getAttribute('data-goto-tab');
     if (tab && typeof activateNavTab === 'function') activateNavTab(tab);
   });
@@ -1515,6 +1539,7 @@ function addExpense() {
   moneyClearInput(aEl);
   nEl.focus();
   render();
+  showToast('Added ' + fmt(amount) + ' · ' + selectedCat);
 }
 
 function parseSplitSpec(spec) {
@@ -1783,7 +1808,7 @@ function deleteExpense(id) {
     expenses.splice(Math.min(idx, expenses.length), 0, removed);
     saveExp();
     render();
-  });
+  }, { detail: (removed.name || 'Expense') + ' · ' + fmt(removed.amount) });
 }
 
 // ── Add income ─────────────────────────────────────────────
@@ -1807,6 +1832,7 @@ function addIncome() {
   nEl.value = '';
   moneyClearInput(aEl);
   render();
+  showToast('Added ' + fmt(amount) + ' · ' + cat);
 }
 
 function repeatLastIncome() {
@@ -1840,7 +1866,7 @@ function deleteIncome(id) {
     incomes.splice(Math.min(idx, incomes.length), 0, removed);
     saveInc();
     render();
-  });
+  }, { detail: (removed.name || 'Income') + ' · ' + fmt(removed.amount) });
 }
 
 // ── Add banks ──────────────────────────────────────────────
@@ -1955,7 +1981,7 @@ function saveEdit() {
   closeEditModal();
   ftHaptic_('success');
   render();
-  showToast('Entry updated');
+  showToast('Updated · ' + fmt(amount) + ' · ' + cat);
 }
 
 // ── Category drill-down ────────────────────────────────────
@@ -2608,12 +2634,17 @@ function renderTxList(id, items, catMap, isIncome) {
   el.classList.remove('tx-list--virtual');
 
   if (!items.length) {
+    const onPage = isIncome ? ftActiveTab_() === 'income' : ftActiveTab_() === 'expenses';
     el.appendChild(buildEmptyState_({
       icon: isIncome ? 'income' : 'expenses',
       msg: isIncome ? 'No income this month' : 'No expenses this month',
-      hint: isIncome ? 'Log salary, refunds, or other inflows.' : 'Use the form above to track spending.',
-      ctaTab: isIncome ? 'income' : 'expenses',
-      ctaLabel: isIncome ? 'Go to Income' : 'Add expense'
+      hint: isIncome ? 'Log salary, refunds, or other inflows.' : 'Track spending to see it here.',
+      ctaTab: onPage ? undefined : (isIncome ? 'income' : 'expenses'),
+      ctaLabel: onPage
+        ? (isIncome ? 'Add income below' : 'Add your first expense')
+        : (isIncome ? 'Go to Income' : 'Go to Expenses'),
+      ctaFocus: onPage ? (isIncome ? 'inc-name' : 'exp-name') : undefined,
+      ctaOpenFold: onPage && !isIncome ? 'exp-add-fold' : undefined,
     }));
     return;
   }
@@ -2646,10 +2677,18 @@ function renderBarChart(id, items, catMap, isIncome) {
   const grand  = sorted.reduce((a,s)=>a+s[1], 0);
 
   if (!sorted.length) {
-    const em = document.createElement('div');
-    em.style.cssText = 'text-align:center;padding:20px;color:var(--ink3);font-size:var(--f-sm)';
-    em.textContent = 'No data yet';
-    el.appendChild(em);
+    const onPage = isIncome ? ftActiveTab_() === 'income' : ftActiveTab_() === 'expenses';
+    el.appendChild(buildEmptyState_({
+      icon: isIncome ? 'income' : 'chart',
+      msg: isIncome ? 'No income to chart yet' : 'No spending to chart yet',
+      hint: isIncome ? 'Categories appear after you log income.' : 'Log expenses to see category breakdown.',
+      ctaTab: onPage ? undefined : (isIncome ? 'income' : 'expenses'),
+      ctaLabel: onPage
+        ? (isIncome ? 'Add income below' : 'Add an expense')
+        : (isIncome ? 'Go to Income' : 'Go to Expenses'),
+      ctaFocus: onPage ? (isIncome ? 'inc-name' : 'exp-name') : undefined,
+      ctaOpenFold: onPage && !isIncome ? 'exp-add-fold' : undefined,
+    }));
     return;
   }
 
@@ -2991,7 +3030,9 @@ function showToast(msg, opts) {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = '';
+  el.className = 'toast' + (opts.type ? ' toast--' + opts.type : '');
   const txt = document.createElement('span');
+  txt.className = 'toast__msg';
   txt.textContent = msg;
   el.appendChild(txt);
   if (toastActionCleanup) {
@@ -3001,8 +3042,8 @@ function showToast(msg, opts) {
   if (opts.actionLabel && typeof opts.onAction === 'function') {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.className = 'toast__action';
     btn.textContent = opts.actionLabel;
-    btn.style.cssText = 'margin-left:10px;border:0;background:transparent;color:#9fd4ff;font-weight:700;cursor:pointer';
     const click = () => {
       try { opts.onAction(); } catch (e) {}
       el.classList.remove('show');
@@ -3022,13 +3063,15 @@ function showToast(msg, opts) {
   }, opts.duration || 2600);
 }
 
-function registerUndoDelete(label, restoreFn) {
+function registerUndoDelete(label, restoreFn, meta) {
+  meta = meta || {};
   if (undoDeleteState && undoDeleteState.t) clearTimeout(undoDeleteState.t);
   undoDeleteState = {
     restore: restoreFn,
     t: setTimeout(() => { undoDeleteState = null; }, 8200),
   };
-  showToast(label + ' deleted', {
+  const detail = meta.detail ? (' · ' + meta.detail) : '';
+  showToast(label + ' deleted' + detail, {
     actionLabel: 'Undo',
     duration: 8000,
     onAction: () => {
@@ -3036,7 +3079,7 @@ function registerUndoDelete(label, restoreFn) {
       const fn = undoDeleteState.restore;
       undoDeleteState = null;
       fn();
-      showToast(label + ' restored');
+      showToast((meta.detail || label) + ' restored');
     },
   });
 }

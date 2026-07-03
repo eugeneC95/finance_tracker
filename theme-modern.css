@@ -2573,3 +2573,119 @@ body.dark .settings-tab.active {
 .home-hero-card__value {
   font-variant-numeric: tabular-nums;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v139 — calmer home, slim headers, toast polish
+   ═══════════════════════════════════════════════════════════════ */
+
+#page-home .page-header--home-compact .sub {
+  display: none;
+}
+
+@media (min-width: 681px) {
+  #page-home .page-header--home-compact {
+    margin-bottom: var(--s4);
+    padding-top: var(--s6);
+  }
+
+  #page-home .page-header--home-compact h2 {
+    font-size: var(--f-xl);
+    letter-spacing: -0.03em;
+  }
+}
+
+@media (max-width: 680px) {
+  #page-home .page-header--home-compact {
+    display: none;
+  }
+
+  .home-explore-fold:not([open]) .home-explore-fold__summary {
+    margin-bottom: 0;
+  }
+}
+
+.page-header--slim {
+  margin-bottom: var(--s4);
+}
+
+.page-header--slim .sub {
+  display: none;
+}
+
+@media (min-width: 681px) {
+  .page-header--slim {
+    padding-top: var(--s6);
+    margin-bottom: var(--s5);
+  }
+
+  .page-header--slim h2 {
+    font-size: var(--f-xl);
+    letter-spacing: -0.03em;
+  }
+
+  #page-expenses.page-header--slim .page-header__top h2,
+  #page-income.page-header--slim h2,
+  #page-assets.page-header--slim h2 {
+    margin: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .page-header--slim {
+    padding-top: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  #page-income.page-header--slim h2,
+  #page-assets.page-header--slim h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #page-expenses.page-header--slim .page-header__top > div:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #page-expenses.page-header--slim .page-header__top {
+    justify-content: flex-end;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 680px) {
+  .toast {
+    bottom: calc(var(--ft-mobile-chrome-bottom, 72px) + 12px);
+    border-radius: 16px;
+    padding: 12px 16px;
+  }
+
+  .toast.show {
+    pointer-events: auto;
+  }
+}
+
+body.dark .toast {
+  background: #ecf3f0;
+  color: #0c1a17;
+}
+
+body.dark .toast__action {
+  color: #0c1a17;
+  border-color: rgba(12, 26, 23, 0.18);
+  background: rgba(12, 26, 23, 0.06);
+}

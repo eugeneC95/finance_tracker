@@ -577,7 +577,18 @@ function renderPetrolLog() {
   if (!el) return;
 
   if (!allEntries.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups logged yet</div>';
+    el.innerHTML = '';
+    if (typeof buildEmptyState_ === 'function') {
+      el.appendChild(buildEmptyState_({
+        icon: 'petrol',
+        msg: 'No fill-ups logged yet',
+        hint: 'Log litres and price per litre to track fuel spending.',
+        ctaTab: 'petrol',
+        ctaLabel: 'Log a fill-up',
+      }));
+    } else {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">⛽</div>No fill-ups logged yet</div>';
+    }
     return;
   }
 

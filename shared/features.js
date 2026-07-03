@@ -335,13 +335,8 @@ function homeSumExpBetween_(fromStr, toStr) {
 
 function renderHomeWeekDigest_() {
   var heroWeek = document.getElementById('home-hero-week');
-  var standCard = document.getElementById('home-week-digest');
-  var el = heroWeek || standCard;
-  if (!el) return;
-  if (standCard) standCard.hidden = true;
-  if (heroWeek) {
-    heroWeek.hidden = false;
-  }
+  if (!heroWeek) return;
+  heroWeek.hidden = false;
   var today = todayStr();
   var weekStart = homeDateOffsetStr_(-6);
   var prevEnd = homeDateOffsetStr_(-7);
@@ -380,15 +375,9 @@ function renderHomeWeekDigest_() {
       missed.length + ' due</strong></div>'
     );
   }
-  if (heroWeek) {
-    el.innerHTML =
-      '<div class="home-hero-week__title">This week</div>' +
-      '<div class="home-hero-week__grid home-week-digest">' + rows.join('') + '</div>';
-    return;
-  }
-  el.innerHTML =
-    '<div class="panel-hd"><span class="panel-title">This week</span></div>' +
-    '<div class="panel-bd home-week-digest">' + rows.join('') + '</div>';
+  heroWeek.innerHTML =
+    '<div class="home-hero-week__title">This week</div>' +
+    '<div class="home-hero-week__grid home-week-digest">' + rows.join('') + '</div>';
 }
 
 function anomalyInsightLines_(ym, vm) {
@@ -546,7 +535,6 @@ function renderHomeDashboard() {
 
   renderHomeRecentMerchants_();
 
-  var prog = document.getElementById('home-month-progress');
   var heroProg = document.getElementById('home-hero-progress');
   var progressHtml =
     '<div class="home-progress-card__head">' +
@@ -559,10 +547,6 @@ function renderHomeDashboard() {
     '</div>';
   if (heroProg) {
     heroProg.innerHTML = progressHtml;
-  }
-  if (prog) {
-    prog.hidden = true;
-    prog.innerHTML = '';
   }
 
   var recentEl = document.getElementById('home-recent');

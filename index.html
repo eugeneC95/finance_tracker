@@ -111,13 +111,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=138"/>
-<link rel="stylesheet" href="styles/reset.css?v=138"/>
-<link rel="stylesheet" href="styles/tokens.css?v=138"/>
-<link rel="stylesheet" href="styles/base.css?v=138"/>
-<link rel="stylesheet" href="styles/components.css?v=138"/>
-<link rel="stylesheet" href="styles/mobile.css?v=138"/>
-<link rel="stylesheet" href="theme-modern.css?v=138"/>
+<link rel="stylesheet" href="styles/fonts.css?v=78"/>
+<link rel="stylesheet" href="styles/reset.css?v=78"/>
+<link rel="stylesheet" href="styles/tokens.css?v=78"/>
+<link rel="stylesheet" href="styles/base.css?v=78"/>
+<link rel="stylesheet" href="styles/components.css?v=78"/>
+<link rel="stylesheet" href="styles/mobile.css?v=78"/>
+<link rel="stylesheet" href="theme-modern.css?v=78"/>
 
 
 </head>
@@ -211,7 +211,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v138 · 2026-07-02 16:42';
+  var BUILD_VERSION    = 'v78 · 2026-07-03 10:32';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -394,7 +394,7 @@
 
   <!-- ── HOME ── -->
   <div class="page active" id="page-home">
-    <div class="page-header">
+    <div class="page-header page-header--home-compact">
       <h2>Home</h2>
       <p class="sub" id="home-header-sub">Your financial snapshot for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
@@ -433,20 +433,14 @@
 
       <div class="home-quick-actions" id="home-quick-actions" aria-label="Quick navigation"></div>
 
-      <div class="card mb-5 home-merchant-card" id="home-recent-merchants" hidden></div>
-
-      <div class="card home-progress-card" id="home-month-progress"></div>
-
-      <div class="card mb-5" id="home-budget-pace" hidden></div>
-
-      <div class="card mb-5 home-week-digest-card" id="home-week-digest"></div>
-
       <details class="home-explore-fold" id="home-explore-fold">
         <summary class="home-explore-fold__summary">
           <span class="home-explore-fold__title">More detail</span>
-          <span class="home-explore-fold__hint">Recent activity, categories, budgets</span>
+          <span class="home-explore-fold__hint">Activity, budgets, merchants, insights</span>
         </summary>
         <div class="home-explore-fold__body">
+      <div class="card mb-5 home-merchant-card" id="home-recent-merchants" hidden></div>
+      <div class="card mb-5" id="home-budget-pace" hidden></div>
       <div class="home-grid">
         <div class="home-col">
           <div class="card mb-5" id="home-recent"></div>
@@ -472,7 +466,7 @@
 
   <!-- ── EXPENSES ── -->
   <div class="page" id="page-expenses">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <div class="page-header__top">
         <div>
           <h2>Expenses</h2>
@@ -669,7 +663,7 @@
 
   <!-- ── INCOME ── -->
   <div class="page" id="page-income">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <h2>Income</h2>
       <p class="sub">Record income and compare with expenses for the selected month.</p>
     </div>
@@ -758,7 +752,7 @@
 
   <!-- ── ASSETS ── -->
   <div class="page" id="page-assets">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <h2>Assets</h2>
       <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
@@ -1459,7 +1453,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v138 · 2026-07-02 16:42</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v78 · 2026-07-03 10:32</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1779,14 +1773,14 @@
 
 <div class="toast" id="toast"></div>
 <div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v137 · 2026-07-02 15:14</div>
-<script src="build-id.js?v=138"></script>
-<script type="module" src="shared/main.js?v=138"></script>
-<script defer src="shared/app.js?v=138"></script>
-<script defer src="shared/sync-auth.js?v=138"></script>
-<script defer src="shared/sync-transport.js?v=138"></script>
-<script defer src="shared/sync.js?v=138"></script>
-<script defer src="shared/features.js?v=138"></script>
-<script defer src="shared/extras.js?v=138"></script>
+<script src="build-id.js?v=78"></script>
+<script type="module" src="shared/main.js?v=78"></script>
+<script defer src="shared/app.js?v=78"></script>
+<script defer src="shared/sync-auth.js?v=78"></script>
+<script defer src="shared/sync-transport.js?v=78"></script>
+<script defer src="shared/sync.js?v=78"></script>
+<script defer src="shared/features.js?v=78"></script>
+<script defer src="shared/extras.js?v=78"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

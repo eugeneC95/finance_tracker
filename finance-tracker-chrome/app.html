@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=138"/>
-<link rel="stylesheet" href="../styles/reset.css?v=138"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=138"/>
-<link rel="stylesheet" href="../styles/base.css?v=138"/>
-<link rel="stylesheet" href="../styles/components.css?v=138"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=138"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=78"/>
+<link rel="stylesheet" href="../styles/reset.css?v=78"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=78"/>
+<link rel="stylesheet" href="../styles/base.css?v=78"/>
+<link rel="stylesheet" href="../styles/components.css?v=78"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=78"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=138"/>
+<link rel="stylesheet" href="../theme-modern.css?v=78"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -115,7 +115,7 @@
 
   <!-- ── EXPENSES ── -->
   <div class="page active" id="page-home">
-    <div class="page-header">
+    <div class="page-header page-header--home-compact">
       <h2>Home</h2>
       <p class="sub" id="home-header-sub">Your financial snapshot for <span class="ft-month-hint ft-month-hint--desk">the month selected in the sidebar</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
@@ -154,20 +154,14 @@
 
       <div class="home-quick-actions" id="home-quick-actions" aria-label="Quick navigation"></div>
 
-      <div class="card mb-5 home-merchant-card" id="home-recent-merchants" hidden></div>
-
-      <div class="card home-progress-card" id="home-month-progress"></div>
-
-      <div class="card mb-5" id="home-budget-pace" hidden></div>
-
-      <div class="card mb-5 home-week-digest-card" id="home-week-digest"></div>
-
       <details class="home-explore-fold" id="home-explore-fold">
         <summary class="home-explore-fold__summary">
           <span class="home-explore-fold__title">More detail</span>
-          <span class="home-explore-fold__hint">Recent activity, categories, budgets</span>
+          <span class="home-explore-fold__hint">Activity, budgets, merchants, insights</span>
         </summary>
         <div class="home-explore-fold__body">
+      <div class="card mb-5 home-merchant-card" id="home-recent-merchants" hidden></div>
+      <div class="card mb-5" id="home-budget-pace" hidden></div>
       <div class="home-grid">
         <div class="home-col">
           <div class="card mb-5" id="home-recent"></div>
@@ -192,7 +186,7 @@
   </div>
 
   <div class="page" id="page-expenses">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <div class="page-header__top">
         <div>
           <h2>Expenses</h2>
@@ -389,7 +383,7 @@
 
   <!-- ── INCOME ── -->
   <div class="page" id="page-income">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <h2>Income</h2>
       <p class="sub">Record income and compare with expenses for the selected month.</p>
     </div>
@@ -478,7 +472,7 @@
 
   <!-- ── ASSETS ── -->
   <div class="page" id="page-assets">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <h2>Assets</h2>
       <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
     </div>
@@ -1179,7 +1173,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v138 · 2026-07-02 16:42</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v78 · 2026-07-03 10:32</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1473,13 +1467,13 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=138"></script>
-<script type="module" src="../shared/main.js?v=138"></script>
-<script defer src="../shared/app.js?v=138"></script>
-<script defer src="../shared/sync-auth.js?v=138"></script>
-<script defer src="../shared/sync-transport.js?v=138"></script>
-<script defer src="../shared/sync.js?v=138"></script>
-<script defer src="../shared/features.js?v=138"></script>
-<script defer src="../shared/extras.js?v=138"></script>
+<script src="../build-id.js?v=78"></script>
+<script type="module" src="../shared/main.js?v=78"></script>
+<script defer src="../shared/app.js?v=78"></script>
+<script defer src="../shared/sync-auth.js?v=78"></script>
+<script defer src="../shared/sync-transport.js?v=78"></script>
+<script defer src="../shared/sync.js?v=78"></script>
+<script defer src="../shared/features.js?v=78"></script>
+<script defer src="../shared/extras.js?v=78"></script>
 </body>
 </html>
