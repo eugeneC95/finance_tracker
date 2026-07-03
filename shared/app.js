@@ -1258,7 +1258,14 @@ function ftIconHtml_(id, extraClass) {
 
 function ftCatIconIdFor_(catName, catMap) {
   if (catMap === EXP_CATS) return EXP_CAT_ICON_IDS[catName] || 'cat-other';
+  if (catMap === INC_CATS) return 'income';
   return null;
+}
+
+function ftBtnSuccessPulse_(btn) {
+  if (!btn) return;
+  btn.classList.add('btn--saved');
+  window.setTimeout(function() { btn.classList.remove('btn--saved'); }, 620);
 }
 
 function ftHaptic_(kind) {
@@ -1540,6 +1547,7 @@ function addExpense() {
   nEl.focus();
   render();
   showToast('Added ' + fmt(amount) + ' · ' + selectedCat);
+  ftBtnSuccessPulse_(document.getElementById('add-exp-btn'));
 }
 
 function parseSplitSpec(spec) {
@@ -1833,6 +1841,7 @@ function addIncome() {
   moneyClearInput(aEl);
   render();
   showToast('Added ' + fmt(amount) + ' · ' + cat);
+  ftBtnSuccessPulse_(document.getElementById('add-inc-btn'));
 }
 
 function repeatLastIncome() {
@@ -2327,6 +2336,7 @@ function renderExpensesPanel_(t) {
   if (typeof renderBudgets === 'function') renderBudgets();
   if (typeof renderExpBudgetChips === 'function') renderExpBudgetChips();
   if (typeof renderSavingsGoal === 'function') renderSavingsGoal();
+  if (typeof renderExpRepeatChip_ === 'function') renderExpRepeatChip_();
   refreshExpensePlaceDatalist_();
 }
 
@@ -2437,6 +2447,7 @@ function render() {
 
   if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
   if (typeof renderRecurring === 'function') renderRecurring();
+  if (typeof renderNavMoreBadge_ === 'function') renderNavMoreBadge_();
   if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
   refreshActiveTabPanels();
 }
@@ -2840,15 +2851,13 @@ function renderBankList() {
   el.innerHTML = '';
 
   if (!banks.length) {
-    const em = document.createElement('div');
-    em.className = 'empty';
-    em.style.padding = 'var(--s4) 0';
-    const ico = document.createElement('div');
-    ico.className = 'empty-icon ft-empty-state__ico';
-    ico.innerHTML = ftIconHtml_('wallet', 'ft-empty-state__svg');
-    em.appendChild(ico);
-    em.appendChild(document.createTextNode('No bank accounts yet'));
-    el.appendChild(em);
+    el.appendChild(buildEmptyState_({
+      icon: 'wallet',
+      msg: 'No bank accounts yet',
+      hint: 'Add a bank account to track cash and net worth.',
+      ctaFocus: 'bk-name',
+      ctaLabel: 'Add bank account',
+    }));
     return;
   }
 
@@ -3787,13 +3796,18 @@ function wireSettingsSearch_() {
   var input = document.getElementById('settings-search');
   if (!input || input.dataset.ftWired === '1') return;
   input.dataset.ftWired = '1';
-  var activeGroup = 'all';
+  var activeGroup = 'essentials';
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.settings-tab'));
+  function settingsGroupMatches_(groupAttr, active) {
+    if (active === 'all') return true;
+    return String(groupAttr || '').split(/\s+/).indexOf(active) >= 0;
+  }
   function applySettingsGroupFilter_() {
+    document.body.classList.toggle('settings-view-essentials', activeGroup === 'essentials');
     var blocks = document.querySelectorAll('#page-settings [data-settings-group]');
     blocks.forEach(function(block) {
       var group = String(block.getAttribute('data-settings-group') || '');
-      var show = activeGroup === 'all' || group === activeGroup;
+      var show = settingsGroupMatches_(group, activeGroup);
       block.classList.toggle('settings-tab-hidden', !show);
     });
     tabs.forEach(function(tab) {

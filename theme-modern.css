@@ -2719,3 +2719,72 @@ body.dark .toast__action {
   border-color: rgba(12, 26, 23, 0.18);
   background: rgba(12, 26, 23, 0.06);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   v141 — Phase 2 UX: essentials settings, home polish, micro-interactions
+   ═══════════════════════════════════════════════════════════ */
+
+body.settings-view-essentials .settings-advanced-action {
+  display: none !important;
+}
+
+body.settings-view-essentials .settings-search-wrap {
+  display: none !important;
+}
+
+@keyframes ft-btn-saved-pulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.btn.btn--saved {
+  animation: ft-btn-saved-pulse 0.55s ease;
+}
+
+.exp-repeat-chip-wrap {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.exp-repeat-chip {
+  width: 100%;
+  justify-content: center;
+  font-size: var(--f-sm);
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  color: var(--ink2);
+  background: var(--surface-2, rgba(12, 26, 23, 0.03));
+}
+
+.exp-repeat-chip:hover,
+.exp-repeat-chip:focus-visible {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(34, 120, 90, 0.08);
+}
+
+#nav-more-open.nav-item--badge {
+  position: relative;
+}
+
+#nav-more-open.nav-item--badge::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 18px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red, #c0392b);
+  box-shadow: 0 0 0 2px var(--sb-bg, #fff);
+}
+
+@media (max-width: 680px) {
+  .settings-group__label,
+  .panel-title {
+    text-transform: none;
+    letter-spacing: normal;
+  }
+}

@@ -267,6 +267,36 @@ function listOverBudgetCats_() {
   return results.sort(function(a, b) { return b.over - a.over; });
 }
 
+function renderNavMoreBadge_() {
+  var btn = document.getElementById('nav-more-open');
+  if (!btn) return;
+  var missed = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
+  var count = missed && missed.length ? missed.length : 0;
+  btn.classList.toggle('nav-item--badge', count > 0);
+  btn.setAttribute('aria-label', count > 0 ? ('More sections, ' + count + ' missed bill' + (count === 1 ? '' : 's')) : 'More sections');
+}
+
+function renderExpRepeatChip_() {
+  var wrap = document.getElementById('exp-repeat-chip-wrap');
+  if (!wrap) return;
+  if (!lastExpenseTpl || !lastExpenseTpl.name) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML =
+    '<button type="button" class="exp-repeat-chip btn-ghost" id="exp-repeat-chip-btn">' +
+    'Repeat: ' + esc(lastExpenseTpl.name) + ' \u00b7 ' + fmt(lastExpenseTpl.amount) +
+    '</button>';
+  var chip = document.getElementById('exp-repeat-chip-btn');
+  if (chip) {
+    chip.addEventListener('click', function() {
+      if (typeof repeatLastExpense === 'function') repeatLastExpense();
+    });
+  }
+}
+
 function renderHomeBudgetAlert_() {
   var el = document.getElementById('home-budget-alert');
   if (!el) return;
@@ -460,10 +490,14 @@ function renderHomeDashboard() {
   }
 
   var netEl = document.getElementById('home-month-net');
+  var isEmptyAccount = (!expenses || !expenses.length) && (!incomes || !incomes.length);
   if (netEl) {
     if (document.body.classList.contains('ft-sync-loading')) {
       netEl.className = 'home-hero-card__value ft-skeleton';
       netEl.textContent = '\u00a0';
+    } else if (isEmptyAccount) {
+      netEl.textContent = 'Start tracking';
+      netEl.className = 'home-hero-card__value';
     } else {
       netEl.textContent = (monthNet >= 0 ? '+' : '\u2212') + fmt(Math.abs(monthNet));
       netEl.className = 'home-hero-card__value ' + (monthNet >= 0 ? 'green' : 'red');
@@ -471,10 +505,14 @@ function renderHomeDashboard() {
   }
   var subEl = document.getElementById('home-month-sub');
   if (subEl) {
-    var pace = dayOfMonth > 0 ? (monthExp / dayOfMonth) * lastDay : monthExp;
-    subEl.textContent =
-      'Income ' + fmt(monthInc) + ' \u00b7 Spend ' + fmt(monthExp) +
-      (isCurrentVm && dayOfMonth > 0 ? ' \u00b7 Pace ~' + fmt(pace) + '/mo' : '');
+    if (isEmptyAccount) {
+      subEl.textContent = 'Add your first expense to see income, spending, and pace here.';
+    } else {
+      var pace = dayOfMonth > 0 ? (monthExp / dayOfMonth) * lastDay : monthExp;
+      subEl.textContent =
+        'Income ' + fmt(monthInc) + ' \u00b7 Spend ' + fmt(monthExp) +
+        (isCurrentVm && dayOfMonth > 0 ? ' \u00b7 Pace ~' + fmt(pace) + '/mo' : '');
+    }
   }
 
   var bankTotal = typeof totalBanksBase === 'function'
@@ -514,11 +552,11 @@ function renderHomeDashboard() {
 
   var qa = document.getElementById('home-quick-actions');
   if (qa) {
-    var iconMap = { expenses: 'expenses', income: 'income', assets: 'assets', report: 'report' };
+    var iconMap = { expenses: 'expenses', income: 'income', trends: 'trends', report: 'report' };
     var actions = [
       { tab: 'expenses', lbl: 'Expense' },
       { tab: 'income', lbl: 'Income' },
-      { tab: 'assets', lbl: 'Assets' },
+      { tab: 'trends', lbl: 'Trends' },
       { tab: 'report', lbl: 'Report' },
     ];
     qa.innerHTML = actions.map(function(a) {

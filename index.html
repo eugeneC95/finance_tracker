@@ -111,13 +111,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=140"/>
-<link rel="stylesheet" href="styles/reset.css?v=140"/>
-<link rel="stylesheet" href="styles/tokens.css?v=140"/>
-<link rel="stylesheet" href="styles/base.css?v=140"/>
-<link rel="stylesheet" href="styles/components.css?v=140"/>
-<link rel="stylesheet" href="styles/mobile.css?v=140"/>
-<link rel="stylesheet" href="theme-modern.css?v=140"/>
+<link rel="stylesheet" href="styles/fonts.css?v=141"/>
+<link rel="stylesheet" href="styles/reset.css?v=141"/>
+<link rel="stylesheet" href="styles/tokens.css?v=141"/>
+<link rel="stylesheet" href="styles/base.css?v=141"/>
+<link rel="stylesheet" href="styles/components.css?v=141"/>
+<link rel="stylesheet" href="styles/mobile.css?v=141"/>
+<link rel="stylesheet" href="theme-modern.css?v=141"/>
 
 
 </head>
@@ -211,7 +211,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v140 · 2026-07-03 10:58';
+  var BUILD_VERSION    = 'v141 · 2026-07-03 12:17';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -558,7 +558,8 @@
                   <input type="date" id="exp-date" class="exp-input"/>
                 </div>
                 <div class="exp-add-actions">
-                  <button type="button" class="btn btn-primary" id="add-exp-btn">Add expense</button>
+              <div id="exp-repeat-chip-wrap" class="exp-repeat-chip-wrap" hidden></div>
+              <button type="button" class="btn btn-primary" id="add-exp-btn">Add expense</button>
                   <button type="button" class="btn-ghost" id="add-exp-split-btn" title="Split one purchase across categories">Split</button>
                 </div>
               </div>
@@ -704,13 +705,13 @@
             <div>
               <label class="lbl" for="inc-cat">Category</label>
               <select id="inc-cat">
-                <option value="Salary">💼 Salary</option>
-                <option value="Freelance">💻 Freelance</option>
-                <option value="Business">🏪 Business</option>
-                <option value="Investment">📈 Investment</option>
-                <option value="Rental">🏠 Rental</option>
-                <option value="Gift">🎁 Gift</option>
-                <option value="Other">📦 Other</option>
+                <option value="Salary">Salary</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Business">Business</option>
+                <option value="Investment">Investment</option>
+                <option value="Rental">Rental</option>
+                <option value="Gift">Gift</option>
+                <option value="Other">Other</option>
               </select>
             </div>
             <div>
@@ -1069,19 +1070,19 @@
 
   <!-- ── SETTINGS ── -->
   <div class="page" id="page-settings">
-    <div class="page-header">
+    <div class="page-header page-header--slim">
       <h2>Settings</h2>
       <p class="sub">Personalize the app, back up your data, and sync with Google Sheets.</p>
     </div>
     <div class="page-body">
       <div class="settings-stack">
 
-        <div class="settings-search-wrap">
+        <div class="settings-search-wrap" data-settings-group="all personalization sync about">
           <label class="sr-only" for="settings-search">Search settings</label>
           <input type="search" id="settings-search" class="settings-search" placeholder="Search settings…" autocomplete="off" enterkeyhint="search"/>
         </div>
 
-        <section class="card ft-page-hero settings-hero" aria-label="Data &amp; sync summary">
+        <section class="card ft-page-hero settings-hero" aria-label="Data &amp; sync summary" data-settings-group="essentials all sync">
           <div id="settings-sync-pill" class="settings-sync-pill">○ Sync</div>
           <div class="settings-hero__status" id="settings-hero-status">Your data stays on this device until you sync.</div>
           <div class="ft-page-hero__chips settings-hero__chips">
@@ -1093,7 +1094,7 @@
           </div>
         </section>
 
-        <div class="settings-quick-grid" aria-label="Quick data actions">
+        <div class="settings-quick-grid" aria-label="Quick data actions" data-settings-group="essentials all sync">
           <button type="button" class="settings-quick-btn settings-quick-btn--primary" id="sync-save-btn">
             Save to Sheet
             <span>Push latest data to Google Sheets</span>
@@ -1102,29 +1103,29 @@
             Load from Sheet
             <span>Replace device data from cloud</span>
           </button>
-          <button type="button" class="settings-quick-btn" id="export-btn">
+          <button type="button" class="settings-quick-btn settings-advanced-action" id="export-btn">
             Export backup
             <span>Download JSON to this device</span>
           </button>
-          <button type="button" class="settings-quick-btn" id="import-btn">
+          <button type="button" class="settings-quick-btn settings-advanced-action" id="import-btn">
             Import backup
             <span>Restore from JSON file</span>
           </button>
           <input type="file" id="import-file" accept=".json" style="display:none"/>
         </div>
 
-        <div class="settings-tabs" role="tablist" aria-label="Settings groups">
-          <button type="button" class="settings-tab active" role="tab" aria-selected="true" data-settings-tab="all">All</button>
+        <div class="settings-tabs" role="tablist" aria-label="Settings groups" data-settings-group="all personalization sync about essentials">
+          <button type="button" class="settings-tab active" role="tab" aria-selected="true" data-settings-tab="essentials">Essentials</button>
+          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="all">All</button>
           <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="personalization">Personalization</button>
-          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="sync">Sync & import</button>
+          <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="sync">Sync &amp; import</button>
           <button type="button" class="settings-tab" role="tab" aria-selected="false" data-settings-tab="about">About</button>
         </div>
 
-        <section aria-labelledby="settings-personalize-title" data-settings-group="personalization">
-          <h3 class="settings-section__title" id="settings-personalize-title">Personalization</h3>
-          <div class="card settings-card">
+        <section aria-labelledby="settings-essentials-title" data-settings-group="essentials">
+          <h3 class="settings-section__title" id="settings-essentials-title">Essentials</h3>
+          <div class="card settings-card settings-essentials-card">
             <div class="panel-bd">
-              <p class="settings-group__label">Look &amp; feel</p>
               <div class="setting-row">
                 <div><div class="s-lbl">Dark mode</div></div>
                 <label class="toggle">
@@ -1134,20 +1135,37 @@
                 </label>
               </div>
               <div class="setting-row">
-                <div><div class="s-lbl">Dark mode schedule</div><div class="s-sub">Auto 7pm–7am</div></div>
-                <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
-                  <option value="off">Off</option>
-                  <option value="system">Match system</option>
-                  <option value="night">Night (7pm-7am)</option>
-                </select>
-              </div>
-              <div class="setting-row">
                 <div><div class="s-lbl">Font size</div></div>
                 <div class="fs-btns">
                   <button type="button" class="fs-btn" data-fs="fs-sm">S</button>
                   <button type="button" class="fs-btn active" data-fs="fs-md">M</button>
                   <button type="button" class="fs-btn" data-fs="fs-lg">L</button>
                 </div>
+              </div>
+              <div class="setting-row">
+                <div><div class="s-lbl">Lock timeout</div><div class="s-sub">Re-enter PIN after inactivity</div></div>
+                <select id="set-lock-timeout" class="cur-input" style="max-width:170px">
+                  <option value="0">Immediate</option>
+                  <option value="5">5 minutes</option>
+                  <option value="15">15 minutes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="settings-personalize-title" data-settings-group="personalization all">
+          <h3 class="settings-section__title" id="settings-personalize-title">Personalization</h3>
+          <div class="card settings-card">
+            <div class="panel-bd">
+              <p class="settings-group__label">Look &amp; feel</p>
+              <div class="setting-row">
+                <div><div class="s-lbl">Dark mode schedule</div><div class="s-sub">Auto 7pm–7am</div></div>
+                <select id="set-dark-schedule" class="cur-input" style="max-width:170px">
+                  <option value="off">Off</option>
+                  <option value="system">Match system</option>
+                  <option value="night">Night (7pm-7am)</option>
+                </select>
               </div>
               <div class="setting-row">
                 <div><div class="s-lbl">Compact view</div></div>
@@ -1172,14 +1190,6 @@
                   <label>USD <input type="number" id="set-fx-usd" class="cur-input" min="0" step="0.0001" inputmode="decimal"/></label>
                   <label>JPY <input type="number" id="set-fx-jpy" class="cur-input" min="0" step="0.0001" inputmode="decimal"/></label>
                 </div>
-              </div>
-              <div class="setting-row">
-                <div><div class="s-lbl">Lock timeout</div><div class="s-sub">Re-enter PIN after inactivity</div></div>
-                <select id="set-lock-timeout" class="cur-input" style="max-width:170px">
-                  <option value="0">Immediate</option>
-                  <option value="5">5 minutes</option>
-                  <option value="15">15 minutes</option>
-                </select>
               </div>
               <div class="setting-row">
                 <div><div class="s-lbl">Drag handles</div><div class="s-sub">Reorder transactions</div></div>
@@ -1217,7 +1227,7 @@
           </div>
         </section>
 
-        <details class="settings-fold-card" id="settings-catrules-fold" data-settings-group="personalization">
+        <details class="settings-fold-card" id="settings-catrules-fold" data-settings-group="personalization all">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-catrules-title">Category rules</span>
           </summary>
@@ -1255,7 +1265,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-sync-fold" data-settings-group="sync">
+        <details class="settings-fold-card" id="settings-sync-fold" data-settings-group="sync all">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-sync-title">Google Sheets sync</span>
           </summary>
@@ -1306,7 +1316,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-import-fold" data-settings-group="sync">
+        <details class="settings-fold-card" id="settings-import-fold" data-settings-group="sync all">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-import-title">Import from bank / TNG</span>
           </summary>
@@ -1445,7 +1455,7 @@
           </div>
         </details>
 
-        <details class="settings-fold-card" id="settings-about-fold" data-settings-group="about">
+        <details class="settings-fold-card" id="settings-about-fold" data-settings-group="about all">
           <summary class="settings-fold-card__summary">
             <span class="settings-section__title" id="settings-about-title">About &amp; maintenance</span>
           </summary>
@@ -1453,7 +1463,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v140 · 2026-07-03 10:58</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v141 · 2026-07-03 12:17</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1772,8 +1782,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v140 · 2026-07-03 10:58</div>
-<script src="build-id.js?v=140"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v141 · 2026-07-03 12:17</div>
+<script src="build-id.js?v=141"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1784,13 +1794,13 @@
   });
 })();
 </script>
-<script type="module" src="shared/main.js?v=140"></script>
-<script defer src="shared/app.js?v=140"></script>
-<script defer src="shared/sync-auth.js?v=140"></script>
-<script defer src="shared/sync-transport.js?v=140"></script>
-<script defer src="shared/sync.js?v=140"></script>
-<script defer src="shared/features.js?v=140"></script>
-<script defer src="shared/extras.js?v=140"></script>
+<script type="module" src="shared/main.js?v=141"></script>
+<script defer src="shared/app.js?v=141"></script>
+<script defer src="shared/sync-auth.js?v=141"></script>
+<script defer src="shared/sync-transport.js?v=141"></script>
+<script defer src="shared/sync.js?v=141"></script>
+<script defer src="shared/features.js?v=141"></script>
+<script defer src="shared/extras.js?v=141"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
