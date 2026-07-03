@@ -398,7 +398,7 @@ textarea {
   -webkit-appearance: none;
 }
 input::placeholder { color: var(--ink3); }
-input:focus, select:focus { border-color: var(--primary); background: var(--card-bg); }
+input:not(#lk-input):focus, select:focus { border-color: var(--primary); background: var(--card-bg); }
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {

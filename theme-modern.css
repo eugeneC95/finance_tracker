@@ -884,9 +884,39 @@ body.dark .ft-fab {
   backdrop-filter: blur(16px);
 }
 
+#lock-overlay .lk-dot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  background: transparent;
+}
+
 #lock-overlay .lk-dot.filled {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+}
+
+#lock-overlay .lk-dot.error {
+  background: #f87171;
+  border-color: #f87171;
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.4);
+}
+
+#lock-overlay .lk-fallback input,
+#lock-overlay .lk-fallback input:focus,
+#lock-overlay .lk-fallback input:focus-visible {
+  background: #2e2e2e !important;
+  border-color: #3a3a3a;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  box-shadow: none;
+}
+
+#lock-overlay .lk-fallback input:focus,
+#lock-overlay .lk-fallback input:focus-visible {
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 /* ═══════════════════════════════════════════════════════════════
