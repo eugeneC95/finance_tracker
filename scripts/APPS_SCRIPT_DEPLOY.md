@@ -2,7 +2,7 @@
 
 Your web app URL (already built into the PWA / extension):
 
-https://script.google.com/macros/s/AKfycbw-crW39LqE5JSpgg6pwHzkfuZbY3ZY0prLYDSv1OTjr8Dnfrk8ozAOn3fIxZd5ISg0/exec
+https://script.google.com/macros/s/AKfycbwjagbphcX_L8uf2tdblTf1rChb0aRSAK43dp1mWbSerSuyb-Rpi_pBtSlmrolXwqEr/exec
 
 **Do not change this URL in the app** after redeploying — only publish a **new version** of the same deployment.
 
