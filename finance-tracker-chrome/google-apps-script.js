@@ -352,7 +352,7 @@ function saveAllData(payload) {
   writeTabMerged_('Banks', payload.banks || [], ['id','name','acct','balance','currency'], null);
   writeTabMerged_('Recurring', payload.recurring || [], ['id','name','amount','type','cat','day','active','lastApplied'], null);
   writeTabMerged_('Petrol', payload.petrolLog || [], ['id','station','litres','ppl','odo','date','total'], 'date');
-  writeTabMerged_('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','units','totalCost','purchaseDate','notes'], null);
+  writeTabMerged_('UTHoldings', payload.unitTrustHoldings || [], ['id','name','fundCode','kind','currency','units','totalCost','purchaseDate','notes'], null);
 
   var existingNw = readTab('NetWorth');
   var mergedNw = mergeDateKeyedRows_(payload.networthHist || [], existingNw, 'date');

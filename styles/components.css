@@ -1365,6 +1365,16 @@ body.dark .assets-stat-tile { background: rgba(255,255,255,.04); }
   margin-top: 4px;
   line-height: 1.4;
 }
+.ut-card__mv-wrap {
+  text-align: right;
+  min-width: 0;
+}
+.ut-card__mv-base {
+  font-size: var(--f-xs);
+  color: var(--ink3);
+  font-weight: 500;
+  margin-top: 2px;
+}
 .ut-card__mv {
   font-size: var(--f-xl);
   font-weight: 800;

@@ -778,7 +778,7 @@
             <div class="assets-stat-tile__sub" id="ns-bank-count">0 accounts</div>
           </div>
           <div class="assets-stat-tile">
-            <div class="assets-stat-tile__lbl">Unit trusts</div>
+            <div class="assets-stat-tile__lbl">Unit trusts &amp; ETFs</div>
             <div class="assets-stat-tile__val green" id="ns-ut">RM 0</div>
             <div class="assets-stat-tile__sub" id="ns-ut-count">0 funds</div>
           </div>
@@ -805,7 +805,7 @@
         </div>
         <div class="panel-bd">
           <div id="assets-networth-chart"></div>
-          <p class="ft-note" style="margin-top:8px">Bank + unit trust total when you update balances or tap Snapshot.</p>
+          <p class="ft-note" style="margin-top:8px">Bank + unit trust/ETF total when you update balances or tap Snapshot.</p>
         </div>
       </div>
 
@@ -852,15 +852,15 @@
 
         <section class="card assets-section mb-5">
           <div class="panel-hd">
-            <span class="panel-title">Unit trusts</span>
+            <span class="panel-title">Unit trusts &amp; ETFs</span>
             <span class="assets-section__total" id="ut-summary-mv">RM 0.00</span>
           </div>
           <div class="panel-bd">
             <details class="assets-help">
               <summary>How NAV &amp; P&amp;L work</summary>
               <div class="assets-help__body">
-                <p>There is no live NAV feed in-app. Enter the latest <strong>NAV per unit</strong> for each fund, or import CSV (<code>fundId,YYYY-MM-DD,NAV</code> or your <strong>fund code</strong> in the first column).</p>
-                <p style="margin-top:8px">For profit/loss, enter <strong>total amount paid (RM)</strong> once (fees included). Google Sheets sync uses tabs <strong>UTHoldings</strong> and <strong>UTNav</strong> after you redeploy the script.</p>
+                <p>Add a <strong>unit trust</strong> or <strong>ETF</strong> and pick its <strong>currency</strong> (MYR, SGD, USD, JPY). Enter the latest <strong>NAV per unit</strong> in that currency, or import CSV (<code>fundId,YYYY-MM-DD,NAV</code> or your <strong>fund code</strong> in the first column).</p>
+                <p style="margin-top:8px">For profit/loss, enter <strong>total amount paid</strong> in the fund currency (fees included). Portfolio totals convert to your base currency using Settings → FX rates. Google Sheets sync uses tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>.</p>
               </div>
             </details>
 
@@ -873,10 +873,10 @@
             <div class="ut-list" id="ut-root"></div>
 
             <form class="assets-form" id="ut-add-form" autocomplete="off" onsubmit="return false">
-              <div class="assets-form__title">Add fund</div>
+              <div class="assets-form__title">Add holding</div>
               <div class="assets-form-grid assets-form-grid--3">
                 <div class="span-2">
-                  <label class="lbl" for="ut-name">Fund name</label>
+                  <label class="lbl" for="ut-name">Name</label>
                   <input type="text" id="ut-name" maxlength="80" placeholder="e.g. ABC Growth Fund"/>
                 </div>
                 <div>
@@ -884,13 +884,24 @@
                   <input type="text" id="ut-code" maxlength="32" placeholder="For CSV import"/>
                 </div>
                 <div>
+                  <label class="lbl" for="ut-kind">Type</label>
+                  <select id="ut-kind">
+                    <option value="ut">Unit trust</option>
+                    <option value="etf">ETF</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl" for="ut-currency">Currency</label>
+                  <select id="ut-currency" class="ut-curr"></select>
+                </div>
+                <div>
                   <label class="lbl" for="ut-units">Units held</label>
                   <input type="number" id="ut-units" min="0" step="0.000001" placeholder="0" inputmode="decimal"/>
                 </div>
                 <div>
-                  <label class="lbl" for="ut-total-cost">Total paid (RM)</label>
+                  <label class="lbl" for="ut-total-cost">Total paid</label>
                   <input type="number" id="ut-total-cost" min="0" step="0.01" placeholder="Optional" inputmode="decimal"/>
-                  <p class="assets-field-hint">Lump sum incl. fees, for P&amp;L</p>
+                  <p class="assets-field-hint">In fund currency, incl. fees, for P&amp;L</p>
                 </div>
                 <div>
                   <label class="lbl" for="ut-pdate">Purchase date</label>

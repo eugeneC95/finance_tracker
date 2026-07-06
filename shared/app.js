@@ -198,6 +198,34 @@ function normalizeBankCurrency(c) {
   return BANK_CURRENCIES[u] ? u : 'MYR';
 }
 
+const UT_KINDS = {
+  ut:  { label: 'Unit trust' },
+  etf: { label: 'ETF' },
+};
+
+function normalizeUtKind(k) {
+  const u = String(k || '').trim().toLowerCase();
+  return u === 'etf' ? 'etf' : 'ut';
+}
+
+function utKindLabel(kind) {
+  const info = UT_KINDS[normalizeUtKind(kind)];
+  return info ? info.label : UT_KINDS.ut.label;
+}
+
+function utHoldingMvNative(h) {
+  if (!h) return null;
+  const last = utLatestNavEntry(h.id);
+  if (!last) return null;
+  return h.units * last.nav;
+}
+
+function utHoldingMvBase(h) {
+  const mv = utHoldingMvNative(h);
+  if (mv == null) return 0;
+  return mv * fxRateToBase(h.currency);
+}
+
 function defaultFxRates() {
   return { MYR: 1, SGD: 3.10, USD: 4.50, JPY: 0.028 };
 }
@@ -342,6 +370,8 @@ function utSanitizeHoldings(arr) {
       id: !isNaN(id) && id > 0 ? id : Date.now() + idx,
       name: String(h.name != null ? h.name : h.Name || 'Fund').trim() || 'Fund',
       fundCode: h.fundCode != null ? String(h.fundCode).trim() : (h.FundCode != null ? String(h.FundCode).trim() : ''),
+      kind: normalizeUtKind(h.kind),
+      currency: normalizeBankCurrency(h.currency),
       units,
       totalCost,
       purchaseDate: h.purchaseDate != null ? String(h.purchaseDate).trim().slice(0, 10) : '',
@@ -468,11 +498,7 @@ function buildMonthDailyTotals(keys, items) {
 }
 
 function computeUtTotalMarketValue() {
-  return utHoldings.reduce((sum, h) => {
-    const last = utLatestNavEntry(h.id);
-    if (!last) return sum;
-    return sum + h.units * last.nav;
-  }, 0);
+  return utHoldings.reduce((sum, h) => sum + utHoldingMvBase(h), 0);
 }
 
 function utBuildPortfolioSeries() {
@@ -499,7 +525,7 @@ function utBuildPortfolioSeries() {
       const h = utHoldings[i];
       const nav = utNavAsOf(h.id, d);
       if (nav == null) continue;
-      total += h.units * nav;
+      total += h.units * nav * fxRateToBase(h.currency);
       any = true;
     }
     if (any) series.push({ date: d, total });
@@ -660,6 +686,8 @@ function importUtNavCsv(file) {
 function addUtHolding() {
   const nameEl = document.getElementById('ut-name');
   const codeEl = document.getElementById('ut-code');
+  const kindEl = document.getElementById('ut-kind');
+  const currEl = document.getElementById('ut-currency');
   const unitsEl = document.getElementById('ut-units');
   const costEl = document.getElementById('ut-total-cost');
   const dateEl = document.getElementById('ut-pdate');
@@ -682,6 +710,8 @@ function addUtHolding() {
     id: Date.now(),
     name,
     fundCode: codeEl ? codeEl.value.trim() : '',
+    kind: normalizeUtKind(kindEl ? kindEl.value : 'ut'),
+    currency: normalizeBankCurrency(currEl ? currEl.value : 'MYR'),
     units,
     totalCost,
     purchaseDate: dateEl && dateEl.value ? dateEl.value : '',
@@ -695,7 +725,7 @@ function addUtHolding() {
   if (dateEl) dateEl.value = '';
   if (notesEl) notesEl.value = '';
   render();
-  showToast('Fund added');
+  showToast('Holding added');
 }
 
 function wireAssetsPageControls() {
@@ -758,17 +788,18 @@ function renderUnitTrustPanel() {
     ico.className = 'empty-icon ft-empty-state__ico';
     ico.innerHTML = ftIconHtml_('chart', 'ft-empty-state__svg');
     em.appendChild(ico);
-    em.appendChild(document.createTextNode('No unit trust holdings yet — add a fund below'));
+    em.appendChild(document.createTextNode('No unit trust or ETF holdings yet — add one below'));
     root.appendChild(em);
   }
 
   utHoldings.forEach(h => {
     const last = utLatestNavEntry(h.id);
     const prev = utPrevNavEntry(h.id);
-    const mv = last ? h.units * last.nav : null;
+    const curCode = normalizeBankCurrency(h.currency);
+    const mv = utHoldingMvNative(h);
     const costBasis = utCostBasis(h);
     let pnl = null;
-    if (last && costBasis != null) pnl = mv - costBasis;
+    if (mv != null && costBasis != null) pnl = mv - costBasis;
     let dayChg = null;
     let dayPct = null;
     if (last && prev) {
@@ -790,15 +821,32 @@ function renderUnitTrustPanel() {
     title.appendChild(nameEl);
     const sub = document.createElement('div');
     sub.className = 'ut-card__sub';
-    const bits = [];
+    const bits = [utKindLabel(h.kind)];
     if (h.fundCode) bits.push('Code ' + h.fundCode);
     if (h.notes) bits.push(h.notes);
-    sub.textContent = bits.length ? bits.join(' · ') : 'Fund ID ' + h.id;
+    sub.textContent = bits.join(' · ');
     title.appendChild(sub);
 
+    const curBadge = document.createElement('span');
+    curBadge.className = 'assets-currency-pill';
+    curBadge.textContent = curCode;
+
+    const mvWrap = document.createElement('div');
+    mvWrap.className = 'ut-card__mv-wrap';
     const mvEl = document.createElement('div');
     mvEl.className = 'ut-card__mv' + (mv == null ? ' ut-card__mv--empty' : '');
-    mvEl.textContent = mv != null ? fmt(mv) : 'No NAV';
+    if (mv != null) {
+      mvEl.textContent = fmtBankAmount(mv, curCode);
+    } else {
+      mvEl.textContent = 'No NAV';
+    }
+    mvWrap.appendChild(mvEl);
+    if (mv != null && curCode !== 'MYR') {
+      const mvBase = document.createElement('div');
+      mvBase.className = 'ut-card__mv-base';
+      mvBase.textContent = '≈ ' + fmt(utHoldingMvBase(h));
+      mvWrap.appendChild(mvBase);
+    }
 
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
@@ -810,7 +858,8 @@ function renderUnitTrustPanel() {
     });
 
     head.appendChild(title);
-    head.appendChild(mvEl);
+    head.appendChild(curBadge);
+    head.appendChild(mvWrap);
     head.appendChild(delBtn);
 
     const stats = document.createElement('div');
@@ -818,12 +867,12 @@ function renderUnitTrustPanel() {
     utAppendStat(stats, 'Units', h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }), '');
     utAppendStat(stats, 'Latest NAV', last ? last.nav.toFixed(4) + ' (' + last.date + ')' : '—', last ? '' : 'muted');
     if (pnl != null) {
-      utAppendStat(stats, 'P&L', (pnl >= 0 ? '+' : '') + fmt(pnl), pnl >= 0 ? 'pos' : 'neg');
+      utAppendStat(stats, 'P&L', (pnl >= 0 ? '+' : '') + fmtBankAmount(pnl, curCode), pnl >= 0 ? 'pos' : 'neg');
     } else {
       utAppendStat(stats, 'P&L', 'Add total paid', 'muted');
     }
     if (dayChg != null) {
-      utAppendStat(stats, 'vs prior NAV', (dayChg >= 0 ? '+' : '') + fmt(dayChg) + ' (' + dayPct.toFixed(2) + '%)', dayChg >= 0 ? 'pos' : 'neg');
+      utAppendStat(stats, 'vs prior NAV', (dayChg >= 0 ? '+' : '') + fmtBankAmount(dayChg, curCode) + ' (' + dayPct.toFixed(2) + '%)', dayChg >= 0 ? 'pos' : 'neg');
     } else {
       utAppendStat(stats, 'vs prior NAV', '—', 'muted');
     }
@@ -851,7 +900,7 @@ function renderUnitTrustPanel() {
     const navWrap = document.createElement('div');
     const navLab = document.createElement('label');
     navLab.className = 'lbl';
-    navLab.textContent = 'NAV per unit';
+    navLab.textContent = 'NAV per unit (' + curCode + ')';
     const navInp = document.createElement('input');
     navInp.type = 'number';
     navInp.placeholder = '0.0000';
@@ -893,6 +942,32 @@ function renderUnitTrustPanel() {
     const editGrid = document.createElement('div');
     editGrid.className = 'assets-form-grid assets-form-grid--3';
 
+    const kindWrap = document.createElement('div');
+    const kindLab = document.createElement('label');
+    kindLab.className = 'lbl';
+    kindLab.textContent = 'Type';
+    const kindSel = document.createElement('select');
+    kindSel.className = 'ut-kind-sel';
+    Object.keys(UT_KINDS).forEach(code => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = UT_KINDS[code].label;
+      if (code === normalizeUtKind(h.kind)) opt.selected = true;
+      kindSel.appendChild(opt);
+    });
+    kindWrap.appendChild(kindLab);
+    kindWrap.appendChild(kindSel);
+
+    const currWrap = document.createElement('div');
+    const currLab = document.createElement('label');
+    currLab.className = 'lbl';
+    currLab.textContent = 'Currency';
+    const currSel = document.createElement('select');
+    currSel.className = 'ut-curr-sel';
+    fillBankCurrencySelect(currSel, h.currency);
+    currWrap.appendChild(currLab);
+    currWrap.appendChild(currSel);
+
     const unitsWrap = document.createElement('div');
     const unitsLab = document.createElement('label');
     unitsLab.className = 'lbl';
@@ -908,7 +983,7 @@ function renderUnitTrustPanel() {
     const costWrap = document.createElement('div');
     const costLab = document.createElement('label');
     costLab.className = 'lbl';
-    costLab.textContent = 'Total paid (RM)';
+    costLab.textContent = 'Total paid (' + curCode + ')';
     const costInp = document.createElement('input');
     costInp.type = 'number';
     costInp.min = '0';
@@ -921,46 +996,36 @@ function renderUnitTrustPanel() {
 
     const saveRow = document.createElement('div');
     saveRow.className = 'assets-form-actions';
-    const saveUnits = document.createElement('button');
-    saveUnits.type = 'button';
-    saveUnits.className = 'btn-ghost';
-    saveUnits.textContent = 'Save units';
-    saveUnits.addEventListener('click', () => {
-      const u = parseFloat(unitsInp.value);
-      if (isNaN(u) || u <= 0) { shake(unitsInp); return; }
-      h.units = u;
-      saveUtHoldings();
-      showToast('Units updated');
-      render();
-    });
     const saveCost = document.createElement('button');
     saveCost.type = 'button';
     saveCost.className = 'btn-ghost';
-    saveCost.textContent = 'Save cost';
+    saveCost.textContent = 'Save details';
     saveCost.addEventListener('click', () => {
+      const u = parseFloat(unitsInp.value);
+      if (isNaN(u) || u <= 0) { shake(unitsInp); return; }
+      h.units = u;
+      h.kind = normalizeUtKind(kindSel.value);
+      h.currency = normalizeBankCurrency(currSel.value);
       const raw = costInp.value.trim();
       if (raw === '') {
         h.totalCost = null;
         delete h.avgCost;
-        saveUtHoldings();
-        showToast('Cost cleared');
-        render();
-        return;
+      } else {
+        const t = parseFloat(raw);
+        if (isNaN(t) || t <= 0) { shake(costInp); return; }
+        h.totalCost = t;
+        delete h.avgCost;
       }
-      const t = parseFloat(raw);
-      if (isNaN(t) || t <= 0) { shake(costInp); return; }
-      h.totalCost = t;
-      delete h.avgCost;
       saveUtHoldings();
-      showToast('Total cost updated');
+      showToast('Holding updated');
       render();
     });
-    saveRow.appendChild(saveUnits);
     saveRow.appendChild(saveCost);
 
+    editGrid.appendChild(kindWrap);
+    editGrid.appendChild(currWrap);
     editGrid.appendChild(unitsWrap);
     editGrid.appendChild(costWrap);
-    editGrid.appendChild(document.createElement('div'));
     editBody.appendChild(editGrid);
     editBody.appendChild(saveRow);
     edit.appendChild(editBody);
@@ -2394,7 +2459,7 @@ function renderAssetsSummaries_(t) {
   }
   const nsUtCount = document.getElementById('ns-ut-count');
   if (nsUtCount) {
-    nsUtCount.textContent = utHoldings.length + ' fund' + (utHoldings.length === 1 ? '' : 's');
+    nsUtCount.textContent = utHoldings.length + ' holding' + (utHoldings.length === 1 ? '' : 's');
   }
 
   const nnet = document.getElementById('ns-net');
@@ -3712,6 +3777,7 @@ if (expPlaceEl) {
   document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') addBank(); })
 );
 fillBankCurrencySelect(document.getElementById('bk-currency'), 'MYR');
+fillBankCurrencySelect(document.getElementById('ut-currency'), 'MYR');
 
 initCalculatorMoneyInputs_();
 wireCalcAmountHint_();
