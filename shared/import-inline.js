@@ -98,46 +98,131 @@ function iwParseTNG(text) {
   return rows;
 }
 
-// ── UOB CSV parser ─────────────────────────────────────────
-function iwParseCSVRow(line) {
-  const r=[]; let c='',inQ=false;
-  for(const ch of line){ if(ch==='"'){inQ=!inQ;continue;} if((ch===','||ch==='\t')&&!inQ){r.push(c);c='';continue;} c+=ch; }
-  return [...r,c];
+// ── UOB / Maybank / generic bank CSV parser ─────────────────
+function iwDetectDelimiter(line) {
+  const commas = (line.match(/,/g) || []).length;
+  const semis = (line.match(/;/g) || []).length;
+  const tabs = (line.match(/\t/g) || []).length;
+  if (tabs >= commas && tabs >= semis && tabs > 0) return '\t';
+  if (semis > commas) return ';';
+  return ',';
 }
+
+function iwParseCSVRow(line, delim) {
+  delim = delim || ',';
+  if (delim !== ',') {
+    return line.split(delim).map(function(s) {
+      return s.trim().replace(/^"|"$/g, '');
+    });
+  }
+  const r = [];
+  let c = '';
+  let inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; continue; }
+    if ((ch === ',' || ch === '\t') && !inQ) { r.push(c); c = ''; continue; }
+    c += ch;
+  }
+  return [...r, c];
+}
+
+function iwParseAmountCell(raw) {
+  if (!raw) return NaN;
+  const s = String(raw).trim();
+  if (!s || s === '-' || s === '—') return NaN;
+  const negParen = /^\((.*)\)$/.test(s);
+  const n = parseFloat(s.replace(/[()]/g, '').replace(/RM|,|\s/g, ''));
+  if (isNaN(n)) return NaN;
+  return negParen ? -Math.abs(n) : n;
+}
+
 function iwParseBankCSV(text) {
   if (text && text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-  const rows=[], lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  let hi=0;
-  for(let i=0;i<Math.min(25,lines.length);i++){
-    const low=lines[i].toLowerCase();
-    const hasDate=low.includes('date')||low.includes('tarikh')||low.includes('posting')||low.includes('value date')||low.includes('transaction date');
-    const hasDesc=low.includes('desc')||low.includes('narrat')||low.includes('particular')||low.includes('transaction')||low.includes('detail')||low.includes('remark')||low.includes('reference')||low.includes('description');
-    const hasAmt=low.includes('withdraw')||low.includes('debit')||low.includes('credit')||low.includes('deposit')||low.includes('amount')||low.includes('jumlah')||low==='dr'||low==='cr'||low.includes('keluar')||low.includes('masuk')||low.includes('money out')||low.includes('money in');
-    if(hasDate&&hasDesc&&hasAmt){hi=i;break;}
+  const rows = [];
+  const lines = text.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(Boolean);
+  if (!lines.length) return rows;
+
+  let hi = 0;
+  let delim = iwDetectDelimiter(lines[0]);
+  for (let i = 0; i < Math.min(30, lines.length); i++) {
+    const low = lines[i].toLowerCase();
+    const hasDate = /date|tarikh|posting|value date|transaction date/.test(low);
+    const hasDesc = /desc|narrat|particular|transaction|detail|remark|reference|description/.test(low);
+    const hasAmt = /withdraw|debit|credit|deposit|amount|jumlah|money out|money in|dr|cr|keluar|masuk/.test(low);
+    if (hasDate && (hasDesc || hasAmt) && (hasAmt || low.split(delim).length >= 3)) {
+      hi = i;
+      delim = iwDetectDelimiter(lines[i]);
+      break;
+    }
   }
-  const hdrs=iwParseCSVRow(lines[hi]).map(h=>h.toLowerCase().trim());
-  const di=hdrs.findIndex(h=>h.includes('date')||h.includes('tarikh')||h.includes('posting')||h.includes('value'));
-  const xi=hdrs.findIndex(h=>/desc|narrat|particular|transaction|detail|remark/.test(h));
-  const dri=hdrs.findIndex(h=>h.includes('withdraw')||h.includes('debit')||h==='dr'||h.includes('keluar')||h.includes('money out'));
-  const cri=hdrs.findIndex(h=>h.includes('deposit')||h.includes('credit')||h==='cr'||h.includes('masuk')||h.includes('money in'));
-  const ai=hdrs.findIndex(h=>h.includes('amount')||h.includes('jumlah')||h.includes('transaction amount'));
-  for(let i=hi+1;i<lines.length;i++){
-    const cols=iwParseCSVRow(lines[i]); if(cols.length<3) continue;
-    const dateStr=iwParseDateStr((cols[di>=0?di:0]||'').trim()); if(!dateStr) continue;
-    const desc=(cols[xi>=0?xi:1]||'').replace(/"/g,'').trim();
-    if(!desc) continue;
+
+  const hdrs = iwParseCSVRow(lines[hi], delim).map(function(h) {
+    return h.toLowerCase().trim().replace(/\s+/g, ' ');
+  });
+  const di = hdrs.findIndex(function(h) {
+    return h.includes('date') || h.includes('tarikh') || h.includes('posting') || h.includes('value');
+  });
+  const xi = hdrs.findIndex(function(h) {
+    return /desc|narrat|particular|transaction description|details|remark|reference/.test(h) &&
+      !h.includes('date') && !h.includes('amount');
+  });
+  const dri = hdrs.findIndex(function(h) {
+    return /withdraw|debit|money out|keluar|^dr$|debit amount/.test(h);
+  });
+  const cri = hdrs.findIndex(function(h) {
+    return /deposit|credit|money in|masuk|^cr$|credit amount/.test(h);
+  });
+  const ai = hdrs.findIndex(function(h) {
+    return (h.includes('amount') || h.includes('jumlah')) && !h.includes('balance');
+  });
+  const balI = hdrs.findIndex(function(h) { return h.includes('balance'); });
+
+  for (let i = hi + 1; i < lines.length; i++) {
+    const cols = iwParseCSVRow(lines[i], delim);
+    if (cols.length < 2) continue;
+    const dateStr = iwParseDateStr((cols[di >= 0 ? di : 0] || '').trim());
+    if (!dateStr) continue;
+    let desc = (cols[xi >= 0 ? xi : 1] || '').replace(/"/g, '').trim();
+    if (!desc && xi < 0) {
+      for (let c = 1; c < cols.length; c++) {
+        if (c === di || c === dri || c === cri || c === ai || c === balI) continue;
+        const t = (cols[c] || '').replace(/"/g, '').trim();
+        if (t && isNaN(iwParseAmountCell(t))) { desc = t; break; }
+      }
+    }
+    if (!desc) continue;
     const descLow = desc.toLowerCase();
-    if (/^(opening|closing)\s+balance/.test(descLow) || descLow === 'balance b/f' || descLow === 'balance c/f') continue;
-    let amount=0,type='exp';
-    if(dri>=0&&cols[dri]&&parseFloat(cols[dri].replace(/[^0-9.]/g,''))>0){amount=parseFloat(cols[dri].replace(/[^0-9.]/g,''));type='exp';}
-    else if(cri>=0&&cols[cri]&&parseFloat(cols[cri].replace(/[^0-9.]/g,''))>0){amount=parseFloat(cols[cri].replace(/[^0-9.]/g,''));type='inc';}
-    else if(ai>=0){const raw=(cols[ai]||'').replace(/[^0-9.\-]/g,'');amount=Math.abs(parseFloat(raw));type=parseFloat(raw)<0?'exp':'inc';}
-    if(!amount||isNaN(amount)) continue;
-    const meta=iwAutocatMeta(desc), cat=meta.cat; if(type==='exp'&&INC_SET.has(cat))type='inc';
-    rows.push({date:dateStr,desc,amount,type,cat,skip:false,confidence:meta.confidence});
+    if (/^(opening|closing)\s+balance/.test(descLow) ||
+        descLow === 'balance b/f' || descLow === 'balance c/f' ||
+        descLow === 'beginning balance' || descLow === 'ending balance' ||
+        /^b\/f|^c\/f/.test(descLow)) continue;
+
+    let amount = 0;
+    let type = 'exp';
+    const drVal = dri >= 0 ? iwParseAmountCell(cols[dri]) : NaN;
+    const crVal = cri >= 0 ? iwParseAmountCell(cols[cri]) : NaN;
+    if (!isNaN(drVal) && drVal > 0) {
+      amount = drVal;
+      type = 'exp';
+    } else if (!isNaN(crVal) && crVal > 0) {
+      amount = crVal;
+      type = 'inc';
+    } else if (ai >= 0) {
+      const rawAmt = iwParseAmountCell(cols[ai]);
+      if (isNaN(rawAmt) || rawAmt === 0) continue;
+      amount = Math.abs(rawAmt);
+      type = rawAmt < 0 ? 'exp' : 'inc';
+    } else continue;
+    if (!amount || isNaN(amount)) continue;
+
+    const meta = iwAutocatMeta(desc);
+    const cat = meta.cat;
+    if (type === 'exp' && INC_SET.has(cat)) type = 'inc';
+    rows.push({ date: dateStr, desc, amount, type, cat, skip: false, confidence: meta.confidence });
   }
   return rows;
 }
+
 function iwParseUOB(text) { return iwParseBankCSV(text); }
 
 function iwAssignRowIds() {
@@ -331,7 +416,7 @@ document.getElementById('iw-parse').addEventListener('click',async()=>{
       iwRows=iwParseBankCSV(text);
     } catch(e){ if(errEl) errEl.textContent='Could not read file: '+e.message; return; }
     if(!iwRows.length){
-      if(errEl) errEl.textContent='No transactions found — use a CSV export from UOB, Maybank, or CIMB (date, description, debit/credit columns).';
+      if(errEl) errEl.textContent='No transactions found — use CSV with date, description, and debit/credit or amount columns (Maybank, CIMB, UOB, or generic).';
       return;
     }
   }

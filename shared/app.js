@@ -2432,6 +2432,12 @@ function renderIncomePanel_(t) {
     true
   );
   renderBarChart('inc-chart', mi, INC_CATS, true);
+  const incDailyEl = document.getElementById('inc-daily-chart');
+  if (incDailyEl) {
+    const dayKeys = buildMonthDateKeys();
+    const dayTotals = buildMonthDailyTotals(dayKeys, mi);
+    renderMonthDailyLineChart(incDailyEl, dayKeys, dayTotals, { stroke: '#1A9E6E', label: 'Income' });
+  }
 }
 
 function renderAssetsSummaries_(t) {

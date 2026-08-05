@@ -837,6 +837,57 @@ function syncReportNotesInput_(ym) {
   input.value = getReportNotesForMonth_(ym);
 }
 
+function reportMonthEndYmd_(ym) {
+  var parts = String(ym || '').split('-');
+  var y = parseInt(parts[0], 10);
+  var m = parseInt(parts[1], 10);
+  if (!y || !m) return String(ym || '') + '-31';
+  var end = new Date(y, m, 0);
+  return y + '-' + String(m).padStart(2, '0') + '-' + String(end.getDate()).padStart(2, '0');
+}
+
+function reportNetWorthAtEndOfYm_(ym) {
+  if (typeof networthHist === 'undefined' || !networthHist.length || !ym) return null;
+  var endStr = reportMonthEndYmd_(ym);
+  var best = null;
+  networthHist.forEach(function(h) {
+    if (!h || !h.date || h.date > endStr) return;
+    if (!best || h.date > best.date) best = h;
+  });
+  return best ? Number(best.total) || 0 : null;
+}
+
+function reportPortfolioLive_() {
+  var banksLen = typeof banks !== 'undefined' ? banks.length : 0;
+  var utLen = typeof utHoldings !== 'undefined' ? utHoldings.length : 0;
+  var bankTotal = typeof totalBanksBase === 'function' ? totalBanksBase() : 0;
+  var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
+  return {
+    total: bankTotal + utMv,
+    banks: bankTotal,
+    ut: utMv,
+    hasAssets: banksLen > 0 || utLen > 0 || bankTotal > 0 || utMv > 0,
+  };
+}
+
+function reportPortfolioShareLines_() {
+  var live = reportPortfolioLive_();
+  if (!live.hasAssets) return [];
+  var ym = typeof viewYM === 'function' ? viewYM() : '';
+  var prevYm = typeof reportPrevMonthYM_ === 'function' ? reportPrevMonthYM_() : '';
+  var snapCur = reportNetWorthAtEndOfYm_(ym);
+  var snapPrev = reportNetWorthAtEndOfYm_(prevYm);
+  var lines = ['Portfolio now: ' + fmt(live.total)];
+  if (live.banks > 0) lines.push('Banks: ' + fmt(live.banks));
+  if (live.ut > 0) lines.push('Unit trust / ETF: ' + fmt(live.ut));
+  if (snapCur != null) {
+    lines.push(
+      'Month-end snapshot: ' + fmt(snapCur) + formatShareDelta_(snapCur, snapPrev, true)
+    );
+  }
+  return lines;
+}
+
 function reportYtdTotals_(ym) {
   var year = String(ym || '').slice(0, 4);
   if (!year) return { exp: 0, inc: 0, net: 0, months: 0 };
@@ -954,6 +1005,36 @@ function renderReport() {
   totVal.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
   totVal.textContent = (net>=0?'+':'') + fmt(net);
   totRow.appendChild(totLeft); totRow.appendChild(totVal); sec1.appendChild(totRow);
+
+  var portfolioLive = reportPortfolioLive_();
+  if (portfolioLive.hasAssets) {
+    var secPort = section('Portfolio');
+    addRow(secPort, 'Portfolio now', fmt(portfolioLive.total));
+    if (portfolioLive.banks > 0) addRow(secPort, 'Bank accounts', fmt(portfolioLive.banks));
+    if (portfolioLive.ut > 0) addRow(secPort, 'Unit trust / ETF', fmt(portfolioLive.ut));
+    var snapCur = reportNetWorthAtEndOfYm_(ym);
+    var snapPrevEnd = reportNetWorthAtEndOfYm_(prevYm);
+    if (snapCur != null) {
+      addRowDelta(
+        secPort,
+        'Latest snapshot in month',
+        fmt(snapCur),
+        '',
+        reportDeltaHint_(snapCur, snapPrevEnd, true)
+      );
+    }
+    if (typeof networthHist !== 'undefined' && networthHist.length >= 2) {
+      var chartWrap = document.createElement('div');
+      chartWrap.id = 'report-nw-chart';
+      chartWrap.style.cssText = 'min-height:120px;margin-top:12px';
+      secPort.appendChild(chartWrap);
+      if (typeof renderNetWorthChart === 'function') {
+        requestAnimationFrame(function() { renderNetWorthChart('report-nw-chart'); });
+      }
+    } else if (snapCur == null) {
+      addRow(secPort, 'Portfolio history', 'Add balances or tap Snapshot on Assets to build a chart');
+    }
+  }
 
   var ytd = reportYtdTotals_(ym);
   if (ytd.exp > 0 || ytd.inc > 0) {
@@ -1129,6 +1210,7 @@ function buildReportShareText() {
     'Expenses: ' + fmt(totalExp) + formatShareDelta_(totalExp, prev.exp),
     'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + formatShareDelta_(net, prev.net),
   ];
+  reportPortfolioShareLines_().forEach(function(line) { lines.push(line); });
   var missedRec = typeof recurringMissedThisMonth_ === 'function' ? recurringMissedThisMonth_() : [];
   if (missedRec.length) {
     lines.push('Missed recurring: ' + missedRec.length + ' bill' + (missedRec.length === 1 ? '' : 's'));
@@ -1164,6 +1246,11 @@ function buildReportPlainText_() {
     'Net: ' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + formatShareDelta_(net, prev.net),
     'Savings rate: ' + (totalInc > 0 ? ((net / totalInc) * 100).toFixed(1) : '0') + '%',
   ];
+  var portLines = reportPortfolioShareLines_();
+  if (portLines.length) {
+    lines.push('', 'PORTFOLIO');
+    portLines.forEach(function(line) { lines.push(line); });
+  }
   var ytd = reportYtdTotals_(ym);
   if (ytd.exp > 0 || ytd.inc > 0) {
     lines.push('', 'YEAR TO DATE (' + viewMonth.getFullYear() + ')');
@@ -1219,6 +1306,11 @@ function buildReportMarkdown_() {
     '| **Net** | **' + (net >= 0 ? '+' : '') + fmt(net) + '**' + formatShareDelta_(net, prev.net) + ' |',
     '| Savings rate | ' + (totalInc > 0 ? ((net / totalInc) * 100).toFixed(1) : '0') + '% |',
   ];
+  var portLinesMd = reportPortfolioShareLines_();
+  if (portLinesMd.length) {
+    lines.push('', '## Portfolio', '');
+    portLinesMd.forEach(function(line) { lines.push('- ' + line); });
+  }
   var ytd = reportYtdTotals_(ym);
   if (ytd.exp > 0 || ytd.inc > 0) {
     lines.push('', '## Year to date (' + viewMonth.getFullYear() + ')', '');

@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=142"/>
-<link rel="stylesheet" href="../styles/reset.css?v=142"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=142"/>
-<link rel="stylesheet" href="../styles/base.css?v=142"/>
-<link rel="stylesheet" href="../styles/components.css?v=142"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=142"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=143"/>
+<link rel="stylesheet" href="../styles/reset.css?v=143"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=143"/>
+<link rel="stylesheet" href="../styles/base.css?v=143"/>
+<link rel="stylesheet" href="../styles/components.css?v=143"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=143"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=142"/>
+<link rel="stylesheet" href="../theme-modern.css?v=143"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -448,6 +448,14 @@
           <span>Save as recurring monthly</span>
         </label>
       </div>
+
+      <details class="card mb-5 exp-daily-card exp-mobile-fold" id="inc-daily-fold">
+        <summary class="exp-mobile-fold__summary"><span class="panel-title">Income by day</span></summary>
+        <div class="panel-bd">
+          <p class="ft-note">Daily totals for the selected month — <span class="ft-month-hint ft-month-hint--desk">use the sidebar arrows</span><span class="ft-month-hint ft-month-hint--mob">tap ‹ › above</span> to change month.</p>
+          <div id="inc-daily-chart" style="min-height:150px"></div>
+        </div>
+      </details>
 
       <div class="cols-2">
         <div>
@@ -1194,7 +1202,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v142 · 2026-08-05 16:17</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v143 · 2026-08-05 16:27</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1488,7 +1496,7 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=142"></script>
+<script src="../build-id.js?v=143"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1497,12 +1505,12 @@
   if (el) el.textContent = s;
 })();
 </script>
-<script type="module" src="../shared/main.js?v=142"></script>
-<script defer src="../shared/app.js?v=142"></script>
-<script defer src="../shared/sync-auth.js?v=142"></script>
-<script defer src="../shared/sync-transport.js?v=142"></script>
-<script defer src="../shared/sync.js?v=142"></script>
-<script defer src="../shared/features.js?v=142"></script>
-<script defer src="../shared/extras.js?v=142"></script>
+<script type="module" src="../shared/main.js?v=143"></script>
+<script defer src="../shared/app.js?v=143"></script>
+<script defer src="../shared/sync-auth.js?v=143"></script>
+<script defer src="../shared/sync-transport.js?v=143"></script>
+<script defer src="../shared/sync.js?v=143"></script>
+<script defer src="../shared/features.js?v=143"></script>
+<script defer src="../shared/extras.js?v=143"></script>
 </body>
 </html>
