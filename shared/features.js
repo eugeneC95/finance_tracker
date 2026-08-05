@@ -60,6 +60,8 @@ function loadFeatures() {
     renderBudgets();
     renderSavingsGoal();
     maybeNotifyUpcomingRecurring_();
+    if (typeof ensureNetWorthHistory_ === 'function') ensureNetWorthHistory_();
+    else if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
     if (changed) render();
   });
 }
@@ -1145,7 +1147,7 @@ function renderHomeNwMini_() {
   var wrap = document.getElementById('home-nw-mini');
   if (!wrap) return;
   if (typeof renderNetWorthChart === 'function') renderNetWorthChart('home-nw-chart');
-  wrap.hidden = !networthHist || networthHist.length < 2;
+  wrap.hidden = !networthHist || networthHist.length < 1;
 }
 
 function renderCatRulesPanel_() {
@@ -1898,6 +1900,54 @@ function renderRecurring() {
 // ╔══════════════════════════════════════════════════════════╗
 //   NET WORTH SNAPSHOT
 // ╚══════════════════════════════════════════════════════════╝
+function hasPortfolioAssets_() {
+  var bankTotal = typeof totalBanksBase === 'function' ? totalBanksBase() : 0;
+  var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
+  var hasBanks = typeof banks !== 'undefined' && banks.length > 0;
+  var hasUt = typeof utHoldings !== 'undefined' && utHoldings.length > 0;
+  return hasBanks || hasUt || bankTotal > 0 || utMv > 0;
+}
+
+/** Rebuild sparse history from saved UT NAV + current bank balances. */
+function backfillNetWorthFromUtSeries_() {
+  if (typeof utBuildPortfolioSeries !== 'function') return false;
+  var bankTotal = typeof totalBanksBase === 'function' ? totalBanksBase() : 0;
+  var series = utBuildPortfolioSeries();
+  if (!series.length) return false;
+  var changed = false;
+  series.forEach(function(s) {
+    if (!s.date || !/^\d{4}-\d{2}-\d{2}$/.test(s.date)) return;
+    var total = bankTotal + (Number(s.total) || 0);
+    var ex = networthHist.find(function(h) { return h.date === s.date; });
+    if (ex) {
+      if (ex.total !== total) {
+        ex.total = total;
+        changed = true;
+      }
+    } else {
+      networthHist.push({ date: s.date, total: total });
+      changed = true;
+    }
+  });
+  if (changed) {
+    networthHist = networthHist.sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(-365);
+    saveNWH();
+  }
+  return changed;
+}
+
+/** Ensure portfolio history exists for charts (load, backfill, today). */
+function ensureNetWorthHistory_() {
+  if (!hasPortfolioAssets_()) return;
+  if (networthHist.length < 2) backfillNetWorthFromUtSeries_();
+  var today = typeof todayStr === 'function' ? todayStr() : '';
+  if (!today || !networthHist.some(function(h) { return h.date === today; })) {
+    snapshotNetWorth();
+  }
+  if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
+  if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+}
+
 function snapshotNetWorth() {
   var bankTotal = (typeof totalBanksBase === 'function')
     ? totalBanksBase()
@@ -1915,7 +1965,8 @@ function snapshotNetWorth() {
 function renderNwSnapshotHint() {
   var hints = document.querySelectorAll('.ft-nw-hint');
   if (!hints.length) return;
-  if (!banks.length) {
+  var hasUt = typeof utHoldings !== 'undefined' && utHoldings.length > 0;
+  if (!banks.length && !hasUt) {
     hints.forEach(function(el) { el.style.display = 'none'; });
     return;
   }
@@ -1936,11 +1987,11 @@ function renderNwSnapshotHint() {
   }
   var autoOn = typeof settings !== 'undefined' && settings.nwAutoSnapshot !== false;
   var msg = needMore
-    ? 'Net worth chart needs at least <strong>two</strong> balance snapshots on different days.'
+    ? 'Portfolio history needs at least <strong>two</strong> days of data — add NAV on another day or update balances tomorrow.'
     : 'Last net worth snapshot was <strong>' + staleDays + ' day' + (staleDays === 1 ? '' : 's') + '</strong> ago (14+ days).';
   msg += autoOn
-    ? ' Updating any bank balance will record today automatically.'
-    : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or edit a bank balance to record today.';
+    ? ' Bank or fund NAV changes record today automatically.'
+    : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or tap <strong>Snapshot today</strong> on Assets.';
   hints.forEach(function(el) {
     el.style.display = 'block';
     el.innerHTML = msg;
@@ -2159,8 +2210,8 @@ function renderNetWorthChart(targetId) {
   var el = document.getElementById(targetId || 'networth-chart');
   if (!el) return;
 
-  if (networthHist.length < 2) {
-    el.innerHTML = '<div class="nw-empty">Update bank balances and unit trusts over time to build a portfolio history chart.</div>';
+  if (!networthHist.length) {
+    el.innerHTML = '<div class="nw-empty">Add bank accounts or unit trust holdings, then save NAV or tap Snapshot to build portfolio history.</div>';
     return;
   }
 
@@ -2177,11 +2228,18 @@ function renderNetWorthChart(targetId) {
   var maxV = Math.max.apply(null, vals);
   var rng  = maxV-minV || 1;
   var n    = networthHist.length;
-  var xOf  = function(i){ return PAD.l+(i/(n-1))*cW; };
+  var xOf  = function(i){
+    if (n === 1) return PAD.l + cW / 2;
+    return PAD.l + (i / (n - 1)) * cW;
+  };
   var yOf  = function(v){ return PAD.t+cH-((v-minV)/rng)*cH; };
   var pts  = networthHist.map(function(h,i){ return xOf(i)+','+yOf(h.total); });
-  var path = 'M '+pts.join(' L ');
-  var area = 'M '+xOf(0)+','+(PAD.t+cH)+' L '+pts.join(' L ')+' L '+xOf(n-1)+','+(PAD.t+cH)+' Z';
+  var path = n === 1
+    ? 'M ' + PAD.l + ',' + yOf(vals[0]) + ' L ' + (PAD.l + cW) + ',' + yOf(vals[0])
+    : 'M ' + pts.join(' L ');
+  var area = n === 1
+    ? 'M ' + PAD.l + ',' + (PAD.t + cH) + ' L ' + (PAD.l + cW) + ',' + yOf(vals[0]) + ' L ' + (PAD.l + cW) + ',' + (PAD.t + cH) + ' Z'
+    : 'M '+xOf(0)+','+(PAD.t+cH)+' L '+pts.join(' L ')+' L '+xOf(n-1)+','+(PAD.t+cH)+' Z';
   var trending = vals[vals.length-1] >= vals[0];
   var lc = trending ? '#1A9E6E' : '#E24B4A';
   var yMid = (minV+maxV)/2;
@@ -2402,3 +2460,9 @@ if (catRulePat) catRulePat.addEventListener('keydown', function(e) {
 });
 
 loadFeatures();
+
+window.addEventListener('ft-app-ready', function() {
+  if (typeof ensureNetWorthHistory_ === 'function') {
+    setTimeout(ensureNetWorthHistory_, 100);
+  }
+});

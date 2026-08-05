@@ -897,6 +897,7 @@ function syncLoad(opts) {
       persistSyncState();
 
       render();
+      if (typeof ensureNetWorthHistory_ === 'function') ensureNetWorthHistory_();
 
       // Reconcile recurring after cloud replace (fixes lost lastApplied + race with loadFeatures).
       if (typeof applyRecurring === 'function' && applyRecurring()) render();

@@ -332,6 +332,7 @@ function load() {
       if (r[KEY_SETS]) settings = Object.assign({}, settings, r[KEY_SETS]);
       applySettings();
       render();
+      if (typeof ensureNetWorthHistory_ === 'function') ensureNetWorthHistory_();
       window.__ftAppReady = true;
     } catch (e) {
       window.__ftAppReady = false;
@@ -534,7 +535,7 @@ function utBuildPortfolioSeries() {
   return series;
 }
 
-function upsertUtNav(fundId, dateStr, navVal) {
+function upsertUtNav(fundId, dateStr, navVal, skipNwSnap) {
   const nav = parseFloat(navVal);
   if (!fundId || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || isNaN(nav) || nav <= 0) return false;
   const i = utNavPoints.findIndex(p => p.fundId === fundId && p.date === dateStr);
@@ -542,6 +543,7 @@ function upsertUtNav(fundId, dateStr, navVal) {
   else utNavPoints.push({ fundId, date: dateStr, nav });
   utDedupeNavPoints();
   saveUtNav();
+  if (!skipNwSnap) maybeSnapshotNetWorth();
   return true;
 }
 
@@ -554,6 +556,7 @@ function deleteUtHolding(id) {
   utNavPoints = utNavPoints.filter(p => p.fundId !== id);
   saveUtHoldings();
   saveUtNav();
+  maybeSnapshotNetWorth();
   ftHaptic_('medium');
   render();
   registerUndoDelete('Fund', () => {
@@ -669,11 +672,11 @@ function importUtNavCsv(file) {
         }
         if (!utHoldings.some(h => h.id === fundId)) continue;
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(nav) || nav <= 0) continue;
-        upsertUtNav(fundId, d, nav);
-        n++;
+        if (upsertUtNav(fundId, d, nav, true)) n++;
       }
       utNavPoints = utSanitizeNav(utNavPoints);
       saveUtNav();
+      if (n) maybeSnapshotNetWorth();
       showToast(n ? 'Imported ' + n + ' NAV row(s)' : 'No CSV rows applied');
       render();
     } catch (err) {
@@ -718,6 +721,7 @@ function addUtHolding() {
     notes: notesEl ? notesEl.value.trim() : '',
   });
   saveUtHoldings();
+  maybeSnapshotNetWorth();
   nameEl.value = '';
   if (codeEl) codeEl.value = '';
   unitsEl.value = '';
@@ -1017,6 +1021,7 @@ function renderUnitTrustPanel() {
         delete h.avgCost;
       }
       saveUtHoldings();
+      maybeSnapshotNetWorth();
       showToast('Holding updated');
       render();
     });
@@ -1868,6 +1873,8 @@ function repeatLastExpense() {
 function maybeSnapshotNetWorth() {
   if (settings.nwAutoSnapshot === false) return;
   if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
+  if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
+  if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
 }
 function deleteExpense(id) {
   const idx = expenses.findIndex(e => e.id === id);
@@ -3562,6 +3569,7 @@ const TAB_OPEN_HOOKS = {
   report: () => { if (typeof renderReport === 'function') renderReport(); },
   trends: () => { if (typeof renderTrends === 'function') renderTrends(); },
   assets: () => {
+    if (typeof ensureNetWorthHistory_ === 'function') ensureNetWorthHistory_();
     renderBankList();
     renderUnitTrustPanel();
     if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
