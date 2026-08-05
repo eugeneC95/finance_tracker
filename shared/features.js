@@ -1206,6 +1206,7 @@ function renderBudgets() {
   var ym = typeof viewYM === 'function' ? viewYM() : '';
   var catTotals = {};
   expenses.filter(function(e) {
+    if (typeof isTransferExpense_ === 'function' && isTransferExpense_(e)) return false;
     return typeof inVM === 'function' ? inVM(e.date) : (ym && String(e.date).indexOf(ym) === 0);
   }).forEach(function(e) {
     catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount;
@@ -1743,8 +1744,49 @@ function addRecurring() {
   showToast('Recurring entry added');
 }
 
+function recurringMonthlyEquivalent_(r) {
+  var amt = Number(r && r.amount) || 0;
+  var name = String(r && r.name || '').toLowerCase();
+  var cat = String(r && r.cat || '').toLowerCase();
+  if (/year|annual|yr/.test(name) || /year|annual/.test(cat)) return amt / 12;
+  return amt;
+}
+
+function renderSubscriptionLens_() {
+  var el = document.getElementById('rec-subscription-lens');
+  if (!el) return;
+  var subs = (recurring || []).filter(function(r) {
+    if (!r || !r.active || r.type !== 'exp') return false;
+    var cat = String(r.cat || '');
+    return cat === 'Subscription' || /netflix|spotify|subscription|astro|disney|apple|youtube/i.test(r.name || '');
+  });
+  if (!subs.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  var monthly = subs.reduce(function(a, r) { return a + recurringMonthlyEquivalent_(r); }, 0);
+  var rows = subs.map(function(r) {
+    var m = recurringMonthlyEquivalent_(r);
+  return (
+      '<div class="sub-lens-row">' +
+      '<span class="sub-lens-row__name">' + esc(r.name || '') + '</span>' +
+      '<span class="sub-lens-row__amt">' + fmt(m) + '/mo</span>' +
+      '<span class="sub-lens-row__raw">' + (m !== Number(r.amount) ? fmt(Number(r.amount) || 0) + ' billed' : '') + '</span>' +
+      '</div>'
+    );
+  }).join('');
+  el.innerHTML =
+    '<div class="panel-hd"><span class="panel-title">Subscriptions</span>' +
+    '<span class="sub-lens-total">' + fmt(monthly) + '/mo</span></div>' +
+    '<div class="panel-bd"><div class="sub-lens-list">' + rows + '</div>' +
+    '<p class="ft-note" style="margin-top:8px">Annual bills are converted to monthly equivalent (÷12).</p></div>';
+}
+
 function renderRecurring() {
   renderRecurringCalendar();
+  renderSubscriptionLens_();
   var el = document.getElementById('rec-list');
   if (!el) return;
   el.innerHTML = '';

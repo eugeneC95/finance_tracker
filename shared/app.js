@@ -154,6 +154,7 @@ const KEY_BANKS = 'banks_v1';
 const KEY_SETS  = 'settings_v1';
 const KEY_UT_HOLD = 'unit_trust_holdings_v1';
 const KEY_UT_NAV  = 'unit_trust_nav_v1';
+const KEY_BANK_LOG = 'bank_balance_log_v1';
 const KEY_LAST_EXP = 'last_expense_v1';
 const KEY_LAST_INC = 'last_income_v1';
 
@@ -165,6 +166,7 @@ function bumpStorageReadGeneration() { _storageReadGen++; }
 let expenses = [], incomes = [], banks = [];
 let utHoldings = [];
 let utNavPoints = [];
+let bankBalanceLog = [];
 let settings = { dark:false, darkSchedule:'off', fontSize:'fs-md', currency:'RM', showDrag:true, compact:false, nwAutoSnapshot:true, lockTimeoutMin:5, notifyRecurring:true, petrolFullTankOnly:false };
 let lastExpenseTpl = null;
 let lastIncomeTpl = null;
@@ -296,6 +298,8 @@ function inVM(dateStr) {
   return d.getFullYear()===viewMonth.getFullYear() && d.getMonth()===viewMonth.getMonth();
 }
 function mExp() { return expenses.filter(e=>inVM(e.date)); }
+function isTransferExpense_(e) { return !!(e && e.transfer); }
+function mExpSpend() { return mExp().filter(e => !isTransferExpense_(e)); }
 function mInc() { return incomes.filter(i=>inVM(i.date)); }
 function viewYM() {
   return viewMonth.getFullYear()+'-'+String(viewMonth.getMonth()+1).padStart(2,'0');
@@ -307,7 +311,7 @@ function load() {
   const sheetOnly = !!(typeof window !== 'undefined' && window.__ftForceSheetSource);
   const storageKeys = sheetOnly
     ? [KEY_SETS]
-    : [KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_LAST_EXP,KEY_LAST_INC];
+    : [KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_BANK_LOG,KEY_LAST_EXP,KEY_LAST_INC];
   chromeStorage.local.get(storageKeys, r => {
     if (gen !== _storageReadGen) return;
     try {
@@ -317,6 +321,7 @@ function load() {
         banks = [];
         utHoldings = [];
         utNavPoints = [];
+        bankBalanceLog = [];
         lastExpenseTpl = null;
         lastIncomeTpl = null;
       } else {
@@ -325,6 +330,7 @@ function load() {
         banks    = (r[KEY_BANKS] || []).map(normalizeBankRow);
         utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
         utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
+        bankBalanceLog = Array.isArray(r[KEY_BANK_LOG]) ? r[KEY_BANK_LOG] : [];
         utCarryForwardNavSnapshotForToday();
         lastExpenseTpl = r[KEY_LAST_EXP] || null;
         lastIncomeTpl = r[KEY_LAST_INC] || null;
@@ -347,6 +353,40 @@ function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
 function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
 function saveUtHoldings() { chromeStorage.local.set({ [KEY_UT_HOLD]: utHoldings }); }
 function saveUtNav()      { chromeStorage.local.set({ [KEY_UT_NAV]:  utNavPoints }); }
+function saveBankLog()    { chromeStorage.local.set({ [KEY_BANK_LOG]: bankBalanceLog }); }
+
+function logBankBalanceChange_(bank, prevBalance) {
+  if (!bank || !bank.id) return;
+  const bal = Number(bank.balance) || 0;
+  const prev = Number(prevBalance);
+  if (isNaN(prev) || prev === bal) return;
+  bankBalanceLog.push({
+    id: Date.now(),
+    bankId: bank.id,
+    name: bank.name || 'Account',
+    date: todayStr(),
+    balance: bal,
+    prevBalance: prev,
+    currency: bank.currency || 'MYR',
+  });
+  bankBalanceLog = bankBalanceLog.slice(-500);
+  saveBankLog();
+}
+
+function utSnapshotAllNavToday_() {
+  const td = todayStr();
+  let n = 0;
+  utHoldings.forEach(h => {
+    const lastE = utLatestNavEntry(h.id);
+    if (!lastE) return;
+    if (upsertUtNav(h.id, td, lastE.nav, true)) n++;
+  });
+  maybeSnapshotNetWorth();
+  render();
+  if (typeof showToast === 'function') {
+    showToast(n ? 'NAV snapshotted for ' + n + ' fund(s) today' : 'No funds with NAV to snapshot');
+  }
+}
 
 function utDedupeNavPoints() {
   const map = new Map();
@@ -757,6 +797,11 @@ function wireAssetsPageControls() {
       utCsvIn.value = '';
       if (f) importUtNavCsv(f);
     });
+  }
+  const utSnap = document.getElementById('ut-snapshot-nav-btn');
+  if (utSnap && !utSnap.dataset.wired) {
+    utSnap.dataset.wired = '1';
+    utSnap.addEventListener('click', () => utSnapshotAllNavToday_());
   }
 }
 
@@ -1604,8 +1649,10 @@ function addExpense() {
   }
   if (amount >= 3000 && !confirm('Large expense detected (' + fmt(amount) + '). Save anyway?')) return;
   if (typeof learnCatRule === 'function') learnCatRule(place || name, selectedCat);
+  const transferEl = document.getElementById('exp-transfer');
   const entry = { id: Date.now(), name, amount, cat: selectedCat, date };
   if (place) entry.place = place;
+  if (transferEl && transferEl.checked) entry.transfer = true;
   expenses.push(entry);
   lastExpenseTpl = { name, amount, cat: selectedCat, place: place || undefined };
   chromeStorage.local.set({ [KEY_LAST_EXP]: lastExpenseTpl });
@@ -1882,6 +1929,7 @@ function deleteExpense(id) {
   const removed = expenses[idx];
   expenses.splice(idx, 1);
   saveExp();
+  if (typeof ftReceiptDelete === 'function') ftReceiptDelete(id).catch(function() {});
   ftHaptic_('medium');
   render();
   registerUndoDelete('Expense', () => {
@@ -1965,6 +2013,7 @@ function addBank() {
   if (isNaN(balance) || balance<0) { shake(bEl); ok = false; }
   if (!ok) return;
   banks.push({ id: Date.now(), name, acct: acct || 'Account', balance, currency });
+  logBankBalanceChange_(banks[banks.length - 1], 0);
   saveBanks();
   maybeSnapshotNetWorth();
   nEl.value = ''; aEl.value = ''; bEl.value = '';
@@ -2022,6 +2071,17 @@ function openEditModal(type, id) {
   if (placeWrap) placeWrap.hidden = type !== 'exp';
   if (placeEl) placeEl.value = (type === 'exp' && entry.place) ? entry.place : '';
 
+  const transferWrap = document.getElementById('edit-transfer-wrap');
+  const transferEl = document.getElementById('edit-transfer');
+  if (transferWrap) transferWrap.hidden = type !== 'exp';
+  if (transferEl) transferEl.checked = type === 'exp' && !!entry.transfer;
+
+  const receiptWrap = document.getElementById('edit-receipt-wrap');
+  if (receiptWrap) receiptWrap.hidden = type !== 'exp';
+  if (type === 'exp' && typeof ftReceiptRefreshEditUi_ === 'function') {
+    ftReceiptRefreshEditUi_(entry.id);
+  }
+
   document.getElementById('edit-overlay').classList.add('open');
   document.getElementById('edit-name').focus();
 }
@@ -2056,6 +2116,9 @@ function saveEdit() {
     const place = placeEl ? placeEl.value.trim() : '';
     if (place) entry.place = place;
     else delete entry.place;
+    const transferEl = document.getElementById('edit-transfer');
+    if (transferEl && transferEl.checked) entry.transfer = true;
+    else delete entry.transfer;
   }
 
   if (editCtx.type === 'exp') saveExp(); else saveInc();
@@ -2271,13 +2334,14 @@ function makeDraggable(el, list, arr, save) {
 // ── Render ─────────────────────────────────────────────────
 function monthTotals_() {
   const me = mExp();
+  const meSpend = mExpSpend();
   const mi = mInc();
   const today = todayStr();
-  const totalExp = me.reduce((a, e) => a + e.amount, 0);
-  const todayExp = expenses.filter(e => e.date === today).reduce((a, e) => a + e.amount, 0);
+  const totalExp = meSpend.reduce((a, e) => a + e.amount, 0);
+  const todayExp = meSpend.filter(e => e.date === today).reduce((a, e) => a + e.amount, 0);
   const totalInc = mi.reduce((a, i) => a + i.amount, 0);
   return {
-    me, mi, today, totalExp, todayExp, totalInc,
+    me, meSpend, mi, today, totalExp, todayExp, totalInc,
     totalBanks: totalBanksBase(),
     net: totalInc - totalExp,
   };
@@ -2395,11 +2459,12 @@ function renderExpensesPanel_(t) {
     EXP_CATS,
     false
   );
-  renderBarChart('bar-chart', me, EXP_CATS, false);
+  renderBarChart('bar-chart', t.meSpend || meSpend(), EXP_CATS, false);
   const expDailyEl = document.getElementById('exp-daily-chart');
   if (expDailyEl) {
     const dayKeys = buildMonthDateKeys();
-    const dayTotals = buildMonthDailyTotals(dayKeys, me);
+    const spendRows = t.meSpend || mExpSpend();
+    const dayTotals = buildMonthDailyTotals(dayKeys, spendRows);
     renderMonthDailyLineChart(expDailyEl, dayKeys, dayTotals, { stroke: '#E24B4A', label: 'Spent' });
   }
 
@@ -2527,6 +2592,7 @@ function render() {
   if (typeof renderRecurring === 'function') renderRecurring();
   if (typeof renderNavMoreBadge_ === 'function') renderNavMoreBadge_();
   if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
+  if (typeof updateSyncUI === 'function') updateSyncUI();
   refreshActiveTabPanels();
 }
 
@@ -2545,7 +2611,8 @@ function buildTxRow_(entry, catMap, isIncome, arr, save, opts) {
   const dlbl = pd ? pd.toLocaleDateString('en-MY', { month: 'short', day: 'numeric' }) : '';
 
   const item = document.createElement('div');
-  item.className = 'tx-item' + (useSwipe ? ' tx-item__surface' : '');
+  item.className = 'tx-item' + (useSwipe ? ' tx-item__surface' : '') +
+    (!isIncome && isTransferExpense_(entry) ? ' tx-item--transfer' : '');
   item.dataset.id = entry.id;
 
   if (showDrag) {
@@ -2569,6 +2636,13 @@ function buildTxRow_(entry, catMap, isIncome, arr, save, opts) {
   const nm = document.createElement('div');
   nm.className = 'tx-name';
   nm.textContent = entry.name;
+  if (!isIncome && isTransferExpense_(entry)) {
+    const tag = document.createElement('span');
+    tag.className = 'tx-transfer-tag';
+    tag.textContent = 'Transfer';
+    nm.appendChild(document.createTextNode(' '));
+    nm.appendChild(tag);
+  }
   info.appendChild(nm);
 
   const meta = document.createElement('div');
@@ -2583,6 +2657,12 @@ function buildTxRow_(entry, catMap, isIncome, arr, save, opts) {
     noteSpan.style.cssText = 'color:var(--ink3);font-style:italic';
     noteSpan.textContent = ' · ' + entry.note;
     meta.appendChild(noteSpan);
+  }
+  if (!isIncome && entry.receipt) {
+    const rc = document.createElement('span');
+    rc.style.cssText = 'color:var(--ink3)';
+    rc.textContent = ' · 📎 receipt';
+    meta.appendChild(rc);
   }
   info.appendChild(meta);
   item.appendChild(info);
@@ -3079,10 +3159,12 @@ function renderBankList() {
       const acctVal = acctInp.value.trim();
       const balVal = parseFloat(balInp.value);
       if (!nameVal || isNaN(balVal) || balVal < 0) { shake(nameInp); return; }
+      const prevBal = Number(b.balance) || 0;
       b.name = nameVal;
       b.acct = acctVal || 'Account';
       b.currency = normalizeBankCurrency(curSel.value);
       b.balance = balVal;
+      logBankBalanceChange_(b, prevBal);
       saveBanks();
       maybeSnapshotNetWorth();
       render();
@@ -3105,6 +3187,90 @@ function renderBankList() {
     wrap.appendChild(row);
     wrap.appendChild(edit);
     el.appendChild(wrap);
+  });
+  renderBankBalanceLog_();
+}
+
+function renderBankBalanceLog_() {
+  const el = document.getElementById('bank-balance-log');
+  if (!el) return;
+  const rows = (bankBalanceLog || []).slice().reverse().slice(0, 30);
+  if (!rows.length) {
+    el.innerHTML = '<p class="ft-note" style="margin:0">Balance changes appear here when you update a bank account.</p>';
+    return;
+  }
+  el.innerHTML = rows.map(function(r) {
+    const delta = (Number(r.balance) || 0) - (Number(r.prevBalance) || 0);
+    const cur = normalizeBankCurrency(r.currency);
+    const sign = delta >= 0 ? '+' : '−';
+    return (
+      '<div class="bank-log-row">' +
+      '<span class="bank-log-row__date">' + esc(String(r.date || '').slice(0, 10)) + '</span>' +
+      '<span class="bank-log-row__name">' + esc(r.name || 'Account') + '</span>' +
+      '<span class="bank-log-row__delta ' + (delta >= 0 ? 'green' : 'red') + '">' +
+      sign + fmtBankAmount(Math.abs(delta), cur) +
+      '</span>' +
+      '<span class="bank-log-row__bal">' + fmtBankAmount(r.balance, cur) + '</span>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+function ftReceiptRefreshEditUi_(expenseId) {
+  const status = document.getElementById('edit-receipt-status');
+  const preview = document.getElementById('edit-receipt-preview');
+  const removeBtn = document.getElementById('edit-receipt-remove');
+  if (!status || typeof ftReceiptHas !== 'function') return;
+  status.textContent = 'Checking…';
+  if (preview) preview.innerHTML = '';
+  ftReceiptHas(expenseId).then(function(has) {
+    status.textContent = has ? 'Receipt attached' : 'No receipt saved';
+    if (removeBtn) removeBtn.hidden = !has;
+    if (has && preview && typeof ftReceiptGet === 'function') {
+      ftReceiptGet(expenseId).then(function(blob) {
+        if (!blob) return;
+        const img = document.createElement('img');
+        img.className = 'edit-receipt-preview__img';
+        img.alt = 'Receipt';
+        img.src = URL.createObjectURL(blob);
+        preview.appendChild(img);
+      }).catch(function() {});
+    }
+  }).catch(function() {
+    status.textContent = 'Receipt storage unavailable';
+  });
+}
+
+function ftReceiptAttachForEdit_() {
+  if (!editCtx || editCtx.type !== 'exp') return;
+  const fileInp = document.getElementById('edit-receipt-file');
+  const file = fileInp && fileInp.files && fileInp.files[0];
+  if (!file || typeof ftReceiptSave !== 'function') return;
+  const entry = expenses.find(function(e) { return e.id === editCtx.id; });
+  if (!entry) return;
+  ftReceiptSave(editCtx.id, file).then(function() {
+    entry.receipt = true;
+    saveExp();
+    if (fileInp) fileInp.value = '';
+    ftReceiptRefreshEditUi_(editCtx.id);
+    if (typeof showToast === 'function') showToast('Receipt saved');
+  }).catch(function() {
+    if (typeof showToast === 'function') showToast('Could not save receipt');
+  });
+}
+
+function ftReceiptRemoveForEdit_() {
+  if (!editCtx || editCtx.type !== 'exp' || typeof ftReceiptDelete !== 'function') return;
+  const entry = expenses.find(function(e) { return e.id === editCtx.id; });
+  ftReceiptDelete(editCtx.id).then(function() {
+    if (entry) {
+      delete entry.receipt;
+      saveExp();
+    }
+    ftReceiptRefreshEditUi_(editCtx.id);
+    if (typeof showToast === 'function') showToast('Receipt removed');
+  }).catch(function() {
+    if (typeof showToast === 'function') showToast('Could not remove receipt');
   });
 }
 
@@ -3494,6 +3660,10 @@ wireQuickAddUi();
 document.getElementById('edit-save').addEventListener('click', saveEdit);
 document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
 document.getElementById('edit-close').addEventListener('click', closeEditModal);
+var editReceiptAttach = document.getElementById('edit-receipt-attach');
+if (editReceiptAttach) editReceiptAttach.addEventListener('click', ftReceiptAttachForEdit_);
+var editReceiptRemove = document.getElementById('edit-receipt-remove');
+if (editReceiptRemove) editReceiptRemove.addEventListener('click', ftReceiptRemoveForEdit_);
 document.getElementById('edit-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('edit-overlay')) closeEditModal();
 });

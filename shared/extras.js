@@ -730,6 +730,50 @@ function renderPetrolEfficiencyChart() {
 // ╔══════════════════════════════════════════════════════════╗
 //   MONTHLY REPORT
 // ╚══════════════════════════════════════════════════════════╝
+function reportExpenses_() {
+  return typeof mExpSpend === 'function' ? mExpSpend() : mExp();
+}
+
+function reportCsvEscape_(val) {
+  var s = String(val == null ? '' : val);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function buildReportCsv_() {
+  var me = reportExpenses_();
+  var mi = mInc();
+  var ym = viewYM();
+  var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+  var totalExp = me.reduce(function(a, e) { return a + e.amount; }, 0);
+  var totalInc = mi.reduce(function(a, i) { return a + i.amount; }, 0);
+  var net = totalInc - totalExp;
+  var lines = [
+    'Section,Label,Amount,Notes',
+    'Summary,Income,' + totalInc.toFixed(2) + ',',
+    'Summary,Expenses,' + totalExp.toFixed(2) + ',',
+    'Summary,Net,' + net.toFixed(2) + ',',
+  ];
+  reportPortfolioShareLines_().forEach(function(line) {
+    var idx = line.indexOf(':');
+    var label = idx >= 0 ? line.slice(0, idx).trim() : line;
+    var val = idx >= 0 ? line.slice(idx + 1).trim() : '';
+    lines.push('Portfolio,' + reportCsvEscape_(label) + ',' + reportCsvEscape_(val) + ',');
+  });
+  var catTotals = {};
+  me.forEach(function(e) { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
+  Object.keys(catTotals).sort().forEach(function(cat) {
+    lines.push('Category,' + reportCsvEscape_(cat) + ',' + catTotals[cat].toFixed(2) + ',');
+  });
+  mi.forEach(function(i) {
+    lines.push('Income row,' + reportCsvEscape_(i.name) + ',' + Number(i.amount).toFixed(2) + ',' + reportCsvEscape_(i.cat + ' ' + i.date));
+  });
+  me.forEach(function(e) {
+    lines.push('Expense row,' + reportCsvEscape_(e.name) + ',' + Number(e.amount).toFixed(2) + ',' + reportCsvEscape_(e.cat + ' ' + e.date));
+  });
+  return lines.join('\n');
+}
+
 function reportCashflowTimeline(daysAhead) {
   var now = new Date();
   var end = new Date(now.getTime() + (daysAhead || 30) * 86400000);
@@ -916,7 +960,7 @@ function renderReport() {
   var el = document.getElementById('report-content');
   if (!el) return;
 
-  var me       = mExp();
+  var me       = reportExpenses_();
   var mi       = mInc();
   var ym       = viewYM();
   var ymLabel  = viewMonth.toLocaleString('default', {month:'long', year:'numeric'});
@@ -1196,7 +1240,7 @@ function renderReport() {
 }
 
 function buildReportShareText() {
-  var me = mExp();
+  var me = reportExpenses_();
   var mi = mInc();
   var ym = viewYM();
   var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -1228,7 +1272,7 @@ function buildReportShareText() {
 }
 
 function buildReportPlainText_() {
-  var me = mExp();
+  var me = reportExpenses_();
   var mi = mInc();
   var ym = viewYM();
   var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -1284,7 +1328,7 @@ function buildReportPlainText_() {
 }
 
 function buildReportMarkdown_() {
-  var me = mExp();
+  var me = reportExpenses_();
   var mi = mInc();
   var ym = viewYM();
   var ymLabel = viewMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -1446,6 +1490,12 @@ if (dlMdBtn) dlMdBtn.addEventListener('click', function() {
   if (typeof renderReport === 'function') renderReport();
   var ym = typeof viewYM === 'function' ? viewYM() : 'report';
   downloadReportFile_(buildReportMarkdown_(), 'finance-report-' + ym + '.md', 'text/markdown;charset=utf-8');
+});
+var dlCsvBtn = document.getElementById('download-report-csv');
+if (dlCsvBtn) dlCsvBtn.addEventListener('click', function() {
+  if (typeof renderReport === 'function') renderReport();
+  var ym = typeof viewYM === 'function' ? viewYM() : 'report';
+  downloadReportFile_(buildReportCsv_(), 'finance-report-' + ym + '.csv', 'text/csv;charset=utf-8');
 });
 
 loadExtras();

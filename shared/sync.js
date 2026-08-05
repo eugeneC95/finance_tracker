@@ -1135,6 +1135,21 @@ function updateSyncUI() {
       outboxEl.innerHTML = '';
     }
   }
+  var globalOutbox = document.getElementById('ft-sync-outbox-global');
+  if (globalOutbox) {
+    if (outbox && outbox.pending && syncLocalDirty) {
+      globalOutbox.hidden = false;
+      var gWhen = outbox.at ? fmtRelativeTime(outbox.at) : 'recently';
+      globalOutbox.innerHTML =
+        '<span>Changes queued (' + gWhen + ')</span>' +
+        '<button type="button" class="btn-ghost" id="sync-outbox-retry-global">Retry sync</button>';
+      var gRetry = document.getElementById('sync-outbox-retry-global');
+      if (gRetry) gRetry.addEventListener('click', retrySyncOutboxNow_);
+    } else {
+      globalOutbox.hidden = true;
+      globalOutbox.innerHTML = '';
+    }
+  }
   if (hero) {
     if (outbox && outbox.pending && syncLocalDirty) {
       hero.textContent = 'Offline — ' + (outbox.retries || 1) + ' save(s) waiting to sync';
