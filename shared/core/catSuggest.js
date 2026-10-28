@@ -73,7 +73,6 @@ export const EXP_AUTO_CAT_RULES = [
   { cat: 'Health', keys: ['klinik', 'clinic', 'hospital', 'dentist', 'doctor', 'medical'] },
   { cat: 'Hotel', keys: ['hotel', 'airbnb', 'booking com'] },
   { cat: 'Gifts', keys: ['gift', 'hadiah'] },
-  { cat: 'Charity', keys: ['zakat', 'donation', 'sedekah', 'infaq'] },
   { cat: 'Bank fees', keys: ['bank fee', 'annual fee', 'late fee', 'service charge'] },
   { cat: 'Salary', keys: ['salary', 'gaji', 'payroll', 'wages'] },
   { cat: 'Bonus', keys: ['bonus', 'incentive', 'allowance', 'elaun'] },

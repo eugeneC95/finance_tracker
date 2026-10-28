@@ -45,7 +45,6 @@ const EXP_CATS = {
   'Internet':      { icon:'IN', color:'#5B8DEF' },
   'Phone':         { icon:'PH', color:'#4C7AE8' },
   'Renovation':    { icon:'RN', color:'#8B6914' },
-  'Household':     { icon:'HH', color:'#A9844A' },
   // Health
   'Health':        { icon:'HE', color:'#D4537E' },
   'Pharmacy':      { icon:'RX', color:'#C44B6A' },
@@ -79,8 +78,6 @@ const EXP_CATS = {
   'Hobbies':       { icon:'HB', color:'#E91E63' },
   // Family
   'Education':     { icon:'ED', color:'#2196F3' },
-  'Kids':          { icon:'KD', color:'#3D8BDB' },
-  'Charity':       { icon:'CH', color:'#5C8A6A' },
   'Pet care':      { icon:'PC', color:'#795548' },
   // Other
   'Other':         { icon:'OT', color:'#B4B2A9' },
@@ -90,12 +87,12 @@ const EXP_CATS = {
 const EXP_CAT_GROUPS = [
   { title: 'Everyday & dining', cats: ['Food', 'Groceries', 'Eating out', 'Coffee'] },
   { title: 'Shopping & gear', cats: ['Shopping', 'Clothing', 'Electronics', 'Gifts'] },
-  { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation', 'Household'] },
+  { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation'] },
   { title: 'Health & self-care', cats: ['Health', 'Pharmacy', 'Fitness', 'Grooming'] },
   { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax', 'Bank fees'] },
   { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Ride-hailing', 'Flight', 'Hotel'] },
   { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
-  { title: 'Education & family', cats: ['Education', 'Kids', 'Charity', 'Pet care'] },
+  { title: 'Education & family', cats: ['Education', 'Pet care'] },
   { title: 'Other', cats: ['Other'] },
 ];
 
@@ -114,7 +111,6 @@ const EXP_CAT_ICON_IDS = {
   'Internet': 'cat-internet',
   'Phone': 'cat-internet',
   'Renovation': 'cat-renovation',
-  'Household': 'cat-home',
   'Health': 'cat-health',
   'Pharmacy': 'cat-health',
   'Fitness': 'cat-fitness',
@@ -142,8 +138,6 @@ const EXP_CAT_ICON_IDS = {
   'Travel': 'cat-travel',
   'Hobbies': 'cat-hobbies',
   'Education': 'cat-education',
-  'Kids': 'cat-education',
-  'Charity': 'cat-other',
   'Pet care': 'cat-pet',
   'Other': 'cat-other',
 };

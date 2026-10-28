@@ -10,7 +10,7 @@ function importWalletStorage() {
 }
 
 const IW_CAT_RULES = EXP_AUTO_CAT_RULES;
-const EXP_LIST=Object.keys(typeof EXP_CATS!=='undefined'?EXP_CATS:{'Food':1,'Groceries':1,'Eating out':1,'Coffee':1,'Shopping':1,'Clothing':1,'Electronics':1,'Gifts':1,'Rent':1,'Utilities':1,'Internet':1,'Phone':1,'Renovation':1,'Household':1,'Health':1,'Pharmacy':1,'Fitness':1,'Grooming':1,'Bills':1,'Insurance':1,'Loan payment':1,'Tax':1,'Bank fees':1,'Petrol':1,'Car Service':1,'Toll':1,'Parking':1,'Car Expenses':1,'Car Insurance':1,'Transport':1,'Ride-hailing':1,'Flight':1,'Hotel':1,'Entertainment':1,'Subscription':1,'Travel':1,'Hobbies':1,'Education':1,'Kids':1,'Charity':1,'Pet care':1,'Other':1});
+const EXP_LIST=Object.keys(typeof EXP_CATS!=='undefined'?EXP_CATS:{'Food':1,'Groceries':1,'Eating out':1,'Coffee':1,'Shopping':1,'Clothing':1,'Electronics':1,'Gifts':1,'Rent':1,'Utilities':1,'Internet':1,'Phone':1,'Renovation':1,'Health':1,'Pharmacy':1,'Fitness':1,'Grooming':1,'Bills':1,'Insurance':1,'Loan payment':1,'Tax':1,'Bank fees':1,'Petrol':1,'Car Service':1,'Toll':1,'Parking':1,'Car Expenses':1,'Car Insurance':1,'Transport':1,'Ride-hailing':1,'Flight':1,'Hotel':1,'Entertainment':1,'Subscription':1,'Travel':1,'Hobbies':1,'Education':1,'Pet care':1,'Other':1});
 const INC_LIST=Object.keys(typeof INC_CATS!=='undefined'?INC_CATS:{'Salary':1,'Bonus':1,'Freelance':1,'Business':1,'Unit Trust':1,'Dividend':1,'Investment':1,'Rental':1,'Side income':1,'Cashback':1,'Gift':1,'Refund':1,'Other':1});
 const INC_SET=new Set(['Salary','Bonus','Freelance','Business','Unit Trust','Dividend','Investment','Rental','Side income','Cashback','Gift','Refund']);
 

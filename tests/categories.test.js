@@ -83,24 +83,24 @@ describe('add-expense chip catalog', () => {
   const EXP_CATS = {
     Food: 1, Groceries: 1, 'Eating out': 1, Coffee: 1,
     Shopping: 1, Clothing: 1, Electronics: 1,
-    Rent: 1, Utilities: 1, Internet: 1, Renovation: 1, Household: 1,
+    Rent: 1, Utilities: 1, Internet: 1, Renovation: 1,
     Health: 1, Fitness: 1, Grooming: 1, Pharmacy: 1,
     Bills: 1, Insurance: 1, 'Loan payment': 1, Tax: 1, Phone: 1, 'Bank fees': 1,
     Petrol: 1, 'Car Service': 1, 'Car Repair Labour': 1, 'Car Parts': 1,
     'Tyre Service': 1, Toll: 1, Parking: 1, 'Car Expenses': 1, 'Car Insurance': 1,
     Transport: 1, 'Ride-hailing': 1, Flight: 1, Hotel: 1,
     Entertainment: 1, Subscription: 1, Travel: 1, Hobbies: 1,
-    Education: 1, Kids: 1, Gifts: 1, Charity: 1, 'Pet care': 1, Other: 1,
+    Education: 1, Gifts: 1, 'Pet care': 1, Other: 1,
   };
   const GROUPS = [
     ['Food', 'Groceries', 'Eating out', 'Coffee'],
     ['Shopping', 'Clothing', 'Electronics', 'Gifts'],
-    ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation', 'Household'],
+    ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation'],
     ['Health', 'Pharmacy', 'Fitness', 'Grooming'],
     ['Bills', 'Insurance', 'Loan payment', 'Tax', 'Bank fees'],
     ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Ride-hailing', 'Flight', 'Hotel'],
     ['Entertainment', 'Subscription', 'Travel', 'Hobbies'],
-    ['Education', 'Kids', 'Charity', 'Pet care'],
+    ['Education', 'Pet care'],
     ['Other'],
   ];
 

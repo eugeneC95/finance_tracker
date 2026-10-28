@@ -394,7 +394,7 @@ async function parseAndPreview() {
 }
 
 // ── Build preview table ────────────────────────────────────
-const EXP_CAT_LIST = ['Food','Groceries','Eating out','Coffee','Shopping','Clothing','Electronics','Gifts','Rent','Utilities','Internet','Phone','Renovation','Household','Health','Pharmacy','Fitness','Grooming','Bills','Insurance','Loan payment','Tax','Bank fees','Petrol','Car Service','Car Repair Labour','Car Parts','Tyre Service','Toll','Parking','Car Expenses','Car Insurance','Transport','Ride-hailing','Flight','Hotel','Entertainment','Subscription','Travel','Hobbies','Education','Kids','Charity','Pet care','Other'];
+const EXP_CAT_LIST = ['Food','Groceries','Eating out','Coffee','Shopping','Clothing','Electronics','Gifts','Rent','Utilities','Internet','Phone','Renovation','Health','Pharmacy','Fitness','Grooming','Bills','Insurance','Loan payment','Tax','Bank fees','Petrol','Car Service','Car Repair Labour','Car Parts','Tyre Service','Toll','Parking','Car Expenses','Car Insurance','Transport','Ride-hailing','Flight','Hotel','Entertainment','Subscription','Travel','Hobbies','Education','Pet care','Other'];
 const INC_CAT_LIST = ['Salary','Freelance','Business','Investment','Rental','Gift','Other'];
 
 function buildPreview() {
