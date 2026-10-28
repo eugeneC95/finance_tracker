@@ -1029,6 +1029,7 @@ body.dark .bar-track { background: var(--card-bg2); }
   gap: var(--s6);
   align-items: start;
 }
+#assets-pane-invest { grid-column: 1 / -1; }
 .assets-section .panel-hd {
   flex-wrap: wrap;
   gap: var(--s3);
@@ -1144,6 +1145,79 @@ body.dark .assets-hero-v2 {
   align-items: flex-start;
   gap: var(--s4);
   margin-bottom: var(--s5);
+}
+.assets-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 var(--s5);
+  padding: 4px;
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  width: fit-content;
+  max-width: 100%;
+}
+.assets-tab {
+  border: 0;
+  background: transparent;
+  color: var(--ink2);
+  font-size: var(--f-sm);
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.assets-tab.active {
+  background: var(--card-bg);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.assets-split { margin-top: 4px; }
+.assets-split__bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--line);
+}
+.assets-split__banks { display: block; height: 100%; background: #0f766e; }
+.assets-split__funds { display: block; height: 100%; background: #7c6af7; }
+.assets-split__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 10px;
+  font-size: var(--f-sm);
+  color: var(--ink2);
+}
+.assets-split__legend strong { color: var(--ink); font-weight: 800; }
+.assets-split__legend em { font-style: normal; color: var(--ink3); font-size: var(--f-xs); margin-left: 4px; }
+.assets-split__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.assets-split__dot--banks { background: #0f766e; }
+.assets-split__dot--funds { background: #7c6af7; }
+.ut-holding summary.assets-acct-row {
+  list-style: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.ut-holding summary.assets-acct-row::-webkit-details-marker { display: none; }
+.ut-holding[open] summary.assets-acct-row {
+  border-bottom: 1px solid var(--line);
+}
+.assets-add-panel .assets-form {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 .assets-cashflow-pill {
   padding: 10px 14px;

@@ -2045,7 +2045,7 @@ function renderNwSnapshotHint() {
     : 'Last net worth snapshot was <strong>' + staleDays + ' day' + (staleDays === 1 ? '' : 's') + '</strong> ago (14+ days).';
   msg += autoOn
     ? ' Bank or fund NAV changes record today automatically.'
-    : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or tap <strong>Snapshot today</strong> on Assets.';
+    : ' Turn on <strong>Auto-snapshot net worth</strong> in Settings, or tap <strong>Update portfolio</strong> on Assets.';
   hints.forEach(function(el) {
     el.style.display = 'block';
     el.innerHTML = msg;
@@ -2500,6 +2500,10 @@ document.addEventListener('keydown', function(e) {
 var assetsNwSnapBtn = document.getElementById('assets-nw-snapshot-btn');
 if (assetsNwSnapBtn) {
   assetsNwSnapBtn.addEventListener('click', function() {
+    if (typeof updatePortfolioNow_ === 'function') {
+      updatePortfolioNow_();
+      return;
+    }
     if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
     if (typeof renderAllNetWorthCharts === 'function') renderAllNetWorthCharts();
     if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();

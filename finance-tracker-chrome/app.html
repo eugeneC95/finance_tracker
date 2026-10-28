@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=146"/>
-<link rel="stylesheet" href="../styles/reset.css?v=146"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=146"/>
-<link rel="stylesheet" href="../styles/base.css?v=146"/>
-<link rel="stylesheet" href="../styles/components.css?v=146"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=146"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=147"/>
+<link rel="stylesheet" href="../styles/reset.css?v=147"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=147"/>
+<link rel="stylesheet" href="../styles/base.css?v=147"/>
+<link rel="stylesheet" href="../styles/components.css?v=147"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=147"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=146"/>
+<link rel="stylesheet" href="../theme-modern.css?v=147"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -488,7 +488,7 @@
   <div class="page" id="page-assets">
     <div class="page-header page-header--slim">
       <h2>Assets</h2>
-      <p class="sub">Cash in the bank and unit-trust holdings. Income and expense totals follow <span class="ft-month-hint ft-month-hint--desk">the sidebar month</span><span class="ft-month-hint ft-month-hint--mob">the month shown above</span>.</p>
+      <p class="sub">Cash and investments in one portfolio. Month income and spend stay on Home.</p>
     </div>
     <div class="page-body">
 
@@ -497,33 +497,18 @@
           <div class="assets-hero__main">
             <div class="assets-hero__label">Total portfolio</div>
             <div class="assets-hero__value green" id="ns-portfolio">RM 0</div>
-            <p class="assets-hero__hint">Bank balances plus unit-trust market value (in RM).</p>
+            <p class="assets-hero__hint">Banks plus funds, in your base currency. Last snapshot: <span id="assets-last-snap">—</span></p>
           </div>
-          <div class="assets-cashflow-pill">
-            <span>Month cashflow</span>
-            <strong class="assets-cashflow-pill__val green" id="ns-cashflow">RM 0</strong>
-          </div>
+          <button type="button" class="btn btn-primary" id="assets-nw-snapshot-btn">Update portfolio</button>
         </div>
-        <div class="assets-stat-grid">
-          <div class="assets-stat-tile">
-            <div class="assets-stat-tile__lbl">Banks</div>
-            <div class="assets-stat-tile__val green" id="ns-banks">RM 0</div>
-            <div class="assets-stat-tile__sub" id="ns-bank-count">0 accounts</div>
+        <div class="assets-split" id="assets-split" hidden>
+          <div class="assets-split__bar" aria-hidden="true">
+            <span class="assets-split__banks" id="assets-split-banks"></span>
+            <span class="assets-split__funds" id="assets-split-funds"></span>
           </div>
-          <div class="assets-stat-tile">
-            <div class="assets-stat-tile__lbl">Unit trusts &amp; ETFs</div>
-            <div class="assets-stat-tile__val green" id="ns-ut">RM 0</div>
-            <div class="assets-stat-tile__sub" id="ns-ut-count">0 funds</div>
-          </div>
-          <div class="assets-stat-tile">
-            <div class="assets-stat-tile__lbl">Income (month)</div>
-            <div class="assets-stat-tile__val green" id="ns-income">RM 0</div>
-            <div class="assets-stat-tile__sub">Selected month</div>
-          </div>
-          <div class="assets-stat-tile">
-            <div class="assets-stat-tile__lbl">Expenses (month)</div>
-            <div class="assets-stat-tile__val red" id="ns-exp">RM 0</div>
-            <div class="assets-stat-tile__sub">Selected month</div>
+          <div class="assets-split__legend">
+            <span><i class="assets-split__dot assets-split__dot--banks"></i> Banks <strong id="ns-banks">RM 0</strong> <em id="ns-bank-count">0 accounts</em></span>
+            <span><i class="assets-split__dot assets-split__dot--funds"></i> Funds <strong id="ns-ut">RM 0</strong> <em id="ns-ut-count">0 holdings</em></span>
           </div>
         </div>
         <div id="ns-net" hidden aria-hidden="true"></div>
@@ -533,17 +518,21 @@
 
       <div class="card mb-5 assets-nw-card">
         <div class="panel-hd">
-          <span class="panel-title">Portfolio history</span>
-          <button type="button" class="btn-ghost" id="assets-nw-snapshot-btn">Snapshot today</button>
+          <span class="panel-title" id="assets-chart-title">Portfolio history</span>
         </div>
         <div class="panel-bd">
           <div id="assets-networth-chart"></div>
-          <p class="ft-note" style="margin-top:8px">Bank + unit trust/ETF total when you update balances or tap Snapshot.</p>
+          <p class="ft-note" style="margin-top:8px">Saved when you update balances, NAV, or tap Update portfolio.</p>
         </div>
       </div>
 
+      <div class="assets-tabs" role="tablist" aria-label="Asset type">
+        <button type="button" class="assets-tab active" role="tab" aria-selected="true" data-assets-tab="cash" id="assets-tab-cash">Cash</button>
+        <button type="button" class="assets-tab" role="tab" aria-selected="false" data-assets-tab="invest" id="assets-tab-invest">Investments</button>
+      </div>
+
       <div class="assets-layout">
-        <section class="card assets-section mb-5">
+        <section class="card assets-section mb-5" id="assets-pane-cash" data-assets-pane="cash">
           <div class="panel-hd">
             <span class="panel-title">Bank accounts</span>
           </div>
@@ -583,12 +572,12 @@
           </div>
         </section>
 
-        <section class="card assets-section mb-5">
+        <section class="card assets-section mb-5" id="assets-pane-cash-log" data-assets-pane="cash">
           <div class="panel-hd"><span class="panel-title">Balance history</span></div>
           <div class="panel-bd" id="bank-balance-log"></div>
         </section>
 
-        <section class="card assets-section mb-5">
+        <section class="card assets-section mb-5" id="assets-pane-invest" data-assets-pane="invest" hidden>
           <div class="panel-hd">
             <span class="panel-title">Unit trusts &amp; ETFs</span>
             <span class="assets-section__total" id="ut-summary-mv">RM 0.00</span>
@@ -603,16 +592,15 @@
             </details>
 
             <div class="ut-toolbar">
-              <button type="button" class="btn-ghost" id="ut-snapshot-nav-btn" title="Copy latest NAV to today for all funds">Snapshot NAV today</button>
-              <button type="button" class="btn-ghost" id="ut-refresh-btn" title="Recompute from latest NAV">Refresh values</button>
               <button type="button" class="btn-ghost" id="ut-csv-btn">Import NAV CSV</button>
               <input type="file" id="ut-csv-input" accept=".csv,text/csv,text/plain" hidden/>
             </div>
 
             <div class="ut-list" id="ut-root"></div>
 
+            <details class="assets-add-panel">
+              <summary>+ Add holding</summary>
             <form class="assets-form" id="ut-add-form" autocomplete="off" onsubmit="return false">
-              <div class="assets-form__title">Add holding</div>
               <div class="assets-form-grid assets-form-grid--3">
                 <div class="span-2">
                   <label class="lbl" for="ut-name">Name</label>
@@ -655,14 +643,8 @@
                 <button type="button" class="btn btn-primary" id="ut-add-btn">Add fund</button>
               </div>
             </form>
-
-            <div class="ut-chart-block">
-              <div class="ut-chart-block__head">
-                <span class="ut-chart-block__title">Portfolio trend</span>
-                <span class="ut-chart-block__hint">From saved NAV</span>
-              </div>
-              <div id="ut-chart"></div>
-            </div>
+            </details>
+            <div id="ut-chart" hidden></div>
           </div>
         </section>
       </div>
@@ -1215,7 +1197,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v146 · 2026-10-28 17:57</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v147 · 2026-10-28 18:13</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1526,7 +1508,7 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=146"></script>
+<script src="../build-id.js?v=147"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1535,13 +1517,13 @@
   if (el) el.textContent = s;
 })();
 </script>
-<script type="module" src="../shared/main.js?v=146"></script>
-<script defer src="../shared/app.js?v=146"></script>
-<script defer src="../shared/sync-auth.js?v=146"></script>
-<script defer src="../shared/sync-transport.js?v=146"></script>
-<script defer src="../shared/sync.js?v=146"></script>
-<script defer src="../shared/features.js?v=146"></script>
-<script defer src="../shared/receipts.js?v=146"></script>
-<script defer src="../shared/extras.js?v=146"></script>
+<script type="module" src="../shared/main.js?v=147"></script>
+<script defer src="../shared/app.js?v=147"></script>
+<script defer src="../shared/sync-auth.js?v=147"></script>
+<script defer src="../shared/sync-transport.js?v=147"></script>
+<script defer src="../shared/sync.js?v=147"></script>
+<script defer src="../shared/features.js?v=147"></script>
+<script defer src="../shared/receipts.js?v=147"></script>
+<script defer src="../shared/extras.js?v=147"></script>
 </body>
 </html>

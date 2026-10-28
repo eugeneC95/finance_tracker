@@ -384,7 +384,8 @@ function logBankBalanceChange_(bank, prevBalance) {
   saveBankLog();
 }
 
-function utSnapshotAllNavToday_() {
+function utSnapshotAllNavToday_(opts) {
+  opts = opts || {};
   const td = todayStr();
   let n = 0;
   utHoldings.forEach(h => {
@@ -392,10 +393,23 @@ function utSnapshotAllNavToday_() {
     if (!lastE) return;
     if (upsertUtNav(h.id, td, lastE.nav, true)) n++;
   });
-  maybeSnapshotNetWorth();
+  if (!opts.skipRender) {
+    maybeSnapshotNetWorth();
+    render();
+    if (typeof showToast === 'function') {
+      showToast(n ? 'NAV snapshotted for ' + n + ' fund(s) today' : 'No funds with NAV to snapshot');
+    }
+  }
+  return n;
+}
+
+function updatePortfolioNow_() {
+  const n = utSnapshotAllNavToday_({ skipRender: true });
+  if (typeof snapshotNetWorth === 'function') snapshotNetWorth();
   render();
+  if (typeof renderNwSnapshotHint === 'function') renderNwSnapshotHint();
   if (typeof showToast === 'function') {
-    showToast(n ? 'NAV snapshotted for ' + n + ' fund(s) today' : 'No funds with NAV to snapshot');
+    showToast(n ? 'Portfolio updated · NAV copied for ' + n + ' fund(s)' : 'Portfolio snapshot saved for today');
   }
 }
 
@@ -783,7 +797,30 @@ function addUtHolding() {
   showToast('Holding added');
 }
 
+function setAssetsTab_(tab) {
+  const which = tab === 'invest' ? 'invest' : 'cash';
+  try { sessionStorage.setItem('ft_assets_tab', which); } catch (e) {}
+  document.querySelectorAll('.assets-tab').forEach(btn => {
+    const on = btn.getAttribute('data-assets-tab') === which;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-assets-pane]').forEach(pane => {
+    pane.hidden = pane.getAttribute('data-assets-pane') !== which;
+  });
+}
+
 function wireAssetsPageControls() {
+  const tabs = document.querySelectorAll('.assets-tab');
+  if (tabs.length && !tabs[0].dataset.wired) {
+    tabs.forEach(btn => {
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', () => setAssetsTab_(btn.getAttribute('data-assets-tab')));
+    });
+    let saved = 'cash';
+    try { saved = sessionStorage.getItem('ft_assets_tab') || 'cash'; } catch (e) {}
+    setAssetsTab_(saved);
+  }
   const utAdd = document.getElementById('ut-add-btn');
   if (utAdd && !utAdd.dataset.wired) {
     utAdd.dataset.wired = '1';
@@ -792,11 +829,6 @@ function wireAssetsPageControls() {
       const el = document.getElementById(id);
       if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') addUtHolding(); });
     });
-  }
-  const utRef = document.getElementById('ut-refresh-btn');
-  if (utRef && !utRef.dataset.wired) {
-    utRef.dataset.wired = '1';
-    utRef.addEventListener('click', () => render());
   }
   const utCsv = document.getElementById('ut-csv-btn');
   const utCsvIn = document.getElementById('ut-csv-input');
@@ -808,11 +840,6 @@ function wireAssetsPageControls() {
       utCsvIn.value = '';
       if (f) importUtNavCsv(f);
     });
-  }
-  const utSnap = document.getElementById('ut-snapshot-nav-btn');
-  if (utSnap && !utSnap.dataset.wired) {
-    utSnap.dataset.wired = '1';
-    utSnap.addEventListener('click', () => utSnapshotAllNavToday_());
   }
 }
 
@@ -868,13 +895,21 @@ function renderUnitTrustPanel() {
     }
 
     const card = document.createElement('div');
-    card.className = 'ut-card';
+    card.className = 'assets-bank-card ut-holding';
 
-    const head = document.createElement('div');
-    head.className = 'ut-card__head';
+    const details = document.createElement('details');
+    details.className = 'ut-holding__details';
+    if (typeof window !== 'undefined' && window.ftUtOpenId_ === h.id) details.open = true;
+    details.addEventListener('toggle', () => {
+      if (details.open) window.ftUtOpenId_ = h.id;
+      else if (window.ftUtOpenId_ === h.id) window.ftUtOpenId_ = null;
+    });
+
+    const head = document.createElement('summary');
+    head.className = 'assets-acct-row';
 
     const title = document.createElement('div');
-    title.className = 'ut-card__title';
+    title.className = 'ut-card__title assets-acct-row__body';
     const nameEl = document.createElement('div');
     nameEl.className = 'ut-card__name';
     nameEl.textContent = h.name;
@@ -913,7 +948,9 @@ function renderUnitTrustPanel() {
     delBtn.className = 'assets-icon-btn del';
     delBtn.title = 'Remove fund';
     delBtn.textContent = '✕';
-    delBtn.addEventListener('click', () => {
+    delBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
       if (confirm('Remove this fund and its NAV history?')) deleteUtHolding(h.id);
     });
 
@@ -991,13 +1028,8 @@ function renderUnitTrustPanel() {
     navGrid.appendChild(saveWrap);
     navBlock.appendChild(navGrid);
 
-    const edit = document.createElement('details');
-    edit.className = 'assets-acct-edit ut-card__edit';
-    const sum = document.createElement('summary');
-    sum.textContent = 'Edit holding';
-    edit.appendChild(sum);
     const editBody = document.createElement('div');
-    editBody.className = 'assets-acct-edit__body';
+    editBody.className = 'ut-holding__edit';
 
     const editGrid = document.createElement('div');
     editGrid.className = 'assets-form-grid assets-form-grid--3';
@@ -1089,12 +1121,16 @@ function renderUnitTrustPanel() {
     editGrid.appendChild(costWrap);
     editBody.appendChild(editGrid);
     editBody.appendChild(saveRow);
-    edit.appendChild(editBody);
 
-    card.appendChild(head);
-    card.appendChild(stats);
-    card.appendChild(navBlock);
-    card.appendChild(edit);
+    const expBody = document.createElement('div');
+    expBody.className = 'assets-acct-edit__body';
+    expBody.appendChild(stats);
+    expBody.appendChild(navBlock);
+    expBody.appendChild(editBody);
+
+    details.appendChild(head);
+    details.appendChild(expBody);
+    card.appendChild(details);
     root.appendChild(card);
   });
 
@@ -2524,24 +2560,13 @@ function renderAssetsSummaries_(t) {
   const totalBanksVal = t.totalBanks;
   const utMv = computeUtTotalMarketValue();
   const portfolioTotal = totalBanksVal + utMv;
-  const monthCashflow = t.totalInc - t.totalExp;
 
   const nsBanks = document.getElementById('ns-banks');
   if (nsBanks) nsBanks.textContent = fmt(totalBanksVal);
-  const nsIncome = document.getElementById('ns-income');
-  if (nsIncome) nsIncome.textContent = fmt(t.totalInc);
-  const nsExp = document.getElementById('ns-exp');
-  if (nsExp) nsExp.textContent = fmt(t.totalExp);
-
   const nsPortfolio = document.getElementById('ns-portfolio');
   if (nsPortfolio) {
     nsPortfolio.textContent = fmt(portfolioTotal);
     nsPortfolio.className = 'assets-hero__value ' + (portfolioTotal >= 0 ? 'green' : 'red');
-  }
-  const nsCashflow = document.getElementById('ns-cashflow');
-  if (nsCashflow) {
-    nsCashflow.textContent = (monthCashflow >= 0 ? '+' : '−') + fmt(Math.abs(monthCashflow));
-    nsCashflow.className = 'assets-cashflow-pill__val ' + (monthCashflow >= 0 ? 'green' : 'red');
   }
   const nsUt = document.getElementById('ns-ut');
   if (nsUt) nsUt.textContent = fmt(utMv);
@@ -2552,6 +2577,23 @@ function renderAssetsSummaries_(t) {
   const nsUtCount = document.getElementById('ns-ut-count');
   if (nsUtCount) {
     nsUtCount.textContent = utHoldings.length + ' holding' + (utHoldings.length === 1 ? '' : 's');
+  }
+  const splitEl = document.getElementById('assets-split');
+  const splitBanks = document.getElementById('assets-split-banks');
+  const splitFunds = document.getElementById('assets-split-funds');
+  if (splitEl && splitBanks && splitFunds) {
+    const showSplit = portfolioTotal > 0 || totalBanksVal > 0 || utMv > 0;
+    splitEl.hidden = !showSplit;
+    const denom = Math.max(portfolioTotal, totalBanksVal + utMv, 1);
+    splitBanks.style.width = (100 * totalBanksVal / denom) + '%';
+    splitFunds.style.width = (100 * utMv / denom) + '%';
+  }
+  const lastSnap = document.getElementById('assets-last-snap');
+  if (lastSnap) {
+    const hist = (typeof networthHist !== 'undefined' && networthHist.length)
+      ? networthHist[networthHist.length - 1]
+      : null;
+    lastSnap.textContent = hist && hist.date ? hist.date : 'none yet';
   }
 
   const nnet = document.getElementById('ns-net');
