@@ -73,7 +73,13 @@ function saveBudRoll() { chromeStorage.local.set({ [KEY_BUD_ROLL]: budgetRollove
 function saveSavGoal() { chromeStorage.local.set({ [KEY_SAVGOAL]: savingsGoal }); }
 function saveCatRules() { chromeStorage.local.set({ [KEY_CAT_RULES]: catRules }); }
 
+function ftCatSuggestCore_() {
+  return (typeof globalThis !== 'undefined' && globalThis.ftCore) ? globalThis.ftCore : {};
+}
+
 function normMerchantKey(name) {
+  var fn = ftCatSuggestCore_().normMerchantKey;
+  if (fn) return fn(name);
   return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 48);
 }
 
@@ -86,13 +92,17 @@ function learnCatRule(name, cat) {
 }
 
 function suggestCatForName(name) {
+  var fn = ftCatSuggestCore_().suggestCatFromLearned;
+  if (fn) return fn(name, catRules);
   var n = normMerchantKey(name);
   if (!n) return null;
   if (catRules[n]) return catRules[n];
   var best = null;
   var bestLen = 0;
   Object.keys(catRules).forEach(function(k) {
-    if (n.indexOf(k) >= 0 && k.length > bestLen) {
+    var hay = ' ' + n + ' ';
+    var needle = ' ' + k + ' ';
+    if ((n === k || hay.indexOf(needle) >= 0) && k.length > bestLen) {
       best = catRules[k];
       bestLen = k.length;
     }
@@ -102,6 +112,7 @@ function suggestCatForName(name) {
 
 function applySuggestedCategory(name, opts) {
   opts = opts || {};
+  if (!opts.force && typeof window !== 'undefined' && window.ftCatLockedByUser_) return false;
   var cat = suggestCatForName(name);
   if (!cat || typeof selectedCat === 'undefined' || cat === selectedCat) return false;
   selectedCat = cat;
@@ -118,6 +129,7 @@ function applySuggestedCategory(name, opts) {
 document.getElementById('cat-btns').addEventListener('click', function(e) {
   var btn = e.target.closest('.cat-btn');
   if (btn && btn.dataset.cat) {
+    if (typeof window !== 'undefined') window.ftCatLockedByUser_ = true;
     chromeStorage.local.set({[KEY_LAST_CAT]: btn.dataset.cat});
   }
 });

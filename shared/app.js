@@ -38,13 +38,17 @@ const EXP_CATS = {
   'Shopping':      { icon:'SH', color:'#D85A30' },
   'Clothing':      { icon:'CL', color:'#E07040' },
   'Electronics':   { icon:'EL', color:'#3A86FF' },
+  'Gifts':         { icon:'GI', color:'#E091A0' },
   // Home
   'Rent':          { icon:'RE', color:'#BA7517' },
   'Utilities':     { icon:'UT', color:'#D4A017' },
   'Internet':      { icon:'IN', color:'#5B8DEF' },
+  'Phone':         { icon:'PH', color:'#4C7AE8' },
   'Renovation':    { icon:'RN', color:'#8B6914' },
+  'Household':     { icon:'HH', color:'#A9844A' },
   // Health
   'Health':        { icon:'HE', color:'#D4537E' },
+  'Pharmacy':      { icon:'RX', color:'#C44B6A' },
   'Fitness':       { icon:'FI', color:'#E8547E' },
   'Grooming':      { icon:'GO', color:'#C4678E' },
   // Bills & finance
@@ -52,6 +56,7 @@ const EXP_CATS = {
   'Insurance':     { icon:'IS', color:'#6B7DB3' },
   'Loan payment':  { icon:'LP', color:'#4A6FA5' },
   'Tax':           { icon:'TX', color:'#666666' },
+  'Bank fees':     { icon:'BF', color:'#5A6A7A' },
   // Car
   'Petrol':        { icon:'PT', color:'#E24B4A' },
   'Car Service':   { icon:'CS', color:'#378ADD' },
@@ -64,7 +69,9 @@ const EXP_CATS = {
   'Car Insurance': { icon:'CI', color:'#4472CA' },
   // Transport
   'Transport':     { icon:'TR', color:'#63A0C8' },
+  'Ride-hailing':  { icon:'RH', color:'#2A9D8F' },
   'Flight':        { icon:'FL', color:'#1A73E8' },
+  'Hotel':         { icon:'HT', color:'#0E8A7A' },
   // Entertainment
   'Entertainment': { icon:'EN', color:'#7F77DD' },
   'Subscription':  { icon:'SU', color:'#9B59B6' },
@@ -72,22 +79,23 @@ const EXP_CATS = {
   'Hobbies':       { icon:'HB', color:'#E91E63' },
   // Family
   'Education':     { icon:'ED', color:'#2196F3' },
-  
+  'Kids':          { icon:'KD', color:'#3D8BDB' },
+  'Charity':       { icon:'CH', color:'#5C8A6A' },
+  'Pet care':      { icon:'PC', color:'#795548' },
   // Other
   'Other':         { icon:'OT', color:'#B4B2A9' },
-  'Pet care':      { icon:'PC', color:'#795548' },
 };
 
 /** Display order for “Add expense” category chips: frequent / similar items first. */
 const EXP_CAT_GROUPS = [
   { title: 'Everyday & dining', cats: ['Food', 'Groceries', 'Eating out', 'Coffee'] },
-  { title: 'Shopping & gear', cats: ['Shopping', 'Clothing', 'Electronics'] },
-  { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Renovation'] },
-  { title: 'Health & self-care', cats: ['Health', 'Fitness', 'Grooming'] },
-  { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax'] },
-  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Flight'] },
+  { title: 'Shopping & gear', cats: ['Shopping', 'Clothing', 'Electronics', 'Gifts'] },
+  { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation', 'Household'] },
+  { title: 'Health & self-care', cats: ['Health', 'Pharmacy', 'Fitness', 'Grooming'] },
+  { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax', 'Bank fees'] },
+  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Ride-hailing', 'Flight', 'Hotel'] },
   { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
-  { title: 'Education & family', cats: ['Education', 'Pet care'] },
+  { title: 'Education & family', cats: ['Education', 'Kids', 'Charity', 'Pet care'] },
   { title: 'Other', cats: ['Other'] },
 ];
 
@@ -100,17 +108,22 @@ const EXP_CAT_ICON_IDS = {
   'Shopping': 'cat-shopping',
   'Clothing': 'cat-clothing',
   'Electronics': 'cat-electronics',
+  'Gifts': 'cat-hobbies',
   'Rent': 'cat-home',
   'Utilities': 'cat-utilities',
   'Internet': 'cat-internet',
+  'Phone': 'cat-internet',
   'Renovation': 'cat-renovation',
+  'Household': 'cat-home',
   'Health': 'cat-health',
+  'Pharmacy': 'cat-health',
   'Fitness': 'cat-fitness',
   'Grooming': 'cat-grooming',
   'Bills': 'cat-bills',
   'Insurance': 'cat-insurance',
   'Loan payment': 'cat-loan',
   'Tax': 'cat-tax',
+  'Bank fees': 'cat-bills',
   'Petrol': 'cat-petrol',
   'Car Service': 'cat-car-service',
   'Car Repair Labour': 'cat-car-service',
@@ -121,12 +134,16 @@ const EXP_CAT_ICON_IDS = {
   'Car Expenses': 'cat-car',
   'Car Insurance': 'cat-car-insurance',
   'Transport': 'cat-transport',
+  'Ride-hailing': 'cat-transport',
   'Flight': 'cat-flight',
+  'Hotel': 'cat-travel',
   'Entertainment': 'cat-entertainment',
   'Subscription': 'cat-subscription',
   'Travel': 'cat-travel',
   'Hobbies': 'cat-hobbies',
   'Education': 'cat-education',
+  'Kids': 'cat-education',
+  'Charity': 'cat-other',
   'Pet care': 'cat-pet',
   'Other': 'cat-other',
 };
@@ -1105,6 +1122,7 @@ function buildCatButtons() {
     btn.type = 'button';
     btn.className = 'cat-btn' + (name === selectedCat ? ' active' : '');
     btn.dataset.cat = name;
+    btn.title = name;
     const iconEl = document.createElement('span');
     iconEl.className = 'ci ft-cat-badge';
     var catIconId = ftCatIconIdFor_(name, EXP_CATS);
@@ -1115,6 +1133,7 @@ function buildCatButtons() {
     btn.appendChild(document.createTextNode(name));
     btn.addEventListener('click', () => {
       selectedCat = name;
+      if (typeof window !== 'undefined') window.ftCatLockedByUser_ = true;
       wrap.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === name));
     });
     return btn;
@@ -1648,6 +1667,7 @@ function addExpense() {
     if (!confirm(msg)) return;
   }
   if (amount >= 3000 && !confirm('Large expense detected (' + fmt(amount) + '). Save anyway?')) return;
+  if (typeof window !== 'undefined') window.ftCatLockedByUser_ = false;
   if (typeof learnCatRule === 'function') learnCatRule(place || name, selectedCat);
   const transferEl = document.getElementById('exp-transfer');
   const entry = { id: Date.now(), name, amount, cat: selectedCat, date };

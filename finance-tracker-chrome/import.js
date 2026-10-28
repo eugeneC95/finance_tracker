@@ -22,11 +22,19 @@ const CAT_RULES = [
 ];
 
 function autoCategory(desc) {
-  const low = desc.toLowerCase();
+  const n = String(desc || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const hay = ' ' + n + ' ';
+  let best = null;
   for (const rule of CAT_RULES) {
-    if (rule.keys.some(k => low.includes(k))) return rule.cat;
+    for (const k of rule.keys) {
+      const key = String(k || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (!key) continue;
+      if (n === key || hay.indexOf(' ' + key + ' ') !== -1) {
+        if (!best || key.length > best.len) best = { cat: rule.cat, len: key.length };
+      }
+    }
   }
-  return 'Other';
+  return best ? best.cat : 'Other';
 }
 
 function isIncomeCat(cat) {
@@ -386,7 +394,7 @@ async function parseAndPreview() {
 }
 
 // ── Build preview table ────────────────────────────────────
-const EXP_CAT_LIST = ['Food','Shopping','Health','Bills','Entertainment','Petrol','Car Service','Toll','Car Expenses','Transport','Other'];
+const EXP_CAT_LIST = ['Food','Groceries','Eating out','Coffee','Shopping','Clothing','Electronics','Gifts','Rent','Utilities','Internet','Phone','Renovation','Household','Health','Pharmacy','Fitness','Grooming','Bills','Insurance','Loan payment','Tax','Bank fees','Petrol','Car Service','Car Repair Labour','Car Parts','Tyre Service','Toll','Parking','Car Expenses','Car Insurance','Transport','Ride-hailing','Flight','Hotel','Entertainment','Subscription','Travel','Hobbies','Education','Kids','Charity','Pet care','Other'];
 const INC_CAT_LIST = ['Salary','Freelance','Business','Investment','Rental','Gift','Other'];
 
 function buildPreview() {
