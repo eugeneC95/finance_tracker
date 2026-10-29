@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=155"/>
-<link rel="stylesheet" href="../styles/reset.css?v=155"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=155"/>
-<link rel="stylesheet" href="../styles/base.css?v=155"/>
-<link rel="stylesheet" href="../styles/components.css?v=155"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=155"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=156"/>
+<link rel="stylesheet" href="../styles/reset.css?v=156"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=156"/>
+<link rel="stylesheet" href="../styles/base.css?v=156"/>
+<link rel="stylesheet" href="../styles/components.css?v=156"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=156"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=155"/>
+<link rel="stylesheet" href="../theme-modern.css?v=156"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -650,19 +650,6 @@
           <div class="panel-bd">
             <div id="ut-dash" class="ut-dash" hidden></div>
             <div id="assets-nav-stale" class="ft-inline-hint mb-5" hidden role="status"></div>
-            <details class="assets-help">
-              <summary>How NAV &amp; P&amp;L work</summary>
-              <div class="assets-help__body">
-                <p>Add a <strong>unit trust</strong> or <strong>ETF</strong> and pick its <strong>currency</strong> (MYR, SGD, USD, JPY). Enter the latest <strong>NAV per unit</strong> in that currency, or import CSV (<code>fundId,YYYY-MM-DD,NAV</code> or your <strong>fund code</strong> in the first column).</p>
-                <p style="margin-top:8px">For profit/loss, enter <strong>total amount paid</strong> in the fund currency (fees included). Portfolio totals convert to your base currency using Settings → FX rates. Google Sheets sync uses tabs <strong>UTHoldings</strong> and <strong>UTNav</strong>.</p>
-              </div>
-            </details>
-
-            <div class="ut-toolbar">
-              <button type="button" class="btn-ghost" id="ut-csv-btn">Import NAV CSV</button>
-              <input type="file" id="ut-csv-input" accept=".csv,text/csv,text/plain" hidden/>
-            </div>
-
             <div class="ut-list" id="ut-root"></div>
 
             <details class="assets-add-panel">
@@ -708,6 +695,8 @@
               </div>
               <div class="assets-form-actions">
                 <button type="button" class="btn btn-primary" id="ut-add-btn">Add fund</button>
+                <button type="button" class="btn-ghost" id="ut-csv-btn">Import NAV CSV</button>
+                <input type="file" id="ut-csv-input" accept=".csv,text/csv,text/plain" hidden/>
               </div>
             </form>
             </details>
@@ -1269,7 +1258,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v155 · 2026-10-29 18:14</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v156 · 2026-10-29 18:32</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1581,7 +1570,7 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=155"></script>
+<script src="../build-id.js?v=156"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1590,13 +1579,13 @@
   if (el) el.textContent = s;
 })();
 </script>
-<script type="module" src="../shared/main.js?v=155"></script>
-<script defer src="../shared/app.js?v=155"></script>
-<script defer src="../shared/sync-auth.js?v=155"></script>
-<script defer src="../shared/sync-transport.js?v=155"></script>
-<script defer src="../shared/sync.js?v=155"></script>
-<script defer src="../shared/features.js?v=155"></script>
-<script defer src="../shared/receipts.js?v=155"></script>
-<script defer src="../shared/extras.js?v=155"></script>
+<script type="module" src="../shared/main.js?v=156"></script>
+<script defer src="../shared/app.js?v=156"></script>
+<script defer src="../shared/sync-auth.js?v=156"></script>
+<script defer src="../shared/sync-transport.js?v=156"></script>
+<script defer src="../shared/sync.js?v=156"></script>
+<script defer src="../shared/features.js?v=156"></script>
+<script defer src="../shared/receipts.js?v=156"></script>
+<script defer src="../shared/extras.js?v=156"></script>
 </body>
 </html>

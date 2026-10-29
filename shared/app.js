@@ -979,102 +979,16 @@ function saveUtDashRow_(fundId, skipSnap) {
   return true;
 }
 
-function renderUtDashboard_() {
-  const el = document.getElementById('ut-dash');
-  if (!el) return;
-  if (!utHoldings.length) {
-    el.hidden = true;
-    el.innerHTML = '';
-    return;
-  }
-  el.hidden = false;
-  const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
+function utDashDate_() {
+  const el = document.getElementById('ut-dash-date');
+  if (el && el.value) return el.value;
+  return window.ftUtDashDate_ || todayStr();
+}
+
+function wireUtNavInputs_(root) {
+  if (!root) return;
   if (!window.ftUtDashDraft_) window.ftUtDashDraft_ = {};
-  const dashDate = (document.getElementById('ut-dash-date') && document.getElementById('ut-dash-date').value)
-    || window.ftUtDashDate_
-    || todayStr();
-  window.ftUtDashDate_ = dashDate;
-
-  let dayMv = 0;
-  let dayAny = false;
-  let totalMv = 0;
-  let totalPnl = 0;
-  let pnlAny = false;
-  const rows = utHoldings.map(function(h) {
-    const last = utLastRealNav_(h.id);
-    const prev = utPrevRealNav_(h.id);
-    const mv = utHoldingMvNative(h);
-    const cost = utCostBasis(h);
-    let pnl = null;
-    if (mv != null && cost != null) {
-      pnl = mv - cost;
-      totalPnl += pnl * fxRateToBase(h.currency);
-      pnlAny = true;
-    }
-    if (mv != null) totalMv += utHoldingMvBase(h);
-    let dayPct = null;
-    let dayChg = null;
-    if (last && prev) {
-      dayPct = prev.nav ? ((last.nav - prev.nav) / prev.nav) * 100 : 0;
-      dayChg = h.units * (last.nav - prev.nav);
-      dayMv += dayChg * fxRateToBase(h.currency);
-      dayAny = true;
-    }
-    const todayLogged = utNavSortedForFund(h.id).some(function(p) {
-      return p.date === dashDate && !p.carry;
-    });
-    const draft = window.ftUtDashDraft_[h.id];
-    const navVal = draft != null ? draft : (last ? String(last.nav) : '');
-    return { h: h, last: last, dayPct: dayPct, dayChg: dayChg, mv: mv, pnl: pnl, todayLogged: todayLogged, navVal: navVal };
-  });
-
-  el.innerHTML =
-    '<div class="ut-dash__head">' +
-    '<div class="ut-dash__stat"><span>Market value</span><strong>' + esc(compact(totalMv)) + '</strong></div>' +
-    '<div class="ut-dash__stat"><span>Vs last NAV</span><strong class="' + (dayAny ? (dayMv >= 0 ? 'pos' : 'neg') : '') + '">' +
-    (dayAny ? esc(compact(dayMv, { signed: true })) : '—') + '</strong></div>' +
-    '<div class="ut-dash__stat"><span>P&amp;L vs paid</span><strong class="' + (pnlAny ? (totalPnl >= 0 ? 'pos' : 'neg') : '') + '">' +
-    (pnlAny ? esc(compact(totalPnl, { signed: true })) : 'Add total paid') + '</strong></div>' +
-    '<div class="ut-dash__date">' +
-    '<label class="lbl" for="ut-dash-date">NAV date</label>' +
-    '<input type="date" id="ut-dash-date" value="' + esc(dashDate) + '"/>' +
-    '</div></div>' +
-    '<p class="ft-note ut-dash__hint">Enter today’s NAV for each fund, then Save row or Save all. Date stays on the day you pick.</p>' +
-    '<div class="ut-dash__table">' +
-    rows.map(function(r) {
-      const h = r.h;
-      const cur = normalizeBankCurrency(h.currency);
-      const chgCls = r.dayPct == null ? '' : (r.dayPct >= 0 ? 'pos' : 'neg');
-      const chgTxt = r.dayPct == null ? '—' : ((r.dayPct >= 0 ? '+' : '') + r.dayPct.toFixed(2) + '%');
-      const mvTxt = r.mv != null ? fmtBankAmount(r.mv, cur) : 'No NAV';
-      return (
-        '<div class="ut-dash-row' + (r.todayLogged ? ' ut-dash-row--ok' : '') + '">' +
-        '<div class="ut-dash-row__name">' +
-        '<strong>' + esc(h.name) + '</strong>' +
-        '<span>' + esc(utKindLabel(h.kind)) + (r.last ? ' · last ' + r.last.date : '') +
-        (r.todayLogged ? ' · saved for this date' : '') + '</span>' +
-        utSparkHtml_(h.id) +
-        '</div>' +
-        '<div class="ut-dash-row__chg ' + chgCls + '">' + chgTxt + '</div>' +
-        '<div class="ut-dash-row__mv">' + esc(mvTxt) + '</div>' +
-        '<div class="ut-dash-row__nav">' +
-        '<input type="number" data-ut-dash-nav="' + h.id + '" min="0" step="0.0001" inputmode="decimal" value="' + esc(r.navVal) + '" aria-label="NAV for ' + esc(h.name) + '"/>' +
-        '<button type="button" class="btn-ghost" data-ut-dash-save="' + h.id + '">Save</button>' +
-        '</div></div>'
-      );
-    }).join('') +
-    '</div>' +
-    '<div class="assets-form-actions">' +
-    '<button type="button" class="btn btn-primary" id="ut-dash-save-all">Save all NAVs</button>' +
-    '</div>';
-
-  const dateEl = document.getElementById('ut-dash-date');
-  if (dateEl) {
-    dateEl.addEventListener('change', function() {
-      window.ftUtDashDate_ = dateEl.value;
-    });
-  }
-  el.querySelectorAll('[data-ut-dash-nav]').forEach(function(inp) {
+  root.querySelectorAll('[data-ut-dash-nav]').forEach(function(inp) {
     inp.addEventListener('input', function() {
       window.ftUtDashDraft_[Number(inp.getAttribute('data-ut-dash-nav'))] = inp.value;
     });
@@ -1088,7 +1002,7 @@ function renderUtDashboard_() {
       }
     });
   });
-  el.querySelectorAll('[data-ut-dash-save]').forEach(function(btn) {
+  root.querySelectorAll('[data-ut-dash-save]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       const id = Number(btn.getAttribute('data-ut-dash-save'));
       if (saveUtDashRow_(id, false)) {
@@ -1097,6 +1011,63 @@ function renderUtDashboard_() {
       }
     });
   });
+}
+
+function renderUtDashboard_() {
+  const el = document.getElementById('ut-dash');
+  if (!el) return;
+  if (!utHoldings.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
+  const dashDate = utDashDate_();
+  window.ftUtDashDate_ = dashDate;
+
+  let dayMv = 0;
+  let dayAny = false;
+  let totalMv = 0;
+  let totalPnl = 0;
+  let pnlAny = false;
+  utHoldings.forEach(function(h) {
+    const last = utLastRealNav_(h.id);
+    const prev = utPrevRealNav_(h.id);
+    const mv = utHoldingMvNative(h);
+    const cost = utCostBasis(h);
+    if (mv != null && cost != null) {
+      totalPnl += (mv - cost) * fxRateToBase(h.currency);
+      pnlAny = true;
+    }
+    if (mv != null) totalMv += utHoldingMvBase(h);
+    if (last && prev) {
+      dayMv += h.units * (last.nav - prev.nav) * fxRateToBase(h.currency);
+      dayAny = true;
+    }
+  });
+
+  el.innerHTML =
+    '<div class="ut-board">' +
+    '<div class="ut-board__stat"><span>Value</span><strong>' + esc(compact(totalMv)) + '</strong></div>' +
+    '<div class="ut-board__stat"><span>Since last NAV</span><strong class="' + (dayAny ? (dayMv >= 0 ? 'pos' : 'neg') : '') + '">' +
+    (dayAny ? esc(compact(dayMv, { signed: true })) : '—') + '</strong></div>' +
+    '<div class="ut-board__stat"><span>P&amp;L</span><strong class="' + (pnlAny ? (totalPnl >= 0 ? 'pos' : 'neg') : '') + '">' +
+    (pnlAny ? esc(compact(totalPnl, { signed: true })) : '—') + '</strong></div>' +
+    '<div class="ut-board__save">' +
+    '<label class="lbl" for="ut-dash-date">NAV date</label>' +
+    '<div class="ut-board__save-row">' +
+    '<input type="date" id="ut-dash-date" value="' + esc(dashDate) + '"/>' +
+    '<button type="button" class="btn btn-primary" id="ut-dash-save-all">Save all</button>' +
+    '</div></div></div>';
+
+  const dateEl = document.getElementById('ut-dash-date');
+  if (dateEl) {
+    dateEl.addEventListener('change', function() {
+      window.ftUtDashDate_ = dateEl.value;
+      renderUnitTrustPanel();
+    });
+  }
   const allBtn = document.getElementById('ut-dash-save-all');
   if (allBtn) {
     allBtn.addEventListener('click', function() {
@@ -1138,183 +1109,77 @@ function renderUnitTrustPanel() {
     root.appendChild(em);
   }
 
+  if (!window.ftUtDashDraft_) window.ftUtDashDraft_ = {};
+  const dashDate = utDashDate_();
+
   utHoldings.forEach(h => {
-    const last = utLatestNavEntry(h.id);
-    const prev = utPrevNavEntry(h.id);
+    const last = utLastRealNav_(h.id);
+    const prev = utPrevRealNav_(h.id);
     const curCode = normalizeBankCurrency(h.currency);
     const mv = utHoldingMvNative(h);
     const costBasis = utCostBasis(h);
     let pnl = null;
     if (mv != null && costBasis != null) pnl = mv - costBasis;
-    let dayChg = null;
     let dayPct = null;
-    if (last && prev) {
-      dayChg = h.units * (last.nav - prev.nav);
-      dayPct = prev.nav ? ((last.nav - prev.nav) / prev.nav) * 100 : 0;
-    }
+    if (last && prev && prev.nav) dayPct = ((last.nav - prev.nav) / prev.nav) * 100;
+    const todayLogged = utNavSortedForFund(h.id).some(function(p) {
+      return p.date === dashDate && !p.carry;
+    });
+    const draft = window.ftUtDashDraft_[h.id];
+    const navVal = draft != null ? draft : (last ? String(last.nav) : '');
+    const chgCls = dayPct == null ? '' : (dayPct >= 0 ? 'pos' : 'neg');
+    const chgTxt = dayPct == null ? '—' : ((dayPct >= 0 ? '+' : '') + dayPct.toFixed(2) + '%');
+    const pnlTxt = pnl == null ? '' : ((pnl >= 0 ? '+' : '') + fmtBankAmount(pnl, curCode));
 
     const card = document.createElement('div');
-    card.className = 'assets-bank-card ut-holding';
+    card.className = 'ut-fund' + (todayLogged ? ' ut-fund--ok' : '') + (chgCls ? ' ut-fund--' + chgCls : '');
+
+    const face = document.createElement('div');
+    face.className = 'ut-fund__face';
+    face.innerHTML =
+      '<div class="ut-fund__who">' +
+      '<strong>' + esc(h.name) + '</strong>' +
+      '<span>' + esc(utKindLabel(h.kind)) + ' · ' + esc(curCode) +
+      (h.units ? ' · ' + h.units.toLocaleString('en-MY', { maximumFractionDigits: 4 }) + ' units' : '') +
+      (last ? ' · NAV ' + last.nav.toFixed(4) : '') +
+      (todayLogged ? ' · saved' : '') + '</span>' +
+      utSparkHtml_(h.id) +
+      '</div>' +
+      '<div class="ut-fund__quote">' +
+      '<div class="ut-fund__chg ' + chgCls + '">' + chgTxt + '</div>' +
+      (pnlTxt ? '<div class="ut-fund__pnl ' + (pnl >= 0 ? 'pos' : 'neg') + '">' + esc(pnlTxt) + '</div>' : '<div class="ut-fund__pnl muted">No cost basis</div>') +
+      '</div>' +
+      '<div class="ut-fund__value">' +
+      (mv != null ? esc(fmtBankAmount(mv, curCode)) : 'No NAV') +
+      (mv != null && curCode !== 'MYR' ? '<small>≈ ' + esc(fmt(utHoldingMvBase(h))) + '</small>' : '') +
+      '</div>' +
+      '<div class="ut-fund__nav">' +
+      '<label class="lbl">NAV / unit</label>' +
+      '<div class="ut-fund__nav-row">' +
+      '<input type="number" data-ut-dash-nav="' + h.id + '" min="0" step="0.0001" inputmode="decimal" value="' + esc(navVal) + '" aria-label="NAV for ' + esc(h.name) + '"/>' +
+      '<button type="button" class="btn btn-primary" data-ut-dash-save="' + h.id + '">Save</button>' +
+      '</div></div>';
+    card.appendChild(face);
 
     const details = document.createElement('details');
-    details.className = 'ut-holding__details';
+    details.className = 'ut-fund__more';
     if (typeof window !== 'undefined' && window.ftUtOpenId_ === h.id) details.open = true;
     details.addEventListener('toggle', () => {
       if (details.open) window.ftUtOpenId_ = h.id;
       else if (window.ftUtOpenId_ === h.id) window.ftUtOpenId_ = null;
     });
+    const sum = document.createElement('summary');
+    sum.textContent = 'Holding details';
+    details.appendChild(sum);
 
-    const head = document.createElement('summary');
-    head.className = 'assets-acct-row';
-
-    const title = document.createElement('div');
-    title.className = 'ut-card__title assets-acct-row__body';
-    const nameEl = document.createElement('div');
-    nameEl.className = 'ut-card__name';
-    nameEl.textContent = h.name;
-    title.appendChild(nameEl);
-    const sub = document.createElement('div');
-    sub.className = 'ut-card__sub';
-    const bits = [utKindLabel(h.kind)];
-    if (h.fundCode) bits.push('Code ' + h.fundCode);
-    if (h.notes) bits.push(h.notes);
-    sub.textContent = bits.join(' · ');
-    title.appendChild(sub);
-
-    const curBadge = document.createElement('span');
-    curBadge.className = 'assets-currency-pill';
-    curBadge.textContent = curCode;
-
-    const mvWrap = document.createElement('div');
-    mvWrap.className = 'ut-card__mv-wrap';
-    const mvEl = document.createElement('div');
-    mvEl.className = 'ut-card__mv' + (mv == null ? ' ut-card__mv--empty' : '');
-    if (mv != null) {
-      mvEl.textContent = fmtBankAmount(mv, curCode);
-    } else {
-      mvEl.textContent = 'No NAV';
-    }
-    mvWrap.appendChild(mvEl);
-    if (mv != null && curCode !== 'MYR') {
-      const mvBase = document.createElement('div');
-      mvBase.className = 'ut-card__mv-base';
-      mvBase.textContent = '≈ ' + fmt(utHoldingMvBase(h));
-      mvWrap.appendChild(mvBase);
-    }
-
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'assets-icon-btn del';
-    delBtn.title = 'Remove fund';
-    delBtn.textContent = '✕';
-    delBtn.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (confirm('Remove this fund and its NAV history?')) deleteUtHolding(h.id);
-    });
-
-    head.appendChild(title);
-    head.appendChild(curBadge);
-    head.appendChild(mvWrap);
-    head.appendChild(delBtn);
-
-    const stats = document.createElement('div');
-    stats.className = 'ut-stats';
-    utAppendStat(stats, 'Units', h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }), '');
-    utAppendStat(
-      stats,
-      'Latest NAV',
-      last
-        ? last.nav.toFixed(4) + ' (' + last.date + (last.carry ? ', copied' : '') + ')'
-        : '—',
-      last ? '' : 'muted'
-    );
-    if (pnl != null) {
-      utAppendStat(stats, 'P&L', (pnl >= 0 ? '+' : '') + fmtBankAmount(pnl, curCode), pnl >= 0 ? 'pos' : 'neg');
-    } else {
-      utAppendStat(stats, 'P&L', 'Add total paid', 'muted');
-    }
-    if (dayChg != null) {
-      utAppendStat(stats, 'vs prior NAV', (dayChg >= 0 ? '+' : '') + fmtBankAmount(dayChg, curCode) + ' (' + dayPct.toFixed(2) + '%)', dayChg >= 0 ? 'pos' : 'neg');
-    } else {
-      utAppendStat(stats, 'vs prior NAV', '—', 'muted');
-    }
-
-    const navBlock = document.createElement('div');
-    navBlock.className = 'ut-card__nav';
-    const navTitle = document.createElement('div');
-    navTitle.className = 'ut-card__nav-title';
-    navTitle.textContent = 'Update NAV';
-    navBlock.appendChild(navTitle);
-
-    const navGrid = document.createElement('div');
-    navGrid.className = 'assets-form-grid assets-form-grid--3';
-
-    const dateWrap = document.createElement('div');
-    const dateLab = document.createElement('label');
-    dateLab.className = 'lbl';
-    dateLab.textContent = 'Date';
-    const dateInp = document.createElement('input');
-    dateInp.type = 'date';
-    dateInp.id = 'ut-nav-date-' + h.id;
-    if (!window.ftUtNavPickDate_) window.ftUtNavPickDate_ = {};
-    dateInp.value = window.ftUtNavPickDate_[h.id] || todayStr();
-    function rememberNavDate_() {
-      if (dateInp.value) window.ftUtNavPickDate_[h.id] = dateInp.value;
-    }
-    dateInp.addEventListener('input', rememberNavDate_);
-    dateInp.addEventListener('change', rememberNavDate_);
-    dateWrap.appendChild(dateLab);
-    dateWrap.appendChild(dateInp);
-
-    const navWrap = document.createElement('div');
-    const navLab = document.createElement('label');
-    navLab.className = 'lbl';
-    navLab.textContent = 'NAV per unit (' + curCode + ')';
-    const navInp = document.createElement('input');
-    navInp.type = 'number';
-    navInp.placeholder = '0.0000';
-    navInp.min = '0';
-    navInp.step = '0.0001';
-    navInp.inputMode = 'decimal';
-    navWrap.appendChild(navLab);
-    navWrap.appendChild(navInp);
-
-    const saveWrap = document.createElement('div');
-    const saveNav = document.createElement('button');
-    saveNav.type = 'button';
-    saveNav.className = 'btn btn-primary';
-    saveNav.textContent = 'Save NAV';
-    saveNav.addEventListener('click', () => {
-      const ymd = String(dateInp.value || '').trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
-        shake(dateInp);
-        return;
-      }
-      window.ftUtNavPickDate_[h.id] = ymd;
-      if (!upsertUtNav(h.id, ymd, navInp.value)) {
-        shake(navInp);
-        return;
-      }
-      navInp.value = '';
-      showToast('NAV saved for ' + ymd);
-      render();
-    });
-    saveWrap.appendChild(saveNav);
-
-    navGrid.appendChild(dateWrap);
-    navGrid.appendChild(navWrap);
-    navGrid.appendChild(saveWrap);
-    navBlock.appendChild(navGrid);
-    const recentNav = utNavSortedForFund(h.id).slice(-5).reverse();
+    const recentNav = utNavSortedForFund(h.id).slice(-6).reverse();
     if (recentNav.length) {
       const hist = document.createElement('p');
       hist.className = 'ft-note';
-      hist.style.margin = '8px 0 0';
       hist.textContent = 'Saved: ' + recentNav.map(function(p) {
         return p.date + ' · ' + p.nav.toFixed(4) + (p.carry ? ' (copied)' : '');
-      }).join(' · ');
-      navBlock.appendChild(hist);
+      }).join('  ·  ');
+      details.appendChild(hist);
     }
 
     const editBody = document.createElement('div');
@@ -1403,6 +1268,14 @@ function renderUnitTrustPanel() {
       render();
     });
     saveRow.appendChild(saveCost);
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-ghost';
+    delBtn.textContent = 'Remove fund';
+    delBtn.addEventListener('click', () => {
+      if (confirm('Remove this fund and its NAV history?')) deleteUtHolding(h.id);
+    });
+    saveRow.appendChild(delBtn);
 
     editGrid.appendChild(kindWrap);
     editGrid.appendChild(currWrap);
@@ -1410,18 +1283,12 @@ function renderUnitTrustPanel() {
     editGrid.appendChild(costWrap);
     editBody.appendChild(editGrid);
     editBody.appendChild(saveRow);
-
-    const expBody = document.createElement('div');
-    expBody.className = 'assets-acct-edit__body';
-    expBody.appendChild(stats);
-    expBody.appendChild(navBlock);
-    expBody.appendChild(editBody);
-
-    details.appendChild(head);
-    details.appendChild(expBody);
+    details.appendChild(editBody);
     card.appendChild(details);
     root.appendChild(card);
   });
+
+  wireUtNavInputs_(root);
 
   const chartSlot = document.getElementById('ut-chart');
   if (chartSlot) renderUtChart(chartSlot);
