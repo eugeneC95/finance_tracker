@@ -11,7 +11,7 @@ var FT_FORCE_SHEET_SOURCE = true;
 window.__ftForceSheetSource = FT_FORCE_SHEET_SOURCE;
 
 var FT_FINANCE_STORAGE_KEYS_ = [
-  'expenses_v2', 'incomes_v1', 'banks_v1',
+  'expenses_v2', 'incomes_v1', 'banks_v1', 'liabilities_v1',
   'recurring_v1', 'networth_history_v1', 'budgets_v1', 'lastcat_v1', 'cat_rules_v1', 'savings_goal_v1',
   'petrol_v1', 'last_petrol_v1', 'last_expense_v1', 'last_income_v1',
   'unit_trust_holdings_v1', 'unit_trust_nav_v1',

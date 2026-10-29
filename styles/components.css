@@ -1274,6 +1274,7 @@ body.dark .assets-hero-v2 {
 }
 .assets-split__dot--banks { background: #0f766e; }
 .assets-split__dot--funds { background: #7c6af7; }
+.assets-split__dot--debt { background: #E24B4A; }
 .ut-holding summary.assets-acct-row {
   list-style: none;
   cursor: pointer;

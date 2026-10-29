@@ -1461,6 +1461,12 @@ if (printBtn) printBtn.addEventListener('click', function() {
   window.addEventListener('afterprint', restoreTitle);
   window.print();
 });
+var waBtn = document.getElementById('share-report-wa');
+if (waBtn) waBtn.addEventListener('click', function() {
+  var text = typeof buildReportShareText === 'function' ? buildReportShareText() : '';
+  if (!text) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+});
 var shareBtn = document.getElementById('share-report-btn');
 if (shareBtn) shareBtn.addEventListener('click', function() {
   var text = buildReportShareText();

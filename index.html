@@ -111,13 +111,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=151"/>
-<link rel="stylesheet" href="styles/reset.css?v=151"/>
-<link rel="stylesheet" href="styles/tokens.css?v=151"/>
-<link rel="stylesheet" href="styles/base.css?v=151"/>
-<link rel="stylesheet" href="styles/components.css?v=151"/>
-<link rel="stylesheet" href="styles/mobile.css?v=151"/>
-<link rel="stylesheet" href="theme-modern.css?v=151"/>
+<link rel="stylesheet" href="styles/fonts.css?v=152"/>
+<link rel="stylesheet" href="styles/reset.css?v=152"/>
+<link rel="stylesheet" href="styles/tokens.css?v=152"/>
+<link rel="stylesheet" href="styles/base.css?v=152"/>
+<link rel="stylesheet" href="styles/components.css?v=152"/>
+<link rel="stylesheet" href="styles/mobile.css?v=152"/>
+<link rel="stylesheet" href="theme-modern.css?v=152"/>
 
 
 </head>
@@ -211,7 +211,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v151 · 2026-10-29 17:09';
+  var BUILD_VERSION    = 'v152 · 2026-10-29 17:21';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -430,6 +430,9 @@
         <div class="home-stat-grid" id="home-stat-grid"></div>
         <div class="home-hero-progress" id="home-hero-progress"></div>
         <div class="home-hero-week" id="home-hero-week" hidden aria-label="This week"></div>
+        <div class="home-hero-tools" id="home-envelope" hidden></div>
+        <div class="home-hero-tools" id="home-bills-due" hidden></div>
+        <div class="home-hero-tools" id="home-subs-watch" hidden></div>
       </section>
 
       <div class="home-quick-actions" id="home-quick-actions" aria-label="Quick navigation"></div>
@@ -546,6 +549,7 @@
               <input type="text" id="exp-place" class="exp-input" list="exp-place-list" placeholder="99 Speedmart, Petronas, restaurant, office…" maxlength="60"/>
               <datalist id="exp-place-list"></datalist>
               <p class="ft-note exp-place-hint">Pick a saved place or type a new one</p>
+              <p class="ft-note" id="exp-merchant-hint" hidden></p>
             </div>
             <div class="exp-add-mid">
               <div class="exp-add-field exp-add-field--amount">
@@ -794,6 +798,7 @@
           <div class="assets-split__legend">
             <span><i class="assets-split__dot assets-split__dot--banks"></i> Banks <strong id="ns-banks">RM 0</strong> <em id="ns-bank-count">0 accounts</em></span>
             <span><i class="assets-split__dot assets-split__dot--funds"></i> Funds <strong id="ns-ut">RM 0</strong> <em id="ns-ut-count">0 holdings</em></span>
+            <span id="assets-split-debt" hidden><i class="assets-split__dot assets-split__dot--debt"></i> Debts <strong id="ns-debt">RM 0</strong></span>
           </div>
         </div>
         <div class="assets-portfolio__chart">
@@ -820,16 +825,24 @@
       <div class="assets-layout">
         <section class="card assets-section mb-5" id="assets-pane-cash" data-assets-pane="cash">
           <div class="panel-hd">
-            <span class="panel-title">Bank accounts</span>
+            <span class="panel-title">Cash &amp; accounts</span>
           </div>
           <div class="panel-bd">
             <div class="assets-acct-list" id="bank-list"></div>
             <details class="assets-add-panel">
-              <summary>+ Add bank account</summary>
+              <summary>+ Add account</summary>
             <form class="assets-form" id="bank-add-form" autocomplete="off" onsubmit="return false">
               <div class="assets-form-grid assets-form-grid--4">
                 <div>
-                  <label class="lbl" for="bk-name">Bank</label>
+                  <label class="lbl" for="bk-kind">Type</label>
+                  <select id="bk-kind">
+                    <option value="bank">Bank</option>
+                    <option value="cash">Cash on hand</option>
+                    <option value="epf">EPF / KWSP</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl" for="bk-name">Name</label>
                   <input type="text" id="bk-name" placeholder="e.g. Maybank" maxlength="24"/>
                 </div>
                 <div>
@@ -863,12 +876,48 @@
           <div class="panel-bd" id="bank-balance-log"></div>
         </section>
 
+        <section class="card assets-section mb-5" id="assets-pane-debts" data-assets-pane="cash">
+          <div class="panel-hd"><span class="panel-title">Debts</span></div>
+          <div class="panel-bd">
+            <p class="ft-note">Loans and cards are subtracted from net worth. They are not bank accounts.</p>
+            <div class="assets-acct-list" id="liab-list"></div>
+            <details class="assets-add-panel">
+              <summary>+ Add debt</summary>
+              <form class="assets-form" id="liab-add-form" autocomplete="off" onsubmit="return false">
+                <div class="assets-form-grid assets-form-grid--3">
+                  <div>
+                    <label class="lbl" for="liab-name">Name</label>
+                    <input type="text" id="liab-name" placeholder="e.g. Car loan" maxlength="40"/>
+                  </div>
+                  <div>
+                    <label class="lbl" for="liab-currency">Currency</label>
+                    <select id="liab-currency" class="be-curr">
+                      <option value="MYR">MYR (RM)</option>
+                      <option value="SGD">SGD</option>
+                      <option value="USD">USD</option>
+                      <option value="JPY">JPY</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="lbl" for="liab-amount">Balance owed</label>
+                    <input type="number" id="liab-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+                  </div>
+                </div>
+                <div class="assets-form-actions">
+                  <button type="button" class="btn btn-primary" id="add-liab-btn">Add debt</button>
+                </div>
+              </form>
+            </details>
+          </div>
+        </section>
+
         <section class="card assets-section mb-5" id="assets-pane-invest" data-assets-pane="invest" hidden>
           <div class="panel-hd">
             <span class="panel-title">Unit trusts &amp; ETFs</span>
             <span class="assets-section__total" id="ut-summary-mv">RM 0.00</span>
           </div>
           <div class="panel-bd">
+            <div id="assets-nav-stale" class="ft-inline-hint mb-5" hidden role="status"></div>
             <details class="assets-help">
               <summary>How NAV &amp; P&amp;L work</summary>
               <div class="assets-help__body">
@@ -1054,6 +1103,16 @@
         <div class="panel-hd"><span class="panel-title">Tips for you</span></div>
         <div class="panel-bd">
           <div id="insights-panel" class="tr-tips"></div>
+        </div>
+      </div>
+
+      <div class="card mb-5" id="tr-whatif-card" hidden>
+        <div class="panel-hd"><span class="panel-title">What if I cut…</span></div>
+        <div class="panel-bd">
+          <p class="ft-note" id="tr-whatif-cat">—</p>
+          <label class="lbl" for="tr-whatif-pct">Cut percent</label>
+          <input type="range" id="tr-whatif-pct" min="5" max="50" step="5" value="20"/>
+          <div id="tr-whatif-out" class="tr-whatif-out"></div>
         </div>
       </div>
 
@@ -1478,7 +1537,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v151 · 2026-10-29 17:09</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v152 · 2026-10-29 17:21</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1655,6 +1714,7 @@
       <div class="ft-toolbar">
         <button type="button" class="btn btn-primary" id="print-report-btn">Print or save PDF</button>
         <button type="button" class="btn-ghost" id="share-report-btn">Share summary</button>
+        <button type="button" class="btn-ghost" id="share-report-wa">WhatsApp</button>
         <button type="button" class="btn-ghost" id="download-report-txt">Download .txt</button>
         <button type="button" class="btn-ghost" id="download-report-md">Download .md</button>
         <button type="button" class="btn-ghost" id="download-report-csv">Download .csv</button>
@@ -1814,8 +1874,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v151 · 2026-10-29 17:09</div>
-<script src="build-id.js?v=151"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v152 · 2026-10-29 17:21</div>
+<script src="build-id.js?v=152"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1826,14 +1886,14 @@
   });
 })();
 </script>
-<script type="module" src="shared/main.js?v=151"></script>
-<script defer src="shared/app.js?v=151"></script>
-<script defer src="shared/sync-auth.js?v=151"></script>
-<script defer src="shared/sync-transport.js?v=151"></script>
-<script defer src="shared/sync.js?v=151"></script>
-<script defer src="shared/features.js?v=151"></script>
-<script defer src="shared/receipts.js?v=151"></script>
-<script defer src="shared/extras.js?v=151"></script>
+<script type="module" src="shared/main.js?v=152"></script>
+<script defer src="shared/app.js?v=152"></script>
+<script defer src="shared/sync-auth.js?v=152"></script>
+<script defer src="shared/sync-transport.js?v=152"></script>
+<script defer src="shared/sync.js?v=152"></script>
+<script defer src="shared/features.js?v=152"></script>
+<script defer src="shared/receipts.js?v=152"></script>
+<script defer src="shared/extras.js?v=152"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

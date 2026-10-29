@@ -166,6 +166,7 @@ const KEY_SETS  = 'settings_v1';
 const KEY_UT_HOLD = 'unit_trust_holdings_v1';
 const KEY_UT_NAV  = 'unit_trust_nav_v1';
 const KEY_BANK_LOG = 'bank_balance_log_v1';
+const KEY_LIAB = 'liabilities_v1';
 const KEY_LAST_EXP = 'last_expense_v1';
 const KEY_LAST_INC = 'last_income_v1';
 
@@ -174,7 +175,7 @@ let _storageReadGen = 0;
 function bumpStorageReadGeneration() { _storageReadGen++; }
 
 // ── State ──────────────────────────────────────────────────
-let expenses = [], incomes = [], banks = [];
+let expenses = [], incomes = [], banks = [], liabilities = [];
 let utHoldings = [];
 let utNavPoints = [];
 let bankBalanceLog = [];
@@ -300,6 +301,7 @@ function totalBanksBase() {
 function normalizeBankRow(b) {
   if (!b || typeof b !== 'object') return b;
   b.currency = normalizeBankCurrency(b.currency);
+  if (b.kind !== 'cash' && b.kind !== 'epf') b.kind = 'bank';
   return b;
 }
 
@@ -344,7 +346,7 @@ function load() {
   const sheetOnly = !!(typeof window !== 'undefined' && window.__ftForceSheetSource);
   const storageKeys = sheetOnly
     ? [KEY_SETS]
-    : [KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_BANK_LOG,KEY_LAST_EXP,KEY_LAST_INC];
+        : [KEY_EXP,KEY_INC,KEY_BANKS,KEY_SETS,KEY_UT_HOLD,KEY_UT_NAV,KEY_BANK_LOG,KEY_LIAB,KEY_LAST_EXP,KEY_LAST_INC];
   chromeStorage.local.get(storageKeys, r => {
     if (gen !== _storageReadGen) return;
     try {
@@ -352,6 +354,7 @@ function load() {
         expenses = [];
         incomes = [];
         banks = [];
+        liabilities = [];
         utHoldings = [];
         utNavPoints = [];
         bankBalanceLog = [];
@@ -361,6 +364,7 @@ function load() {
         expenses = r[KEY_EXP]   || [];
         incomes  = r[KEY_INC]   || [];
         banks    = (r[KEY_BANKS] || []).map(normalizeBankRow);
+        liabilities = Array.isArray(r[KEY_LIAB]) ? r[KEY_LIAB] : [];
         utHoldings = utSanitizeHoldings(r[KEY_UT_HOLD]);
         utNavPoints = utSanitizeNav(r[KEY_UT_NAV]);
         bankBalanceLog = Array.isArray(r[KEY_BANK_LOG]) ? r[KEY_BANK_LOG] : [];
@@ -383,6 +387,40 @@ function load() {
 function saveExp()   { chromeStorage.local.set({[KEY_EXP]:   expenses}); }
 function saveInc()   { chromeStorage.local.set({[KEY_INC]:   incomes}); }
 function saveBanks() { chromeStorage.local.set({[KEY_BANKS]: banks}); }
+function saveLiab() { chromeStorage.local.set({[KEY_LIAB]: liabilities}); }
+
+function bankKind_(b) {
+  var k = b && b.kind;
+  if (k === 'cash' || k === 'epf') return k;
+  return 'bank';
+}
+function bankKindLabel_(k) {
+  if (k === 'epf') return 'EPF / KWSP';
+  if (k === 'cash') return 'Cash on hand';
+  return 'Bank';
+}
+function fillBankKindSelect(sel, selected) {
+  if (!sel) return;
+  var cur = selected === 'cash' || selected === 'epf' ? selected : 'bank';
+  sel.innerHTML = '';
+  [['bank', 'Bank'], ['cash', 'Cash on hand'], ['epf', 'EPF / KWSP']].forEach(function(pair) {
+    var opt = document.createElement('option');
+    opt.value = pair[0];
+    opt.textContent = pair[1];
+    if (pair[0] === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function totalLiabBase() {
+  return (liabilities || []).reduce(function(a, d) {
+    return a + (Number(d && d.amount) || 0) * fxRateToBase(d && d.currency);
+  }, 0);
+}
+function portfolioNetWorth_() {
+  var banksT = typeof totalBanksBase === 'function' ? totalBanksBase() : 0;
+  var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
+  return banksT + utMv - totalLiabBase();
+}
 function saveSets()  { chromeStorage.local.set({[KEY_SETS]:  settings}); }
 function saveUtHoldings() { chromeStorage.local.set({ [KEY_UT_HOLD]: utHoldings }); }
 function saveUtNav()      { chromeStorage.local.set({ [KEY_UT_NAV]:  utNavPoints }); }
@@ -2123,21 +2161,24 @@ function addBank() {
   const nEl = document.getElementById('bk-name');
   const aEl = document.getElementById('bk-acct');
   const cEl = document.getElementById('bk-currency');
+  const kEl = document.getElementById('bk-kind');
   const bEl = document.getElementById('bk-balance');
   const name    = nEl.value.trim();
   const acct    = aEl.value.trim();
   const currency = normalizeBankCurrency(cEl ? cEl.value : 'MYR');
+  const kind = (kEl && (kEl.value === 'cash' || kEl.value === 'epf')) ? kEl.value : 'bank';
   const balance = parseFloat(bEl.value);
   let ok = true;
   if (!name)                       { shake(nEl); ok = false; }
   if (isNaN(balance) || balance<0) { shake(bEl); ok = false; }
   if (!ok) return;
-  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance, currency });
+  banks.push({ id: Date.now(), name, acct: acct || 'Account', balance, currency, kind });
   logBankBalanceChange_(banks[banks.length - 1], 0);
   saveBanks();
   maybeSnapshotNetWorth();
   nEl.value = ''; aEl.value = ''; bEl.value = '';
   if (cEl) cEl.value = 'MYR';
+  if (kEl) kEl.value = 'bank';
   render();
 }
 function deleteBank(id) {
@@ -2629,7 +2670,9 @@ function renderAssetsSummaries_(t) {
   t = t || monthTotals_();
   const totalBanksVal = t.totalBanks;
   const utMv = computeUtTotalMarketValue();
-  const portfolioTotal = totalBanksVal + utMv;
+  const debtVal = typeof totalLiabBase === 'function' ? totalLiabBase() : 0;
+  const portfolioGross = totalBanksVal + utMv;
+  const portfolioTotal = portfolioGross - debtVal;
 
   const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
   const nsPortfolio = document.getElementById('ns-portfolio');
@@ -2660,11 +2703,22 @@ function renderAssetsSummaries_(t) {
   const splitBanks = document.getElementById('assets-split-banks');
   const splitFunds = document.getElementById('assets-split-funds');
   if (splitEl && splitBanks && splitFunds) {
-    const showSplit = portfolioTotal > 0 || totalBanksVal > 0 || utMv > 0;
+    const showSplit = portfolioGross > 0 || totalBanksVal > 0 || utMv > 0 || debtVal > 0;
     splitEl.hidden = !showSplit;
-    const denom = Math.max(portfolioTotal, totalBanksVal + utMv, 1);
+    const denom = Math.max(portfolioGross, totalBanksVal + utMv, 1);
     splitBanks.style.width = (100 * totalBanksVal / denom) + '%';
     splitFunds.style.width = (100 * utMv / denom) + '%';
+  }
+  const nsDebt = document.getElementById('ns-debt');
+  if (nsDebt) {
+    nsDebt.textContent = compact(debtVal);
+    nsDebt.title = fmt(debtVal);
+  }
+  const debtRow = document.getElementById('assets-split-debt');
+  if (debtRow) debtRow.hidden = !(debtVal > 0);
+  const heroLbl = document.querySelector('.assets-hero__label');
+  if (heroLbl && heroLbl.parentElement && heroLbl.parentElement.classList.contains('assets-hero__main')) {
+    heroLbl.textContent = debtVal > 0 ? 'Net worth' : 'Total';
   }
   const lastSnap = document.getElementById('assets-last-snap');
   if (lastSnap) {
@@ -3196,7 +3250,8 @@ function renderBankList() {
     nameEl.textContent = b.name;
     const meta = document.createElement('div');
     meta.className = 'assets-acct-row__meta';
-    meta.textContent = b.acct || 'Account';
+    const kindLbl = bankKindLabel_(bankKind_(b));
+    meta.textContent = (b.acct || 'Account') + (bankKind_(b) !== 'bank' ? ' · ' + kindLbl : '');
     body.appendChild(nameEl);
     body.appendChild(meta);
 
@@ -3278,6 +3333,16 @@ function renderBankList() {
     acctWrap.appendChild(acctLab);
     acctWrap.appendChild(acctInp);
 
+    const kindWrap = document.createElement('div');
+    const kindLab = document.createElement('label');
+    kindLab.className = 'lbl';
+    kindLab.textContent = 'Type';
+    const kindSel = document.createElement('select');
+    kindSel.className = 'be-kind';
+    fillBankKindSelect(kindSel, bankKind_(b));
+    kindWrap.appendChild(kindLab);
+    kindWrap.appendChild(kindSel);
+
     const curWrap = document.createElement('div');
     const curLab = document.createElement('label');
     curLab.className = 'lbl';
@@ -3303,6 +3368,7 @@ function renderBankList() {
 
     grid.appendChild(nameWrap);
     grid.appendChild(acctWrap);
+    grid.appendChild(kindWrap);
     grid.appendChild(curWrap);
     grid.appendChild(balFieldWrap);
     editBody.appendChild(grid);
@@ -3322,6 +3388,7 @@ function renderBankList() {
       b.name = nameVal;
       b.acct = acctVal || 'Account';
       b.currency = normalizeBankCurrency(curSel.value);
+      b.kind = (kindSel.value === 'cash' || kindSel.value === 'epf') ? kindSel.value : 'bank';
       b.balance = balVal;
       logBankBalanceChange_(b, prevBal);
       saveBanks();
@@ -3348,6 +3415,120 @@ function renderBankList() {
     el.appendChild(wrap);
   });
   renderBankBalanceLog_();
+  renderLiabilities_();
+  renderStaleNavBanner_();
+}
+
+function addLiability() {
+  const nEl = document.getElementById('liab-name');
+  const aEl = document.getElementById('liab-amount');
+  const cEl = document.getElementById('liab-currency');
+  if (!nEl || !aEl) return;
+  const name = nEl.value.trim();
+  const amount = parseFloat(aEl.value);
+  const currency = normalizeBankCurrency(cEl ? cEl.value : 'MYR');
+  if (!name) { shake(nEl); return; }
+  if (isNaN(amount) || amount < 0) { shake(aEl); return; }
+  liabilities.push({ id: Date.now(), name: name, amount: amount, currency: currency });
+  saveLiab();
+  maybeSnapshotNetWorth();
+  nEl.value = '';
+  aEl.value = '';
+  if (cEl) cEl.value = 'MYR';
+  render();
+}
+
+function deleteLiability(id) {
+  const idx = liabilities.findIndex(function(d) { return d.id === id; });
+  if (idx < 0) return;
+  liabilities.splice(idx, 1);
+  saveLiab();
+  maybeSnapshotNetWorth();
+  render();
+}
+
+function renderLiabilities_() {
+  const el = document.getElementById('liab-list');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!liabilities.length) {
+    el.appendChild(buildEmptyState_({
+      icon: 'wallet',
+      msg: 'No debts tracked',
+      hint: 'Add a loan, credit card, or HP so net worth is after what you owe.',
+      ctaFocus: 'liab-name',
+      ctaLabel: 'Add debt',
+    }));
+    return;
+  }
+  liabilities.forEach(function(d) {
+    const row = document.createElement('div');
+    row.className = 'assets-acct-row';
+    const body = document.createElement('div');
+    body.className = 'assets-acct-row__body';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'assets-acct-row__name';
+    nameEl.textContent = d.name;
+    const meta = document.createElement('div');
+    meta.className = 'assets-acct-row__meta';
+    meta.textContent = 'Debt';
+    body.appendChild(nameEl);
+    body.appendChild(meta);
+    const curBadge = document.createElement('span');
+    curBadge.className = 'assets-currency-pill';
+    curBadge.textContent = normalizeBankCurrency(d.currency);
+    const bal = document.createElement('div');
+    bal.className = 'assets-acct-row__bal';
+    bal.textContent = fmtBankAmount(d.amount, d.currency);
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'assets-icon-btn del';
+    delBtn.title = 'Delete';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('click', function() {
+      if (confirm('Remove this debt?')) deleteLiability(d.id);
+    });
+    row.appendChild(body);
+    row.appendChild(curBadge);
+    const balWrap = document.createElement('div');
+    balWrap.className = 'assets-acct-row__bal-wrap';
+    balWrap.appendChild(bal);
+    row.appendChild(balWrap);
+    const actions = document.createElement('div');
+    actions.className = 'assets-acct-row__actions';
+    actions.appendChild(delBtn);
+    row.appendChild(actions);
+    el.appendChild(row);
+  });
+}
+
+function utLastManualNavEntry_(fundId) {
+  const s = utNavSortedForFund(fundId).filter(function(p) { return !p.carry; });
+  if (s.length) return s[s.length - 1];
+  return utLatestNavEntry(fundId);
+}
+
+function renderStaleNavBanner_() {
+  const el = document.getElementById('assets-nav-stale');
+  if (!el) return;
+  const today = todayStr();
+  const stale = (utHoldings || []).filter(function(h) {
+    const last = utLastManualNavEntry_(h.id);
+    if (!last || !last.date) return true;
+    const lastD = parseTxDate(last.date);
+    if (!lastD) return true;
+    const days = Math.floor((Date.now() - lastD.getTime()) / 86400000);
+    return days > 14;
+  });
+  if (!stale.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML = '<strong>NAV looks stale</strong> — last manual price for ' +
+    stale.map(function(h) { return esc(h.name || 'holding'); }).join(', ') +
+    ' is over 14 days old (today ' + today + '). Update NAV on Investments.';
 }
 
 function renderBankBalanceLog_() {
@@ -3502,6 +3683,7 @@ function exportData() {
     version: 5,
     exported: new Date().toISOString(),
     expenses, incomes, banks,
+    liabilities: (typeof liabilities !== 'undefined') ? liabilities : [],
     unitTrustHoldings: utHoldings,
     unitTrustNav: utNavPoints,
     recurring:    (typeof recurring    !== 'undefined') ? recurring    : [],
@@ -3576,6 +3758,8 @@ function importBackup(file) {
 
       if (ans === 'replace') {
         expenses = d.expenses; incomes = d.incomes; banks = (d.banks || []).map(normalizeBankRow);
+        if (Array.isArray(d.liabilities)) liabilities = d.liabilities;
+        else liabilities = [];
         if (Array.isArray(d.unitTrustHoldings)) utHoldings = utSanitizeHoldings(d.unitTrustHoldings);
         else utHoldings = [];
         if (Array.isArray(d.unitTrustNav)) utNavPoints = utSanitizeNav(d.unitTrustNav);
@@ -3590,6 +3774,9 @@ function importBackup(file) {
         expRes = mergeByDateAmount(expenses, d.expenses); expenses = expRes.merged;
         incRes = mergeByDateAmount(incomes,  d.incomes);  incomes  = incRes.merged;
         if (Array.isArray(d.banks)) banks = mergeById(banks, d.banks).map(normalizeBankRow);
+        if (Array.isArray(d.liabilities) && d.liabilities.length) {
+          liabilities = mergeById(liabilities, d.liabilities);
+        }
         if (d.recurring    && typeof recurring    !== 'undefined') recurring    = mergeById(recurring, d.recurring);
         if (d.petrolLog    && typeof petrolLog    !== 'undefined') petrolLog    = mergeById(petrolLog, d.petrolLog);
         if (d.networthHist && typeof networthHist !== 'undefined') {
@@ -3614,6 +3801,7 @@ function importBackup(file) {
       }
 
       saveExp(); saveInc(); saveBanks();
+      if (typeof saveLiab === 'function') saveLiab();
       saveUtHoldings();
       saveUtNav();
       if (typeof saveRec    === 'function') saveRec();
@@ -4067,6 +4255,7 @@ if (addExpBtn && !document.getElementById('add-exp-split-btn')) {
 }
 bindClick('add-inc-btn', addIncome);
 bindClick('add-bank-btn', addBank);
+bindClick('add-liab-btn', addLiability);
 bindClick('export-btn', exportData);
 bindClick('import-btn', () => {
   const inp = document.getElementById('import-file');
@@ -4088,6 +4277,7 @@ if (expNameEl) {
       if (typeof applySuggestedCategory === 'function') {
         applySuggestedCategory(expNameEl.value.trim(), { silent: true });
       }
+      if (typeof renderMerchantMemoryHint_ === 'function') renderMerchantMemoryHint_();
     }, 400);
   });
   expNameEl.addEventListener('blur', () => {
@@ -4105,6 +4295,7 @@ if (expPlaceEl) {
       if (typeof applySuggestedCategory === 'function') {
         applySuggestedCategory(expPlaceEl.value.trim(), { silent: true });
       }
+      if (typeof renderMerchantMemoryHint_ === 'function') renderMerchantMemoryHint_();
     }, 400);
   });
   expPlaceEl.addEventListener('blur', () => {

@@ -533,7 +533,8 @@ function renderHomeDashboard() {
     ? totalBanksBase()
     : banks.reduce(function(a, b) { return a + (Number(b.balance) || 0); }, 0);
   var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
-  var assetsTotal = bankTotal + (utMv > 0 ? utMv : 0);
+  var debtT = typeof totalLiabBase === 'function' ? totalLiabBase() : 0;
+  var assetsTotal = bankTotal + (utMv > 0 ? utMv : 0) - debtT;
 
   var prevD = new Date(vm.getFullYear(), vm.getMonth() - 1, 1);
   var prvYM = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
@@ -558,7 +559,7 @@ function renderHomeDashboard() {
       statTile('Today spent', fmt(todayExp), 'spend', todayExp > 0 ? 'Net today ' + fmt(todayNet) : 'No spend yet') +
       statTile('Today income', fmt(todayInc), 'income', todayInc > 0 ? '' : 'No income yet') +
       statTile('Month spend', fmt(monthExp), 'month', expHint) +
-      statTile('Assets', fmt(assetsTotal), 'assets', banks.length + ' bank' + (banks.length === 1 ? '' : 's') + (utMv > 0 ? ' + funds' : ''));
+      statTile('Net worth', fmt(assetsTotal), 'assets', banks.length + ' acct' + (banks.length === 1 ? '' : 's') + (utMv > 0 ? ' + funds' : '') + (debtT > 0 ? ' − debts' : ''));
     if (document.body.classList.contains('ft-sync-loading')) {
       statGrid.querySelectorAll('.home-stat__val').forEach(function(el) { el.classList.add('ft-skeleton'); });
     }
@@ -648,6 +649,9 @@ function renderHomeDashboard() {
   }
 
   renderHomeWeekDigest_();
+  renderHomePaydayEnvelope_();
+  renderHomeBillsDue_();
+  renderHomeSubsWatch_();
   renderBudgetPaceCard_('home-budget-pace');
 
   var catsEl = document.getElementById('home-top-cats');
@@ -1120,6 +1124,7 @@ function homeQuickAddMerchant_(name, cat, amount) {
     try { nEl.focus(); nEl.select(); } catch (e) {}
   }
   if (typeof showToast === 'function') showToast('Quick add — adjust amount if needed');
+  if (typeof renderMerchantMemoryHint_ === 'function') renderMerchantMemoryHint_();
 }
 
 function renderHomeRecentMerchants_() {
@@ -1626,6 +1631,244 @@ function recurringMissedThisMonth_() {
   return missed;
 }
 
+function recurringUpcomingWithin_(withinDays) {
+  var now = new Date();
+  var items = [];
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var y = now.getFullYear();
+    var m = now.getMonth();
+    var fd = recurringFireMeta_(r, y, m);
+    var fire = new Date(fd.dateStr + 'T12:00:00');
+    var days = Math.round((fire.getTime() - now.getTime()) / 86400000);
+    if (days < 0) {
+      var nd = new Date(y, m + 1, 1);
+      fd = recurringFireMeta_(r, nd.getFullYear(), nd.getMonth());
+      fire = new Date(fd.dateStr + 'T12:00:00');
+      days = Math.round((fire.getTime() - now.getTime()) / 86400000);
+    }
+    if (days >= 0 && days <= withinDays) {
+      items.push({
+        r: r,
+        dateStr: fd.dateStr,
+        days: days,
+        logged: recurringHasLoggedMatch_(r, fd.dateStr),
+      });
+    }
+  });
+  items.sort(function(a, b) { return a.days - b.days; });
+  return items;
+}
+
+function paydayEnvelope_() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = now.getMonth();
+  var d = now.getDate();
+  var lastDay = new Date(y, m + 1, 0).getDate();
+  var ym = y + '-' + String(m + 1).padStart(2, '0');
+  var monthInc = (incomes || []).filter(function(i) { return String(i.date).indexOf(ym) === 0; })
+    .reduce(function(a, i) { return a + (Number(i.amount) || 0); }, 0);
+  var monthExp = (expenses || []).filter(function(e) {
+    return String(e.date).indexOf(ym) === 0 && !(e && e.transfer);
+  }).reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+  var remainingBills = 0;
+  var remainingIncome = 0;
+  (recurring || []).forEach(function(r) {
+    if (!r || !r.active) return;
+    var fd = recurringFireMeta_(r, y, m);
+    if (fd.fireDay <= d) return;
+    if (recurringHasLoggedMatch_(r, fd.dateStr)) return;
+    if (r.type === 'inc') remainingIncome += Number(r.amount) || 0;
+    else remainingBills += Number(r.amount) || 0;
+  });
+  var leftover = monthInc + remainingIncome - monthExp - remainingBills;
+  var daysLeft = Math.max(1, lastDay - d);
+  var weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
+  return {
+    leftover: leftover,
+    weekSafe: leftover / weeksLeft,
+    remainingBills: remainingBills,
+    remainingIncome: remainingIncome,
+    daysLeft: lastDay - d,
+    weeksLeft: weeksLeft,
+    monthInc: monthInc,
+    monthExp: monthExp,
+  };
+}
+
+function renderHomePaydayEnvelope_() {
+  var el = document.getElementById('home-envelope');
+  if (!el) return;
+  var vm = typeof viewMonth !== 'undefined' && viewMonth ? viewMonth : new Date();
+  var td = new Date();
+  var isCurrent = td.getFullYear() === vm.getFullYear() && td.getMonth() === vm.getMonth();
+  if (!isCurrent) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  var env = paydayEnvelope_();
+  el.hidden = false;
+  el.innerHTML =
+    '<div class="home-tool-card">' +
+    '<div class="home-tool-card__title">This week’s envelope</div>' +
+    '<div class="home-tool-card__val">' + esc(fmt(Math.max(0, env.weekSafe))) + '</div>' +
+    '<p class="home-tool-card__note">Safe to spend this week after remaining bills (' +
+    esc(fmt(env.remainingBills)) + '). Leftover this month ' + esc(fmt(env.leftover)) +
+    (env.leftover < 0 ? ' — you are already over.' : '.') + '</p></div>';
+}
+
+function renderHomeBillsDue_() {
+  var el = document.getElementById('home-bills-due');
+  if (!el) return;
+  var items = recurringUpcomingWithin_(7);
+  if (!items.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML =
+    '<div class="home-tool-card">' +
+    '<div class="home-tool-card__title">Due in 7 days</div>' +
+    items.map(function(it) {
+      var when = it.days === 0 ? 'today' : (it.days === 1 ? 'tomorrow' : 'in ' + it.days + ' days');
+      return '<div class="home-tool-row">' +
+        '<span>' + esc(it.r.name || 'Bill') +
+        (it.logged ? ' <em>logged</em>' : '') + '</span>' +
+        '<strong>' + esc(fmt(it.r.amount)) + ' · ' + when + '</strong></div>';
+    }).join('') + '</div>';
+}
+
+function subscriptionWatchdog_() {
+  var ym = typeof viewYM === 'function' ? viewYM() : '';
+  var cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 120);
+  var cutStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
+  var byKey = {};
+  (expenses || []).forEach(function(e) {
+    if (!e || e.transfer) return;
+    if (String(e.cat) !== 'Subscription') return;
+    if (String(e.date) < cutStr) return;
+    var key = String(e.place || e.name || '').trim().toLowerCase();
+    if (!key) return;
+    if (!byKey[key]) byKey[key] = { label: e.place || e.name, months: {}, lastAmt: 0, lastDate: '' };
+    var m = String(e.date).slice(0, 7);
+    byKey[key].months[m] = (byKey[key].months[m] || 0) + (Number(e.amount) || 0);
+    if (String(e.date) >= byKey[key].lastDate) {
+      byKey[key].lastDate = String(e.date);
+      byKey[key].lastAmt = Number(e.amount) || 0;
+    }
+  });
+  var missing = [];
+  var priceJump = [];
+  Object.keys(byKey).forEach(function(k) {
+    var g = byKey[k];
+    var months = Object.keys(g.months).sort();
+    if (months.length < 2) return;
+    if (ym && !g.months[ym]) missing.push(g);
+    if (months.length >= 2) {
+      var a = g.months[months[months.length - 2]];
+      var b = g.months[months[months.length - 1]];
+      if (a > 0 && b > a * 1.1) priceJump.push(g);
+    }
+  });
+  return { missing: missing, priceJump: priceJump };
+}
+
+function renderHomeSubsWatch_() {
+  var el = document.getElementById('home-subs-watch');
+  if (!el) return;
+  var w = subscriptionWatchdog_();
+  if (!w.missing.length && !w.priceJump.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  var rows = [];
+  w.missing.forEach(function(g) {
+    rows.push('<div class="home-tool-row"><span>' + esc(g.label) + '</span><strong>not logged this month</strong></div>');
+  });
+  w.priceJump.forEach(function(g) {
+    rows.push('<div class="home-tool-row"><span>' + esc(g.label) + '</span><strong>price up · last ' + esc(fmt(g.lastAmt)) + '</strong></div>');
+  });
+  el.innerHTML =
+    '<div class="home-tool-card">' +
+    '<div class="home-tool-card__title">Subscriptions</div>' +
+    rows.join('') + '</div>';
+}
+
+function lastMerchantExpense_(name, place) {
+  var n = String(name || '').trim().toLowerCase();
+  var p = String(place || '').trim().toLowerCase();
+  if (!n && !p) return null;
+  var best = null;
+  (expenses || []).forEach(function(e) {
+    if (!e || e.transfer) return;
+    var en = String(e.name || '').trim().toLowerCase();
+    var ep = String(e.place || '').trim().toLowerCase();
+    var hit = (p && ep && ep === p) || (n && en && en === n) || (p && en && en === p) || (n && ep && ep === n);
+    if (!hit) return;
+    if (!best || String(e.date) > String(best.date) || (e.date === best.date && e.id > best.id)) best = e;
+  });
+  return best;
+}
+
+function renderMerchantMemoryHint_() {
+  var el = document.getElementById('exp-merchant-hint');
+  if (!el) return;
+  var nameEl = document.getElementById('exp-name');
+  var placeEl = document.getElementById('exp-place');
+  var last = lastMerchantExpense_(nameEl ? nameEl.value : '', placeEl ? placeEl.value : '');
+  if (!last) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML = 'Last time: ' + esc(fmt(last.amount)) + ' on ' + esc(String(last.date)) +
+    ' <button type="button" class="btn-ghost exp-use-last" data-amt="' + last.amount + '">Use this</button>';
+  var btn = el.querySelector('.exp-use-last');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      var aEl = document.getElementById('exp-amount');
+      var amt = Number(btn.getAttribute('data-amt')) || 0;
+      if (aEl && typeof moneySetAmount === 'function') moneySetAmount(aEl, amt);
+      else if (aEl) aEl.value = String(amt);
+    });
+  }
+}
+
+function renderTrendsWhatIf_(months) {
+  var card = document.getElementById('tr-whatif-card');
+  var catEl = document.getElementById('tr-whatif-cat');
+  var pctEl = document.getElementById('tr-whatif-pct');
+  var outEl = document.getElementById('tr-whatif-out');
+  if (!card || !outEl) return;
+  var cur = months && months.length ? months[months.length - 1] : null;
+  var cats = cur ? trendCatTotalsYm_(cur.ym) : {};
+  var top = Object.keys(cats).map(function(c) { return { cat: c, amount: cats[c] }; })
+    .sort(function(a, b) { return b.amount - a.amount; })[0];
+  if (!top || !top.amount) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  if (catEl) catEl.textContent = top.cat + ' is ' + fmt(top.amount) + ' this month.';
+  function paint() {
+    var pct = pctEl ? Number(pctEl.value) || 20 : 20;
+    var save = top.amount * (pct / 100);
+    outEl.innerHTML = 'Cut ' + pct + '% and keep <strong>' + esc(fmt(save)) + '</strong> this month.';
+  }
+  if (pctEl && !pctEl._ftBound) {
+    pctEl._ftBound = true;
+    pctEl.addEventListener('input', paint);
+  }
+  paint();
+}
+
 function applyOneRecurring_(r) {
   if (!r) return;
   var now = new Date();
@@ -2007,7 +2250,8 @@ function snapshotNetWorth() {
     ? totalBanksBase()
     : banks.reduce(function(a,b){ return a+b.balance; }, 0);
   var utMv = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
-  var total = bankTotal + utMv;
+  var debt = typeof totalLiabBase === 'function' ? totalLiabBase() : 0;
+  var total = bankTotal + utMv - debt;
   var today = todayStr();
   var ex    = networthHist.find(function(h){ return h.date===today; });
   if (ex) ex.total = total;
@@ -2185,6 +2429,7 @@ function renderTrends() {
   renderTrendIncBreakdown();
   renderDayBreakdown();
   renderInsightsPanel(months);
+  renderTrendsWhatIf_(months);
   renderNwSnapshotHint();
 }
 
