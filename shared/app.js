@@ -90,8 +90,9 @@ const EXP_CAT_GROUPS = [
   { title: 'Home & utilities', cats: ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation'] },
   { title: 'Health & self-care', cats: ['Health', 'Pharmacy', 'Fitness', 'Grooming'] },
   { title: 'Bills & finance', cats: ['Bills', 'Insurance', 'Loan payment', 'Tax', 'Bank fees'] },
-  { title: 'Car & travel', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Ride-hailing', 'Flight', 'Hotel'] },
-  { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Travel', 'Hobbies'] },
+  { title: 'Car', cats: ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance'] },
+  { title: 'Travel', cats: ['Transport', 'Ride-hailing', 'Flight', 'Hotel', 'Travel'] },
+  { title: 'Fun & leisure', cats: ['Entertainment', 'Subscription', 'Hobbies'] },
   { title: 'Education & family', cats: ['Education', 'Pet care'] },
   { title: 'Other', cats: ['Other'] },
 ];

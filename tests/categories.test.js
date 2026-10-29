@@ -98,8 +98,9 @@ describe('add-expense chip catalog', () => {
     ['Rent', 'Utilities', 'Internet', 'Phone', 'Renovation'],
     ['Health', 'Pharmacy', 'Fitness', 'Grooming'],
     ['Bills', 'Insurance', 'Loan payment', 'Tax', 'Bank fees'],
-    ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance', 'Transport', 'Ride-hailing', 'Flight', 'Hotel'],
-    ['Entertainment', 'Subscription', 'Travel', 'Hobbies'],
+    ['Petrol', 'Car Service', 'Car Repair Labour', 'Car Parts', 'Tyre Service', 'Toll', 'Parking', 'Car Expenses', 'Car Insurance'],
+    ['Transport', 'Ride-hailing', 'Flight', 'Hotel', 'Travel'],
+    ['Entertainment', 'Subscription', 'Hobbies'],
     ['Education', 'Pet care'],
     ['Other'],
   ];
