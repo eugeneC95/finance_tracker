@@ -371,6 +371,9 @@ body.dark .assets-hero-v2 {
   font-weight: 800;
   letter-spacing: -0.04em;
 }
+.assets-hero-v2 .assets-hero__value {
+  font-size: clamp(22px, 3.2vw, 28px);
+}
 
 .ft-page-hero__value.green,
 .assets-hero__value.green { color: var(--green); }

@@ -978,7 +978,7 @@ body.dark .bar-track { background: var(--card-bg2); }
   margin-bottom: var(--s2);
 }
 .assets-hero__value {
-  font-size: clamp(28px, 4vw, 36px);
+  font-size: clamp(22px, 3.2vw, 28px);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -1145,6 +1145,71 @@ body.dark .assets-hero-v2 {
   align-items: flex-start;
   gap: var(--s4);
   margin-bottom: var(--s5);
+}
+.assets-portfolio__chg {
+  min-width: 8.5rem;
+}
+.assets-portfolio__chg-val {
+  font-size: clamp(18px, 2.6vw, 22px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.assets-portfolio__chg-val.pos,
+.assets-portfolio__chg-pct.pos { color: var(--green); }
+.assets-portfolio__chg-val.neg,
+.assets-portfolio__chg-pct.neg { color: var(--red); }
+.assets-portfolio__chg-val.muted { color: var(--ink3); font-size: var(--f-sm); font-weight: 600; }
+.assets-portfolio__chg-pct {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  margin-top: 2px;
+}
+.assets-portfolio__chart {
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+.assets-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.assets-chart-toolbar__title {
+  font-size: var(--f-sm);
+  font-weight: 700;
+  color: var(--ink2);
+}
+.assets-chart-modes {
+  display: flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--card-bg2);
+  border: 1px solid var(--line);
+}
+.assets-chart-mode {
+  border: 0;
+  background: transparent;
+  color: var(--ink3);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.assets-chart-mode.active {
+  background: var(--card-bg);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.nw-chart-wrap--tall { height: 220px; }
+.nw-zero {
+  stroke: var(--ink3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.55;
 }
 .assets-tabs {
   display: flex;
@@ -1630,6 +1695,9 @@ body.dark .assets-stat-tile { background: rgba(255,255,255,.04); }
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
+}
+.assets-portfolio .assets-hero__value {
+  font-size: clamp(22px, 3.2vw, 28px);
 }
 .ft-page-hero__value.green,
 .assets-hero__value.green { color: var(--green); }

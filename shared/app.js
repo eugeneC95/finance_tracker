@@ -198,6 +198,28 @@ function fmt(n) {
   return fn ? fn(n, settings.currency || 'RM') : String(n);
 }
 
+/** Short labels for large RM totals so charts and heroes stay readable. */
+function ftFmtCompact_(n, opts) {
+  opts = opts || {};
+  var v = Number(n);
+  if (!isFinite(v)) v = 0;
+  var cur = (settings && settings.currency) || 'RM';
+  var neg = v < 0;
+  var abs = Math.abs(v);
+  var body;
+  if (abs >= 1000000) {
+    body = (abs / 1000000).toFixed(abs >= 10000000 ? 1 : 2).replace(/\.0+$/, '').replace(/(\.\d)0$/, '$1') + 'm';
+  } else if (abs >= 10000) {
+    body = (abs / 1000).toFixed(abs >= 100000 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  } else {
+    body = abs.toLocaleString('en-MY', { maximumFractionDigits: abs >= 100 ? 0 : 2 });
+  }
+  var sign = '';
+  if (opts.signed && v !== 0) sign = neg ? '−' : '+';
+  else if (neg) sign = '−';
+  return sign + cur + '\u00a0' + body;
+}
+
 const BANK_CURRENCIES = {
   MYR: { symbol: 'RM',  label: 'MYR', decimals: 2 },
   SGD: { symbol: 'SGD', label: 'SGD', decimals: 2 },
@@ -820,6 +842,19 @@ function wireAssetsPageControls() {
     let saved = 'cash';
     try { saved = sessionStorage.getItem('ft_assets_tab') || 'cash'; } catch (e) {}
     setAssetsTab_(saved);
+  }
+  document.querySelectorAll('.assets-chart-mode').forEach(btn => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      if (typeof setNwAssetsChartMode_ === 'function') setNwAssetsChartMode_(btn.getAttribute('data-nw-mode'));
+    });
+  });
+  if (typeof nwAssetsChartMode_ === 'function') {
+    const mode = nwAssetsChartMode_();
+    document.querySelectorAll('.assets-chart-mode').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-nw-mode') === mode);
+    });
   }
   const utAdd = document.getElementById('ut-add-btn');
   if (utAdd && !utAdd.dataset.wired) {
@@ -2561,15 +2596,23 @@ function renderAssetsSummaries_(t) {
   const utMv = computeUtTotalMarketValue();
   const portfolioTotal = totalBanksVal + utMv;
 
-  const nsBanks = document.getElementById('ns-banks');
-  if (nsBanks) nsBanks.textContent = fmt(totalBanksVal);
+  const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
   const nsPortfolio = document.getElementById('ns-portfolio');
   if (nsPortfolio) {
-    nsPortfolio.textContent = fmt(portfolioTotal);
+    nsPortfolio.textContent = compact(portfolioTotal);
+    nsPortfolio.title = fmt(portfolioTotal);
     nsPortfolio.className = 'assets-hero__value ' + (portfolioTotal >= 0 ? 'green' : 'red');
   }
   const nsUt = document.getElementById('ns-ut');
-  if (nsUt) nsUt.textContent = fmt(utMv);
+  if (nsUt) {
+    nsUt.textContent = compact(utMv);
+    nsUt.title = fmt(utMv);
+  }
+  const nsBanksVal = document.getElementById('ns-banks');
+  if (nsBanksVal) {
+    nsBanksVal.textContent = compact(totalBanksVal);
+    nsBanksVal.title = fmt(totalBanksVal);
+  }
   const nsBankCount = document.getElementById('ns-bank-count');
   if (nsBankCount) {
     nsBankCount.textContent = banks.length + ' account' + (banks.length === 1 ? '' : 's');
@@ -2595,6 +2638,28 @@ function renderAssetsSummaries_(t) {
       : null;
     lastSnap.textContent = hist && hist.date ? hist.date : 'none yet';
   }
+  const chgEl = document.getElementById('assets-period-chg');
+  const pctEl = document.getElementById('assets-period-pct');
+  if (chgEl) {
+    const hist = (typeof networthHist !== 'undefined') ? networthHist : [];
+    if (hist.length >= 2) {
+      const first = hist[0].total;
+      const last = hist[hist.length - 1].total;
+      const delta = last - first;
+      chgEl.textContent = compact(delta, { signed: true });
+      chgEl.title = fmt(delta);
+      chgEl.className = 'assets-portfolio__chg-val ' + (delta >= 0 ? 'pos' : 'neg');
+      if (pctEl) {
+        const pct = first ? (delta / first) * 100 : 0;
+        pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(Math.abs(pct) < 1 ? 2 : 1) + '%';
+        pctEl.className = 'assets-portfolio__chg-pct ' + (delta >= 0 ? 'pos' : 'neg');
+      }
+    } else {
+      chgEl.textContent = 'Need 2+ snapshots';
+      chgEl.className = 'assets-portfolio__chg-val muted';
+      if (pctEl) pctEl.textContent = '';
+    }
+  }
 
   const nnet = document.getElementById('ns-net');
   if (nnet) {
@@ -2603,7 +2668,10 @@ function renderAssetsSummaries_(t) {
   }
 
   const utSumEl = document.getElementById('ut-summary-mv');
-  if (utSumEl) utSumEl.textContent = fmt(utMv);
+  if (utSumEl) {
+    utSumEl.textContent = compact(utMv);
+    utSumEl.title = fmt(utMv);
+  }
 }
 
 function renderActivePagePanels_(t) {

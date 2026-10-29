@@ -2254,6 +2254,25 @@ function openTrendMonthInExpenses() {
   render();
 }
 
+function nwAssetsChartMode_() {
+  try { return sessionStorage.getItem('ft_nw_chart_mode') || 'change'; } catch (e) { return 'change'; }
+}
+
+function setNwAssetsChartMode_(mode) {
+  var next = mode === 'total' ? 'total' : 'change';
+  try { sessionStorage.setItem('ft_nw_chart_mode', next); } catch (e) {}
+  document.querySelectorAll('.assets-chart-mode').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-nw-mode') === next);
+  });
+  var cap = document.getElementById('assets-chart-caption');
+  if (cap) {
+    cap.textContent = next === 'change'
+      ? 'Change view zooms into movement so a large total does not flatten the line.'
+      : 'Total view shows the full portfolio amount on each date.';
+  }
+  renderNetWorthChart('assets-networth-chart');
+}
+
 function renderAllNetWorthCharts() {
   renderNetWorthChart('networth-chart');
   renderNetWorthChart('assets-networth-chart');
@@ -2265,55 +2284,89 @@ function renderNetWorthChart(targetId) {
   if (!el) return;
 
   if (!networthHist.length) {
-    el.innerHTML = '<div class="nw-empty">Add bank accounts or unit trust holdings, then save NAV or tap Snapshot to build portfolio history.</div>';
+    el.innerHTML = '<div class="nw-empty">Add bank accounts or unit trust holdings, then save NAV or tap Update portfolio to build history.</div>';
     return;
   }
 
   var chartKey = (targetId || 'networth-chart').replace(/[^a-z0-9]/gi, '');
   var gradId = 'nw-grad-' + chartKey;
   var isMini = targetId === 'home-nw-chart';
+  var isAssets = targetId === 'assets-networth-chart';
+  var mode = isAssets ? nwAssetsChartMode_() : 'total';
+  var compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : function(n, o) {
+    var s = (o && o.signed && n > 0 ? '+' : '') + fmt(n);
+    return s;
+  };
 
   var W   = el.clientWidth || (isMini ? 320 : 600);
-  var H   = isMini ? 96 : 160;
-  var PAD = {t:10, r:20, b:30, l:72};
-  var cW  = W-PAD.l-PAD.r, cH = H-PAD.t-PAD.b;
-  var vals = networthHist.map(function(h){ return h.total; });
-  var minV = Math.min.apply(null, vals);
-  var maxV = Math.max.apply(null, vals);
-  var rng  = maxV-minV || 1;
-  var n    = networthHist.length;
-  var xOf  = function(i){
+  var H   = isMini ? 96 : (isAssets ? 220 : 160);
+  var PAD = { t: 12, r: 12, b: 28, l: isAssets ? 52 : 56 };
+  var cW  = W - PAD.l - PAD.r;
+  var cH  = H - PAD.t - PAD.b;
+  var vals = networthHist.map(function(h) { return h.total; });
+  var baseline = vals[0];
+  var series = mode === 'change' ? vals.map(function(v) { return v - baseline; }) : vals;
+  var dataMin = Math.min.apply(null, series);
+  var dataMax = Math.max.apply(null, series);
+  if (mode === 'change') {
+    dataMin = Math.min(dataMin, 0);
+    dataMax = Math.max(dataMax, 0);
+  }
+  var span = dataMax - dataMin;
+  var padAmt = span ? span * 0.14 : Math.max(Math.abs(dataMax), 1) * 0.08;
+  var minV = dataMin - padAmt;
+  var maxV = dataMax + padAmt;
+  var rng = maxV - minV || 1;
+  var n = networthHist.length;
+  var xOf = function(i) {
     if (n === 1) return PAD.l + cW / 2;
     return PAD.l + (i / (n - 1)) * cW;
   };
-  var yOf  = function(v){ return PAD.t+cH-((v-minV)/rng)*cH; };
-  var pts  = networthHist.map(function(h,i){ return xOf(i)+','+yOf(h.total); });
+  var yOf = function(v) { return PAD.t + cH - ((v - minV) / rng) * cH; };
+  var pts = series.map(function(v, i) { return xOf(i) + ',' + yOf(v); });
   var path = n === 1
-    ? 'M ' + PAD.l + ',' + yOf(vals[0]) + ' L ' + (PAD.l + cW) + ',' + yOf(vals[0])
+    ? 'M ' + PAD.l + ',' + yOf(series[0]) + ' L ' + (PAD.l + cW) + ',' + yOf(series[0])
     : 'M ' + pts.join(' L ');
   var area = n === 1
-    ? 'M ' + PAD.l + ',' + (PAD.t + cH) + ' L ' + (PAD.l + cW) + ',' + yOf(vals[0]) + ' L ' + (PAD.l + cW) + ',' + (PAD.t + cH) + ' Z'
-    : 'M '+xOf(0)+','+(PAD.t+cH)+' L '+pts.join(' L ')+' L '+xOf(n-1)+','+(PAD.t+cH)+' Z';
-  var trending = vals[vals.length-1] >= vals[0];
+    ? 'M ' + PAD.l + ',' + (PAD.t + cH) + ' L ' + (PAD.l + cW) + ',' + yOf(series[0]) + ' L ' + (PAD.l + cW) + ',' + (PAD.t + cH) + ' Z'
+    : 'M ' + xOf(0) + ',' + (PAD.t + cH) + ' L ' + pts.join(' L ') + ' L ' + xOf(n - 1) + ',' + (PAD.t + cH) + ' Z';
+  var trending = series[series.length - 1] >= series[0];
   var lc = trending ? '#1A9E6E' : '#E24B4A';
-  var yMid = (minV+maxV)/2;
-  var yLbls = [{v:maxV,y:yOf(maxV)},{v:yMid,y:yOf(yMid)},{v:minV,y:yOf(minV)}];
-  var xIdxs = [0, Math.floor((n-1)/2), n-1].filter(function(v,i,a){ return a.indexOf(v)===i; });
-  var xLbls = xIdxs.map(function(i){ return {lbl:networthHist[i].date.slice(0,7), x:xOf(i)}; });
+  var yMid = (dataMin + dataMax) / 2;
+  var yLbls = [{ v: dataMax, y: yOf(dataMax) }, { v: yMid, y: yOf(yMid) }, { v: dataMin, y: yOf(dataMin) }];
+  if (mode === 'change' && dataMin < 0 && dataMax > 0) {
+    yLbls.push({ v: 0, y: yOf(0), zero: true });
+  }
+  var xIdxs = [0, Math.floor((n - 1) / 2), n - 1].filter(function(v, i, a) { return a.indexOf(v) === i; });
+  var xLbls = xIdxs.map(function(i) { return { lbl: networthHist[i].date.slice(0, 7), x: xOf(i) }; });
 
-  var circles = networthHist.map(function(h,i){
-    return '<circle cx="'+xOf(i)+'" cy="'+yOf(h.total)+'" r="3.5" fill="'+lc+'" stroke="white" stroke-width="1.5"><title>'+h.date+': '+fmt(h.total)+'</title></circle>';
+  var zeroLine = '';
+  if (mode === 'change' && dataMin < 0 && dataMax > 0) {
+    zeroLine = '<line class="nw-zero" x1="' + PAD.l + '" y1="' + yOf(0) + '" x2="' + (PAD.l + cW) + '" y2="' + yOf(0) + '" />';
+  }
+
+  var circles = series.map(function(sv, i) {
+    var tip = networthHist[i].date + ': ' + fmt(vals[i]);
+    if (mode === 'change') tip += ' (' + compact(sv, { signed: true }) + ')';
+    return '<circle cx="' + xOf(i) + '" cy="' + yOf(sv) + '" r="' + (isMini ? 2.5 : 3.5) + '" fill="' + lc + '" stroke="white" stroke-width="1.5"><title>' + tip + '</title></circle>';
   }).join('');
 
-  el.innerHTML = '<div class="nw-chart-wrap"><svg class="nw-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">' +
-    '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0%" stop-color="'+lc+'" stop-opacity="0.15"/>' +
-    '<stop offset="100%" stop-color="'+lc+'" stop-opacity="0"/>' +
+  var yLabelFn = function(v) {
+    return compact(v, { signed: mode === 'change' });
+  };
+
+  el.innerHTML = '<div class="nw-chart-wrap' + (isAssets ? ' nw-chart-wrap--tall' : '') + '"><svg class="nw-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' +
+    '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="' + lc + '" stop-opacity="0.18"/>' +
+    '<stop offset="100%" stop-color="' + lc + '" stop-opacity="0"/>' +
     '</linearGradient></defs>' +
-    '<path d="'+area+'" fill="url(#'+gradId  +')"/>' +
-    '<path d="'+path+'" fill="none" stroke="'+lc+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
-    yLbls.map(function(l){ return '<text class="nw-axis-lbl" x="'+(PAD.l-6)+'" y="'+(l.y+3)+'" text-anchor="end">'+fmt(l.v)+'</text>'; }).join('') +
-    xLbls.map(function(l){ return '<text class="nw-axis-lbl" x="'+l.x+'" y="'+(H-4)+'" text-anchor="middle">'+l.lbl+'</text>'; }).join('') +
+    '<path d="' + area + '" fill="url(#' + gradId + ')"/>' +
+    zeroLine +
+    '<path d="' + path + '" fill="none" stroke="' + lc + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    yLbls.map(function(l) {
+      return '<text class="nw-axis-lbl" x="' + (PAD.l - 6) + '" y="' + (l.y + 3) + '" text-anchor="end">' + yLabelFn(l.v) + '</text>';
+    }).join('') +
+    xLbls.map(function(l) { return '<text class="nw-axis-lbl" x="' + l.x + '" y="' + (H - 4) + '" text-anchor="middle">' + l.lbl + '</text>'; }).join('') +
     circles + '</svg></div>';
 }
 

@@ -111,13 +111,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=147"/>
-<link rel="stylesheet" href="styles/reset.css?v=147"/>
-<link rel="stylesheet" href="styles/tokens.css?v=147"/>
-<link rel="stylesheet" href="styles/base.css?v=147"/>
-<link rel="stylesheet" href="styles/components.css?v=147"/>
-<link rel="stylesheet" href="styles/mobile.css?v=147"/>
-<link rel="stylesheet" href="theme-modern.css?v=147"/>
+<link rel="stylesheet" href="styles/fonts.css?v=148"/>
+<link rel="stylesheet" href="styles/reset.css?v=148"/>
+<link rel="stylesheet" href="styles/tokens.css?v=148"/>
+<link rel="stylesheet" href="styles/base.css?v=148"/>
+<link rel="stylesheet" href="styles/components.css?v=148"/>
+<link rel="stylesheet" href="styles/mobile.css?v=148"/>
+<link rel="stylesheet" href="theme-modern.css?v=148"/>
 
 
 </head>
@@ -211,7 +211,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v147 · 2026-10-28 18:13';
+  var BUILD_VERSION    = 'v148 · 2026-10-29 16:54';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -772,12 +772,17 @@
     </div>
     <div class="page-body">
 
-      <section class="card assets-hero-v2" aria-label="Portfolio summary">
+      <section class="card assets-hero-v2 assets-portfolio" aria-label="Portfolio summary">
         <div class="assets-hero-v2__top">
           <div class="assets-hero__main">
-            <div class="assets-hero__label">Total portfolio</div>
+            <div class="assets-hero__label">Total</div>
             <div class="assets-hero__value green" id="ns-portfolio">RM 0</div>
-            <p class="assets-hero__hint">Banks plus funds, in your base currency. Last snapshot: <span id="assets-last-snap">—</span></p>
+            <p class="assets-hero__hint">Last snapshot <span id="assets-last-snap">—</span></p>
+          </div>
+          <div class="assets-portfolio__chg" id="assets-period-wrap">
+            <div class="assets-hero__label">Since first snapshot</div>
+            <div class="assets-portfolio__chg-val" id="assets-period-chg">—</div>
+            <div class="assets-portfolio__chg-pct" id="assets-period-pct"></div>
           </div>
           <button type="button" class="btn btn-primary" id="assets-nw-snapshot-btn">Update portfolio</button>
         </div>
@@ -791,20 +796,21 @@
             <span><i class="assets-split__dot assets-split__dot--funds"></i> Funds <strong id="ns-ut">RM 0</strong> <em id="ns-ut-count">0 holdings</em></span>
           </div>
         </div>
+        <div class="assets-portfolio__chart">
+          <div class="assets-chart-toolbar">
+            <span class="assets-chart-toolbar__title" id="assets-chart-title">History</span>
+            <div class="assets-chart-modes" role="group" aria-label="Chart scale">
+              <button type="button" class="assets-chart-mode active" data-nw-mode="change">Change</button>
+              <button type="button" class="assets-chart-mode" data-nw-mode="total">Total</button>
+            </div>
+          </div>
+          <div id="assets-networth-chart"></div>
+          <p class="ft-note" id="assets-chart-caption">Change view zooms into movement so a large total does not flatten the line.</p>
+        </div>
         <div id="ns-net" hidden aria-hidden="true"></div>
       </section>
 
       <div id="nw-snapshot-hint-assets" class="ft-inline-hint ft-nw-hint mb-5" style="display:none" role="status"></div>
-
-      <div class="card mb-5 assets-nw-card">
-        <div class="panel-hd">
-          <span class="panel-title" id="assets-chart-title">Portfolio history</span>
-        </div>
-        <div class="panel-bd">
-          <div id="assets-networth-chart"></div>
-          <p class="ft-note" style="margin-top:8px">Saved when you update balances, NAV, or tap Update portfolio.</p>
-        </div>
-      </div>
 
       <div class="assets-tabs" role="tablist" aria-label="Asset type">
         <button type="button" class="assets-tab active" role="tab" aria-selected="true" data-assets-tab="cash" id="assets-tab-cash">Cash</button>
@@ -1477,7 +1483,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v147 · 2026-10-28 18:13</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v148 · 2026-10-29 16:54</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1813,8 +1819,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v147 · 2026-10-28 18:13</div>
-<script src="build-id.js?v=147"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v148 · 2026-10-29 16:54</div>
+<script src="build-id.js?v=148"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1825,14 +1831,14 @@
   });
 })();
 </script>
-<script type="module" src="shared/main.js?v=147"></script>
-<script defer src="shared/app.js?v=147"></script>
-<script defer src="shared/sync-auth.js?v=147"></script>
-<script defer src="shared/sync-transport.js?v=147"></script>
-<script defer src="shared/sync.js?v=147"></script>
-<script defer src="shared/features.js?v=147"></script>
-<script defer src="shared/receipts.js?v=147"></script>
-<script defer src="shared/extras.js?v=147"></script>
+<script type="module" src="shared/main.js?v=148"></script>
+<script defer src="shared/app.js?v=148"></script>
+<script defer src="shared/sync-auth.js?v=148"></script>
+<script defer src="shared/sync-transport.js?v=148"></script>
+<script defer src="shared/sync.js?v=148"></script>
+<script defer src="shared/features.js?v=148"></script>
+<script defer src="shared/receipts.js?v=148"></script>
+<script defer src="shared/extras.js?v=148"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {
