@@ -802,6 +802,11 @@ body.dark .ft-fab {
     width: 100%;
   }
 
+  #page-assets .page-body,
+  #page-assets .page-header {
+    max-width: min(1560px, 100%);
+  }
+
   .page-header::before {
     display: block;
   }
@@ -2221,8 +2226,8 @@ body.ft-sync-loading #c-today {
 }
 
 .ft-cat-badge__ico {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   color: #fff;
 }
 
@@ -2254,6 +2259,12 @@ body.ft-sync-loading #c-today {
 
 .cat-btn .ci.ft-cat-badge {
   margin-bottom: 4px;
+  width: 34px;
+  height: 34px;
+}
+.cat-btn .ci.ft-cat-badge .ft-cat-badge__ico {
+  width: 18px;
+  height: 18px;
 }
 
 .home-insight-card__svg {
