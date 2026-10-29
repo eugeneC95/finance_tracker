@@ -111,13 +111,13 @@
 <link rel="icon" href="icons/icon192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="icons/icon192.png"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="styles/fonts.css?v=149"/>
-<link rel="stylesheet" href="styles/reset.css?v=149"/>
-<link rel="stylesheet" href="styles/tokens.css?v=149"/>
-<link rel="stylesheet" href="styles/base.css?v=149"/>
-<link rel="stylesheet" href="styles/components.css?v=149"/>
-<link rel="stylesheet" href="styles/mobile.css?v=149"/>
-<link rel="stylesheet" href="theme-modern.css?v=149"/>
+<link rel="stylesheet" href="styles/fonts.css?v=151"/>
+<link rel="stylesheet" href="styles/reset.css?v=151"/>
+<link rel="stylesheet" href="styles/tokens.css?v=151"/>
+<link rel="stylesheet" href="styles/base.css?v=151"/>
+<link rel="stylesheet" href="styles/components.css?v=151"/>
+<link rel="stylesheet" href="styles/mobile.css?v=151"/>
+<link rel="stylesheet" href="theme-modern.css?v=151"/>
 
 
 </head>
@@ -211,7 +211,7 @@
   var BRIDGE_KEY       = 'ft_unlock_bridge';
   var MAX              = 6;
   // Shown on lock overlay (#lk-ver). Use build number + local wall date and 24h time so users see when this HTML was cut (bump all ?v= + CACHE when precached assets change).
-  var BUILD_VERSION    = 'v149 · 2026-10-29 17:02';
+  var BUILD_VERSION    = 'v151 · 2026-10-29 17:09';
 
   var ov = document.getElementById('lock-overlay');
   if (!ov) return;
@@ -1027,62 +1027,57 @@
   <div class="page" id="page-trends">
     <div class="page-header">
       <h2>Trends</h2>
-      <p class="sub">Six-month patterns, weekday spending, and net worth over time.</p>
+      <p class="sub">What changed in your spending, and what is worth doing next.</p>
     </div>
     <div class="page-body">
-      <section class="card ft-page-hero" aria-label="Trend highlights">
+      <section class="card ft-page-hero" aria-label="This month vs usual">
+        <p class="tr-verdict" id="tr-verdict">Add a few expenses to see tips.</p>
         <div class="ft-page-hero__row">
           <div class="ft-page-hero__chips" style="width:100%">
             <div class="ft-chip">
-              <span>Avg spend / mo</span>
+              <span>This month spent</span>
               <strong class="red" id="tr-avg-exp">RM 0</strong>
             </div>
             <div class="ft-chip">
-              <span>Avg income / mo</span>
-              <strong class="green" id="tr-avg-inc">RM 0</strong>
+              <span>vs last month</span>
+              <strong id="tr-avg-inc">—</strong>
             </div>
             <div class="ft-chip">
-              <span>Best savings</span>
+              <span>Left after spend</span>
               <strong id="tr-best">—</strong>
             </div>
           </div>
         </div>
       </section>
 
-      <div id="nw-snapshot-hint" class="ft-inline-hint ft-nw-hint" style="display:none" role="status"></div>
+      <div class="card mb-5">
+        <div class="panel-hd"><span class="panel-title">Tips for you</span></div>
+        <div class="panel-bd">
+          <div id="insights-panel" class="tr-tips"></div>
+        </div>
+      </div>
 
       <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Monthly overview —last 6 months</span></div>
+        <div class="panel-hd"><span class="panel-title">Last 6 months</span></div>
         <div class="panel-bd" id="trend-chart-wrap" style="overflow-x:auto">
           <div id="trend-chart"></div>
-          <p class="ft-note" style="margin-top:10px">Tap a month to see income by category.</p>
+          <p class="ft-note" style="margin-top:10px">Tap a month to see where money went.</p>
         </div>
       </div>
 
       <div class="card mb-5" id="trend-inc-breakdown" hidden>
         <div class="panel-hd" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-          <span class="panel-title">Income breakdown</span>
-          <button type="button" class="btn-ghost" id="trend-open-expenses" style="margin-left:auto;font-size:var(--f-sm)">Open month in Expenses</button>
+          <span class="panel-title" id="trend-breakdown-title">Spend by category</span>
+          <button type="button" class="btn-ghost" id="trend-open-expenses" style="margin-left:auto;font-size:var(--f-sm)">Open in Expenses</button>
         </div>
         <div class="panel-bd bar-chart" id="trend-inc-breakdown-bd"></div>
       </div>
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Insights</span></div>
-        <div class="panel-bd">
-          <div id="insights-panel"></div>
-        </div>
-      </div>
-      <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Spending by day of week</span></div>
-        <div class="panel-bd">
-          <div class="bar-chart" id="day-breakdown"></div>
-        </div>
-      </div>
 
       <div class="card mb-5">
-        <div class="panel-hd"><span class="panel-title">Net worth history</span></div>
+        <div class="panel-hd"><span class="panel-title">When you spend</span></div>
         <div class="panel-bd">
-          <div id="networth-chart"></div>
+          <p class="tr-weekday-tip" id="tr-weekday-tip"></p>
+          <div class="bar-chart" id="day-breakdown"></div>
         </div>
       </div>
     </div>
@@ -1483,7 +1478,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v149 · 2026-10-29 17:02</span>
+                <strong>Finance Tracker</strong> · build <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v151 · 2026-10-29 17:09</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline use</summary>
@@ -1819,8 +1814,8 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v149 · 2026-10-29 17:02</div>
-<script src="build-id.js?v=149"></script>
+<div id="ft-build" style="position:fixed;bottom:6px;right:8px;font-size:10px;color:var(--ink3);opacity:.5;pointer-events:none;z-index:1">v151 · 2026-10-29 17:09</div>
+<script src="build-id.js?v=151"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1831,14 +1826,14 @@
   });
 })();
 </script>
-<script type="module" src="shared/main.js?v=149"></script>
-<script defer src="shared/app.js?v=149"></script>
-<script defer src="shared/sync-auth.js?v=149"></script>
-<script defer src="shared/sync-transport.js?v=149"></script>
-<script defer src="shared/sync.js?v=149"></script>
-<script defer src="shared/features.js?v=149"></script>
-<script defer src="shared/receipts.js?v=149"></script>
-<script defer src="shared/extras.js?v=149"></script>
+<script type="module" src="shared/main.js?v=151"></script>
+<script defer src="shared/app.js?v=151"></script>
+<script defer src="shared/sync-auth.js?v=151"></script>
+<script defer src="shared/sync-transport.js?v=151"></script>
+<script defer src="shared/sync.js?v=151"></script>
+<script defer src="shared/features.js?v=151"></script>
+<script defer src="shared/receipts.js?v=151"></script>
+<script defer src="shared/extras.js?v=151"></script>
 <script>
 // ── Service worker: register and auto-reload when a new version installs ──
 if ('serviceWorker' in navigator) {

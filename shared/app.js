@@ -481,11 +481,15 @@ function utCostBasis(h) {
 
 function utSanitizeNav(arr) {
   if (!Array.isArray(arr)) return [];
-  const out = arr.filter(p => p && typeof p === 'object').map(p => ({
-    fundId: Number(p.fundId),
-    date: String(p.date || '').trim().slice(0, 10),
-    nav: parseFloat(p.nav),
-  })).filter(p => !isNaN(p.fundId) && p.fundId > 0 && /^\d{4}-\d{2}-\d{2}$/.test(p.date) && !isNaN(p.nav) && p.nav > 0);
+  const out = arr.filter(p => p && typeof p === 'object').map(p => {
+    const row = {
+      fundId: Number(p.fundId),
+      date: String(p.date || '').trim().slice(0, 10),
+      nav: parseFloat(p.nav),
+    };
+    if (p.carry) row.carry = true;
+    return row;
+  }).filter(p => !isNaN(p.fundId) && p.fundId > 0 && /^\d{4}-\d{2}-\d{2}$/.test(p.date) && !isNaN(p.nav) && p.nav > 0);
   const map = new Map();
   out.forEach(p => { map.set(p.fundId + '|' + p.date, p); });
   return Array.from(map.values());
@@ -547,7 +551,7 @@ function utCarryForwardNavSnapshotForToday() {
     if (!lastE) return;
     const hasToday = utNavPoints.some(p => p.fundId === h.id && p.date === td);
     if (hasToday) return;
-    utNavPoints.push({ fundId: h.id, date: td, nav: lastE.nav });
+    utNavPoints.push({ fundId: h.id, date: td, nav: lastE.nav, carry: true });
     changed = true;
   });
 
@@ -626,8 +630,9 @@ function upsertUtNav(fundId, dateStr, navVal, skipNwSnap) {
   const nav = parseFloat(navVal);
   if (!fundId || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || isNaN(nav) || nav <= 0) return false;
   const i = utNavPoints.findIndex(p => p.fundId === fundId && p.date === dateStr);
-  if (i >= 0) utNavPoints[i].nav = nav;
-  else utNavPoints.push({ fundId, date: dateStr, nav });
+  const row = { fundId, date: dateStr, nav };
+  if (i >= 0) utNavPoints[i] = row;
+  else utNavPoints.push(row);
   utDedupeNavPoints();
   saveUtNav();
   if (!skipNwSnap) maybeSnapshotNetWorth();
@@ -997,7 +1002,14 @@ function renderUnitTrustPanel() {
     const stats = document.createElement('div');
     stats.className = 'ut-stats';
     utAppendStat(stats, 'Units', h.units.toLocaleString('en-MY', { maximumFractionDigits: 6 }), '');
-    utAppendStat(stats, 'Latest NAV', last ? last.nav.toFixed(4) + ' (' + last.date + ')' : '—', last ? '' : 'muted');
+    utAppendStat(
+      stats,
+      'Latest NAV',
+      last
+        ? last.nav.toFixed(4) + ' (' + last.date + (last.carry ? ', copied' : '') + ')'
+        : '—',
+      last ? '' : 'muted'
+    );
     if (pnl != null) {
       utAppendStat(stats, 'P&L', (pnl >= 0 ? '+' : '') + fmtBankAmount(pnl, curCode), pnl >= 0 ? 'pos' : 'neg');
     } else {
@@ -1025,7 +1037,14 @@ function renderUnitTrustPanel() {
     dateLab.textContent = 'Date';
     const dateInp = document.createElement('input');
     dateInp.type = 'date';
-    dateInp.value = last ? last.date : todayStr();
+    dateInp.id = 'ut-nav-date-' + h.id;
+    if (!window.ftUtNavPickDate_) window.ftUtNavPickDate_ = {};
+    dateInp.value = window.ftUtNavPickDate_[h.id] || todayStr();
+    function rememberNavDate_() {
+      if (dateInp.value) window.ftUtNavPickDate_[h.id] = dateInp.value;
+    }
+    dateInp.addEventListener('input', rememberNavDate_);
+    dateInp.addEventListener('change', rememberNavDate_);
     dateWrap.appendChild(dateLab);
     dateWrap.appendChild(dateInp);
 
@@ -1048,12 +1067,18 @@ function renderUnitTrustPanel() {
     saveNav.className = 'btn btn-primary';
     saveNav.textContent = 'Save NAV';
     saveNav.addEventListener('click', () => {
-      if (!upsertUtNav(h.id, dateInp.value, navInp.value)) {
+      const ymd = String(dateInp.value || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        shake(dateInp);
+        return;
+      }
+      window.ftUtNavPickDate_[h.id] = ymd;
+      if (!upsertUtNav(h.id, ymd, navInp.value)) {
         shake(navInp);
         return;
       }
       navInp.value = '';
-      showToast('NAV saved');
+      showToast('NAV saved for ' + ymd);
       render();
     });
     saveWrap.appendChild(saveNav);
@@ -1062,6 +1087,16 @@ function renderUnitTrustPanel() {
     navGrid.appendChild(navWrap);
     navGrid.appendChild(saveWrap);
     navBlock.appendChild(navGrid);
+    const recentNav = utNavSortedForFund(h.id).slice(-5).reverse();
+    if (recentNav.length) {
+      const hist = document.createElement('p');
+      hist.className = 'ft-note';
+      hist.style.margin = '8px 0 0';
+      hist.textContent = 'Saved: ' + recentNav.map(function(p) {
+        return p.date + ' · ' + p.nav.toFixed(4) + (p.carry ? ' (copied)' : '');
+      }).join(' · ');
+      navBlock.appendChild(hist);
+    }
 
     const editBody = document.createElement('div');
     editBody.className = 'ut-holding__edit';

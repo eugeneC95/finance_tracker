@@ -2070,26 +2070,68 @@ function txInCalendarMonth(dateStr, ym) {
   return String(dateStr).indexOf(ym) === 0;
 }
 
+function trendSkipTransfer_(e) {
+  return typeof isTransferExpense_ === 'function' && isTransferExpense_(e);
+}
+
+function trendSpendYm_(ym) {
+  return expenses.filter(function(e) {
+    if (trendSkipTransfer_(e)) return false;
+    return txInCalendarMonth(e.date, ym);
+  }).reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0);
+}
+
+function trendCatTotalsYm_(ym) {
+  var map = {};
+  expenses.forEach(function(e) {
+    if (trendSkipTransfer_(e)) return;
+    if (!txInCalendarMonth(e.date, ym)) return;
+    var cat = e.cat || 'Other';
+    map[cat] = (map[cat] || 0) + (Number(e.amount) || 0);
+  });
+  return map;
+}
+
 function renderTrends() {
   var months = [];
   for (var i=5; i>=0; i--) {
     var d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
     var ym  = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     var lbl = d.toLocaleString('default',{month:'short',year:'2-digit'});
-    var mE  = expenses.filter(function(e){ return txInCalendarMonth(e.date, ym); }).reduce(function(a,e){ return a+e.amount; },0);
+    var mE  = trendSpendYm_(ym);
     var mI  = incomes.filter(function(e){  return txInCalendarMonth(e.date, ym); }).reduce(function(a,e){ return a+e.amount; },0);
     months.push({ ym:ym, lbl:lbl, exp:mE, inc:mI, isCurrent:i===0 });
   }
 
   var maxVal  = Math.max.apply(null, months.map(function(m){ return Math.max(m.exp,m.inc); }).concat([1]));
-  var avgExp  = months.reduce(function(a,m){return a+m.exp;},0) / months.length;
-  var avgInc  = months.reduce(function(a,m){return a+m.inc;},0) / months.length;
-  var bestM   = null, bestNet = -Infinity;
-  months.forEach(function(m){ var net=m.inc-m.exp; if(net>bestNet){bestNet=net;bestM=m;} });
+  var cur = months[months.length - 1];
+  var prev = months.length > 1 ? months[months.length - 2] : null;
+  var saved = cur.inc - cur.exp;
+  var momPct = (prev && prev.exp > 0) ? Math.round(((cur.exp - prev.exp) / prev.exp) * 100) : null;
 
-  var teEl = document.getElementById('tr-avg-exp'); if(teEl) teEl.textContent = fmt(avgExp);
-  var tiEl = document.getElementById('tr-avg-inc'); if(tiEl) tiEl.textContent = fmt(avgInc);
-  var tbEl = document.getElementById('tr-best');    if(tbEl) tbEl.textContent = bestM ? bestM.lbl + ' (+'+fmt(bestNet)+')' : '\u2014';
+  var teEl = document.getElementById('tr-avg-exp'); if(teEl) teEl.textContent = fmt(cur.exp);
+  var tiEl = document.getElementById('tr-avg-inc');
+  if (tiEl) {
+    if (momPct == null) tiEl.textContent = 'Need last month';
+    else {
+      tiEl.textContent = (momPct >= 0 ? '+' : '') + momPct + '%';
+      tiEl.className = momPct > 0 ? 'red' : 'green';
+    }
+  }
+  var tbEl = document.getElementById('tr-best');
+  if (tbEl) {
+    tbEl.textContent = (saved >= 0 ? '+' : '\u2212') + fmt(Math.abs(saved));
+    tbEl.className = saved >= 0 ? 'green' : 'red';
+  }
+  var verdict = document.getElementById('tr-verdict');
+  if (verdict) {
+    if (!cur.exp && !cur.inc) verdict.textContent = 'Log this month’s expenses and income to get personal tips.';
+    else if (saved < 0) verdict.textContent = 'This month you spent more than you earned. Tips below pick the biggest cuts.';
+    else if (momPct != null && momPct >= 15) verdict.textContent = 'Spending jumped versus last month. See which category moved.';
+    else if (momPct != null && momPct <= -10) verdict.textContent = 'Spending is down versus last month. Keep the habits that worked.';
+    else verdict.textContent = 'Spending is close to last month. Tips focus on your largest categories.';
+  }
+  if (!selectedTrendYm) selectedTrendYm = cur.ym;
 
   var trendEl = document.getElementById('trend-chart');
   if (!trendEl) return;
@@ -2109,7 +2151,7 @@ function renderTrends() {
     var col = document.createElement('div');
     col.className = 'trend-month-col' + (m.isCurrent?' current':'') + (selectedTrendYm===m.ym?' selected':'');
     col.dataset.ym = m.ym;
-    col.title = m.lbl + ': Exp ' + fmt(m.exp) + ', Inc ' + fmt(m.inc) + ' — tap for income breakdown';
+    col.title = m.lbl + ': spent ' + fmt(m.exp) + ', income ' + fmt(m.inc) + ' — tap for categories';
 
     var bars = document.createElement('div'); bars.className='trend-bars';
     var eBar = document.createElement('div'); eBar.className='trend-bar';
@@ -2144,37 +2186,164 @@ function renderTrends() {
   renderDayBreakdown();
   renderInsightsPanel(months);
   renderNwSnapshotHint();
-  renderAllNetWorthCharts();
-  requestAnimationFrame(function() {
-    if (document.getElementById('page-trends') && document.getElementById('page-trends').classList.contains('active')) {
-      renderAllNetWorthCharts();
-    }
-  });
 }
 
 function renderInsightsPanel(months) {
   var el = document.getElementById('insights-panel');
   if (!el) return;
-  var me = typeof mExp === 'function' ? mExp() : [];
-  var byCat = {};
-  me.forEach(function(e) { byCat[e.cat] = (byCat[e.cat] || 0) + Number(e.amount || 0); });
-  var top = Object.keys(byCat).map(function(cat) { return { cat: cat, amount: byCat[cat] }; })
-    .sort(function(a, b) { return b.amount - a.amount; }).slice(0, 3);
-  var latest = months && months.length ? months[months.length - 1] : null;
+  var cur = months && months.length ? months[months.length - 1] : null;
   var prev = months && months.length > 1 ? months[months.length - 2] : null;
-  var mom = (latest && prev && prev.exp > 0) ? Math.round(((latest.exp - prev.exp) / prev.exp) * 100) : null;
-  var risk = [];
-  Object.keys(budgets || {}).forEach(function(cat) {
-    var lim = Number(budgets[cat]) || 0;
-    if (!lim) return;
-    var spent = byCat[cat] || 0;
-    if (spent >= lim) risk.push(cat + ' over (' + Math.round((spent / lim) * 100) + '%)');
-    else if (spent >= lim * 0.9) risk.push(cat + ' near limit (' + Math.round((spent / lim) * 100) + '%)');
+  var avgExp = months.reduce(function(a, m) { return a + m.exp; }, 0) / Math.max(months.length, 1);
+  var curCats = cur ? trendCatTotalsYm_(cur.ym) : {};
+  var prevCats = prev ? trendCatTotalsYm_(prev.ym) : {};
+  var top = Object.keys(curCats).map(function(cat) { return { cat: cat, amount: curCats[cat] }; })
+    .sort(function(a, b) { return b.amount - a.amount; });
+  var tips = [];
+
+  if (!cur || (cur.exp <= 0 && cur.inc <= 0)) {
+    tips.push({
+      kind: 'info',
+      title: 'Nothing to compare yet',
+      body: 'Add expenses for this month. Tips compare this month with last month and your 6-month average.',
+      tab: 'expenses',
+      cta: 'Add expense'
+    });
+  } else {
+    if (cur.exp > avgExp * 1.12) {
+      tips.push({
+        kind: 'warn',
+        title: 'Above your usual spend',
+        body: 'This month is ' + fmt(cur.exp) + ' vs a 6-month average of ' + fmt(avgExp) + ' (' + fmt(cur.exp - avgExp) + ' extra). Cut from the largest category first.',
+        tab: 'expenses',
+        cta: 'See expenses'
+      });
+    } else if (cur.exp > 0 && cur.exp < avgExp * 0.88) {
+      tips.push({
+        kind: 'good',
+        title: 'Quieter than your usual month',
+        body: 'You are ' + fmt(avgExp - cur.exp) + ' under the 6-month average. If this is intentional, keep the same merchants and skip one-off splurges.',
+        tab: 'expenses',
+        cta: 'Check the list'
+      });
+    }
+
+    var spike = null;
+    Object.keys(curCats).forEach(function(cat) {
+      var now = curCats[cat];
+      var was = prevCats[cat] || 0;
+      var delta = now - was;
+      if (!spike || delta > spike.delta) spike = { cat: cat, now: now, was: was, delta: delta };
+    });
+    if (spike && spike.delta >= 50 && spike.was > 0) {
+      tips.push({
+        kind: 'warn',
+        title: spike.cat + ' jumped',
+        body: fmt(spike.was) + ' last month → ' + fmt(spike.now) + ' now (+' + fmt(spike.delta) + '). Open the list and tag any one-offs so next month is cleaner.',
+        tab: 'expenses',
+        cta: 'Review ' + spike.cat
+      });
+    } else if (spike && spike.delta >= 80 && spike.was === 0) {
+      tips.push({
+        kind: 'info',
+        title: 'New spend in ' + spike.cat,
+        body: fmt(spike.now) + ' this month, nothing last month. If it repeats, set a budget for it.',
+        tab: 'expenses',
+        cta: 'Open expenses'
+      });
+    }
+
+    if (top[0] && top[0].amount > 0) {
+      var cut = top[0].amount * 0.2;
+      tips.push({
+        kind: 'info',
+        title: 'Biggest lever: ' + top[0].cat,
+        body: 'That category is ' + fmt(top[0].amount) + '. Trim 20% and you keep ' + fmt(cut) + ' this month. Next: ' + (top[1] ? top[1].cat + ' ' + fmt(top[1].amount) : 'no second category yet') + '.',
+        tab: 'expenses',
+        cta: 'Filter spending'
+      });
+    }
+
+    if (cur.inc > 0 && cur.exp > cur.inc) {
+      tips.push({
+        kind: 'warn',
+        title: 'Spend is ahead of income',
+        body: 'Income ' + fmt(cur.inc) + ' vs spend ' + fmt(cur.exp) + '. Gap ' + fmt(cur.exp - cur.inc) + '. Pause non-essentials until the next payday.',
+        tab: 'income',
+        cta: 'Check income'
+      });
+    } else if (cur.inc > 0) {
+      var rate = Math.round(((cur.inc - cur.exp) / cur.inc) * 100);
+      tips.push({
+        kind: rate >= 20 ? 'good' : 'info',
+        title: 'Kept ' + rate + '% of income',
+        body: rate >= 20
+          ? 'Solid buffer this month. Park it in a bank or fund on Assets so it does not leak back into spending.'
+          : 'Under 20% left after spend. A small cap on Eating out or Shopping next week usually lifts this.',
+        tab: 'assets',
+        cta: 'Open Assets'
+      });
+    }
+
+    Object.keys(budgets || {}).forEach(function(cat) {
+      var lim = Number(budgets[cat]) || 0;
+      if (!lim) return;
+      var spent = curCats[cat] || 0;
+      if (spent >= lim) {
+        tips.push({
+          kind: 'warn',
+          title: cat + ' is over budget',
+          body: fmt(spent) + ' vs limit ' + fmt(lim) + ' (' + Math.round((spent / lim) * 100) + '%). Stop new spend in this category until next month.',
+          tab: 'expenses',
+          cta: 'See budget'
+        });
+      } else if (spent >= lim * 0.85) {
+        tips.push({
+          kind: 'info',
+          title: cat + ' is close to its limit',
+          body: fmt(spent) + ' of ' + fmt(lim) + ' used. ' + fmt(Math.max(0, lim - spent)) + ' left.',
+          tab: 'expenses',
+          cta: 'Watch it'
+        });
+      }
+    });
+
+    var eat = (curCats['Eating out'] || 0) + (curCats['Coffee'] || 0);
+    var groc = curCats['Groceries'] || 0;
+    if (eat > 0 && groc > 0 && eat > groc * 1.15) {
+      tips.push({
+        kind: 'info',
+        title: 'Eating out is ahead of groceries',
+        body: 'Cafes/meals ' + fmt(eat) + ' vs groceries ' + fmt(groc) + '. One home-cooked stretch usually closes that gap fastest.',
+        tab: 'expenses',
+        cta: 'See food spend'
+      });
+    }
+  }
+
+  if (!tips.length) {
+    tips.push({
+      kind: 'good',
+      title: 'No red flags this month',
+      body: 'Spend is in line with last month and budgets. Use the 6-month bars if you want a longer view.',
+      tab: 'expenses',
+      cta: 'Open expenses'
+    });
+  }
+
+  el.innerHTML = tips.slice(0, 6).map(function(t) {
+    return '<article class="tr-tip tr-tip--' + t.kind + '">' +
+      '<div class="tr-tip__title">' + esc(t.title) + '</div>' +
+      '<p class="tr-tip__body">' + esc(t.body) + '</p>' +
+      (t.tab ? '<button type="button" class="btn-ghost tr-tip__cta" data-tab="' + esc(t.tab) + '">' + esc(t.cta || 'Open') + '</button>' : '') +
+      '</article>';
+  }).join('');
+
+  el.querySelectorAll('.tr-tip__cta').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.getAttribute('data-tab');
+      if (tab && typeof activateNavTab === 'function') activateNavTab(tab);
+    });
   });
-  el.innerHTML =
-    '<div class="ft-note" style="margin-bottom:8px">Top spend: ' + (top.length ? top.map(function(t){ return esc(t.cat) + ' ' + fmt(t.amount); }).join(' · ') : 'No spending this month') + '</div>' +
-    '<div class="ft-note" style="margin-bottom:8px">MoM spend delta: ' + (mom == null ? 'Not enough data yet' : ((mom >= 0 ? '+' : '') + mom + '%')) + '</div>' +
-    '<div class="ft-note">Budget risk: ' + (risk.length ? esc(risk.join(' · ')) : 'No budget risks in current month') + '</div>';
 }
 
 function renderTrendIncBreakdown() {
@@ -2190,23 +2359,20 @@ function renderTrendIncBreakdown() {
   var parts = selectedTrendYm.split('-');
   var monthLbl = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1)
     .toLocaleString('default', { month: 'long', year: 'numeric' });
-  var rows = incomes.filter(function(i) { return txInCalendarMonth(i.date, selectedTrendYm); });
-  var totals = {};
-  rows.forEach(function(i) {
-    totals[i.cat] = (totals[i.cat] || 0) + i.amount;
-  });
+  var titleEl = document.getElementById('trend-breakdown-title');
+  if (titleEl) titleEl.textContent = 'Spend in ' + monthLbl;
+  var totals = trendCatTotalsYm_(selectedTrendYm);
   var sorted = Object.keys(totals).map(function(cat) {
     return { cat: cat, amount: totals[cat] };
   }).sort(function(a, b) { return b.amount - a.amount; });
   var total = sorted.reduce(function(a, r) { return a + r.amount; }, 0);
   if (!sorted.length) {
-    body.innerHTML = '<p class="ft-note">No income recorded for ' + esc(monthLbl) + '.</p>';
+    body.innerHTML = '<p class="ft-note">No spending recorded for ' + esc(monthLbl) + '.</p>';
     return;
   }
   var max = sorted[0].amount || 1;
   body.innerHTML = '';
   sorted.forEach(function(r) {
-    var info = INC_CATS[r.cat] || { icon: '\uD83D\uDCE6' };
     var pct = Math.round((r.amount / max) * 100);
     var row = document.createElement('div');
     row.className = 'bar-row';
@@ -2215,13 +2381,13 @@ function renderTrendIncBreakdown() {
     lbl.className = 'bar-label';
     lbl.style.cssText = 'width:auto;min-width:88px';
     lbl.innerHTML = typeof ftCatLabelHtml_ === 'function'
-      ? ftCatLabelHtml_(r.cat, INC_CATS, 'ft-cat-badge--sm')
+      ? ftCatLabelHtml_(r.cat, EXP_CATS, 'ft-cat-badge--sm')
       : esc(r.cat);
     var track = document.createElement('div');
     track.className = 'bar-track';
     var fill = document.createElement('div');
     fill.className = 'bar-fill';
-    fill.style.cssText = 'width:' + pct + '%;background:#1A9E6E';
+    fill.style.cssText = 'width:' + pct + '%;background:#E24B4A';
     track.appendChild(fill);
     var val = document.createElement('div');
     val.className = 'bar-val';
@@ -2234,7 +2400,7 @@ function renderTrendIncBreakdown() {
   var foot = document.createElement('p');
   foot.className = 'ft-note';
   foot.style.marginTop = '10px';
-  foot.textContent = 'Total income: ' + fmt(total);
+  foot.textContent = 'Total spent: ' + fmt(total);
   body.appendChild(foot);
 }
 
@@ -2386,6 +2552,14 @@ function renderDayBreakdown() {
   });
   var avgs   = totals.map(function(t,i){ return counts[i] ? t/counts[i] : 0; });
   var maxAvg = Math.max.apply(null, avgs.concat([1]));
+  var tipEl = document.getElementById('tr-weekday-tip');
+  if (tipEl) {
+    var hi = 0;
+    avgs.forEach(function(v, i) { if (v > avgs[hi]) hi = i; });
+    tipEl.textContent = avgs[hi] > 0
+      ? days[hi] + ' is your heaviest day (avg ' + fmt(avgs[hi]) + '). Plan meals or transfers before that day.'
+      : 'Not enough recent spend to see a weekday pattern.';
+  }
   el.innerHTML = '';
   days.forEach(function(day, i) {
     var pct = Math.round((avgs[i]/maxAvg)*100);
