@@ -936,9 +936,189 @@ function utAppendStat(parent, label, text, cls) {
   parent.appendChild(box);
 }
 
+function utNavRealSeries_(fundId) {
+  const real = utNavSortedForFund(fundId).filter(function(p) { return !p.carry; });
+  if (real.length) return real;
+  return utNavSortedForFund(fundId);
+}
+
+function utLastRealNav_(fundId) {
+  const s = utNavRealSeries_(fundId);
+  return s.length ? s[s.length - 1] : null;
+}
+
+function utPrevRealNav_(fundId) {
+  const s = utNavRealSeries_(fundId);
+  return s.length >= 2 ? s[s.length - 2] : null;
+}
+
+function utSparkHtml_(fundId) {
+  const pts = utNavRealSeries_(fundId).slice(-8);
+  if (pts.length < 2) return '';
+  const vals = pts.map(function(p) { return p.nav; });
+  const min = Math.min.apply(null, vals);
+  const max = Math.max.apply(null, vals);
+  const rng = max - min || 1;
+  return '<span class="ut-spark" aria-hidden="true">' + vals.map(function(v) {
+    const h = 5 + ((v - min) / rng) * 18;
+    return '<i style="height:' + h.toFixed(1) + 'px"></i>';
+  }).join('') + '</span>';
+}
+
+function saveUtDashRow_(fundId, skipSnap) {
+  const dateEl = document.getElementById('ut-dash-date');
+  const inp = document.querySelector('[data-ut-dash-nav="' + fundId + '"]');
+  const ymd = dateEl && dateEl.value ? String(dateEl.value).trim() : todayStr();
+  if (!inp || !upsertUtNav(fundId, ymd, inp.value, skipSnap)) {
+    if (inp) shake(inp);
+    return false;
+  }
+  if (!window.ftUtNavPickDate_) window.ftUtNavPickDate_ = {};
+  window.ftUtNavPickDate_[fundId] = ymd;
+  if (window.ftUtDashDraft_) delete window.ftUtDashDraft_[fundId];
+  return true;
+}
+
+function renderUtDashboard_() {
+  const el = document.getElementById('ut-dash');
+  if (!el) return;
+  if (!utHoldings.length) {
+    el.hidden = true;
+    el.innerHTML = '';
+    return;
+  }
+  el.hidden = false;
+  const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
+  if (!window.ftUtDashDraft_) window.ftUtDashDraft_ = {};
+  const dashDate = (document.getElementById('ut-dash-date') && document.getElementById('ut-dash-date').value)
+    || window.ftUtDashDate_
+    || todayStr();
+  window.ftUtDashDate_ = dashDate;
+
+  let dayMv = 0;
+  let dayAny = false;
+  let totalMv = 0;
+  let totalPnl = 0;
+  let pnlAny = false;
+  const rows = utHoldings.map(function(h) {
+    const last = utLastRealNav_(h.id);
+    const prev = utPrevRealNav_(h.id);
+    const mv = utHoldingMvNative(h);
+    const cost = utCostBasis(h);
+    let pnl = null;
+    if (mv != null && cost != null) {
+      pnl = mv - cost;
+      totalPnl += pnl * fxRateToBase(h.currency);
+      pnlAny = true;
+    }
+    if (mv != null) totalMv += utHoldingMvBase(h);
+    let dayPct = null;
+    let dayChg = null;
+    if (last && prev) {
+      dayPct = prev.nav ? ((last.nav - prev.nav) / prev.nav) * 100 : 0;
+      dayChg = h.units * (last.nav - prev.nav);
+      dayMv += dayChg * fxRateToBase(h.currency);
+      dayAny = true;
+    }
+    const todayLogged = utNavSortedForFund(h.id).some(function(p) {
+      return p.date === dashDate && !p.carry;
+    });
+    const draft = window.ftUtDashDraft_[h.id];
+    const navVal = draft != null ? draft : (last ? String(last.nav) : '');
+    return { h: h, last: last, dayPct: dayPct, dayChg: dayChg, mv: mv, pnl: pnl, todayLogged: todayLogged, navVal: navVal };
+  });
+
+  el.innerHTML =
+    '<div class="ut-dash__head">' +
+    '<div class="ut-dash__stat"><span>Market value</span><strong>' + esc(compact(totalMv)) + '</strong></div>' +
+    '<div class="ut-dash__stat"><span>Vs last NAV</span><strong class="' + (dayAny ? (dayMv >= 0 ? 'pos' : 'neg') : '') + '">' +
+    (dayAny ? esc(compact(dayMv, { signed: true })) : '—') + '</strong></div>' +
+    '<div class="ut-dash__stat"><span>P&amp;L vs paid</span><strong class="' + (pnlAny ? (totalPnl >= 0 ? 'pos' : 'neg') : '') + '">' +
+    (pnlAny ? esc(compact(totalPnl, { signed: true })) : 'Add total paid') + '</strong></div>' +
+    '<div class="ut-dash__date">' +
+    '<label class="lbl" for="ut-dash-date">NAV date</label>' +
+    '<input type="date" id="ut-dash-date" value="' + esc(dashDate) + '"/>' +
+    '</div></div>' +
+    '<p class="ft-note ut-dash__hint">Enter today’s NAV for each fund, then Save row or Save all. Date stays on the day you pick.</p>' +
+    '<div class="ut-dash__table">' +
+    rows.map(function(r) {
+      const h = r.h;
+      const cur = normalizeBankCurrency(h.currency);
+      const chgCls = r.dayPct == null ? '' : (r.dayPct >= 0 ? 'pos' : 'neg');
+      const chgTxt = r.dayPct == null ? '—' : ((r.dayPct >= 0 ? '+' : '') + r.dayPct.toFixed(2) + '%');
+      const mvTxt = r.mv != null ? fmtBankAmount(r.mv, cur) : 'No NAV';
+      return (
+        '<div class="ut-dash-row' + (r.todayLogged ? ' ut-dash-row--ok' : '') + '">' +
+        '<div class="ut-dash-row__name">' +
+        '<strong>' + esc(h.name) + '</strong>' +
+        '<span>' + esc(utKindLabel(h.kind)) + (r.last ? ' · last ' + r.last.date : '') +
+        (r.todayLogged ? ' · saved for this date' : '') + '</span>' +
+        utSparkHtml_(h.id) +
+        '</div>' +
+        '<div class="ut-dash-row__chg ' + chgCls + '">' + chgTxt + '</div>' +
+        '<div class="ut-dash-row__mv">' + esc(mvTxt) + '</div>' +
+        '<div class="ut-dash-row__nav">' +
+        '<input type="number" data-ut-dash-nav="' + h.id + '" min="0" step="0.0001" inputmode="decimal" value="' + esc(r.navVal) + '" aria-label="NAV for ' + esc(h.name) + '"/>' +
+        '<button type="button" class="btn-ghost" data-ut-dash-save="' + h.id + '">Save</button>' +
+        '</div></div>'
+      );
+    }).join('') +
+    '</div>' +
+    '<div class="assets-form-actions">' +
+    '<button type="button" class="btn btn-primary" id="ut-dash-save-all">Save all NAVs</button>' +
+    '</div>';
+
+  const dateEl = document.getElementById('ut-dash-date');
+  if (dateEl) {
+    dateEl.addEventListener('change', function() {
+      window.ftUtDashDate_ = dateEl.value;
+    });
+  }
+  el.querySelectorAll('[data-ut-dash-nav]').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      window.ftUtDashDraft_[Number(inp.getAttribute('data-ut-dash-nav'))] = inp.value;
+    });
+    inp.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const id = Number(inp.getAttribute('data-ut-dash-nav'));
+      if (saveUtDashRow_(id, false)) {
+        showToast('NAV saved');
+        render();
+      }
+    });
+  });
+  el.querySelectorAll('[data-ut-dash-save]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const id = Number(btn.getAttribute('data-ut-dash-save'));
+      if (saveUtDashRow_(id, false)) {
+        showToast('NAV saved');
+        render();
+      }
+    });
+  });
+  const allBtn = document.getElementById('ut-dash-save-all');
+  if (allBtn) {
+    allBtn.addEventListener('click', function() {
+      let n = 0;
+      utHoldings.forEach(function(h) {
+        if (saveUtDashRow_(h.id, true)) n++;
+      });
+      if (!n) {
+        showToast('Enter a NAV first');
+        return;
+      }
+      maybeSnapshotNetWorth();
+      showToast(n + ' NAV' + (n === 1 ? '' : 's') + ' saved');
+      render();
+    });
+  }
+}
+
 function renderUnitTrustPanel() {
   const root = document.getElementById('ut-root');
   if (!root) return;
+  renderUtDashboard_();
 
   const totalMv = computeUtTotalMarketValue();
   const sumEl = document.getElementById('ut-summary-mv');
