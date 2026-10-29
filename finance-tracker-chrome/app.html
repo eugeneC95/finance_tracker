@@ -36,14 +36,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#0c1614"/>
 <title>Finance Tracker</title>
-<link rel="stylesheet" href="../styles/fonts.css?v=153"/>
-<link rel="stylesheet" href="../styles/reset.css?v=153"/>
-<link rel="stylesheet" href="../styles/tokens.css?v=153"/>
-<link rel="stylesheet" href="../styles/base.css?v=153"/>
-<link rel="stylesheet" href="../styles/components.css?v=153"/>
-<link rel="stylesheet" href="../styles/mobile.css?v=153"/>
+<link rel="stylesheet" href="../styles/fonts.css?v=154"/>
+<link rel="stylesheet" href="../styles/reset.css?v=154"/>
+<link rel="stylesheet" href="../styles/tokens.css?v=154"/>
+<link rel="stylesheet" href="../styles/base.css?v=154"/>
+<link rel="stylesheet" href="../styles/components.css?v=154"/>
+<link rel="stylesheet" href="../styles/mobile.css?v=154"/>
 
-<link rel="stylesheet" href="../theme-modern.css?v=153"/>
+<link rel="stylesheet" href="../theme-modern.css?v=154"/>
 </head>
 <body class="fs-md">
 <a class="ft-skip-link" href="#main-content">Skip to main content</a>
@@ -492,54 +492,63 @@
   <div class="page" id="page-assets">
     <div class="page-header page-header--slim">
       <h2>Assets</h2>
-      <p class="sub">Cash and investments in one portfolio. Month income and spend stay on Home.</p>
+      <p class="sub">Spendable cash, locked EPF, funds, and debts. Update balances here — daily spend stays on Home.</p>
     </div>
     <div class="page-body">
 
       <section class="card assets-hero-v2 assets-portfolio" aria-label="Portfolio summary">
         <div class="assets-hero-v2__top">
           <div class="assets-hero__main">
-            <div class="assets-hero__label">Total</div>
+            <div class="assets-hero__label">Net worth</div>
             <div class="assets-hero__value green" id="ns-portfolio">RM 0</div>
-            <p class="assets-hero__hint">Last snapshot <span id="assets-last-snap">—</span></p>
+            <p class="assets-hero__hint">After debts · snapshot <span id="assets-last-snap">—</span></p>
           </div>
           <div class="assets-portfolio__chg" id="assets-period-wrap">
-            <div class="assets-hero__label">Since first snapshot</div>
+            <div class="assets-hero__label">Last 30 days</div>
             <div class="assets-portfolio__chg-val" id="assets-period-chg">—</div>
             <div class="assets-portfolio__chg-pct" id="assets-period-pct"></div>
           </div>
-          <button type="button" class="btn btn-primary" id="assets-nw-snapshot-btn">Update portfolio</button>
+          <button type="button" class="btn btn-primary" id="assets-nw-snapshot-btn">Save snapshot</button>
         </div>
+        <div class="assets-mix" id="assets-mix"></div>
         <div class="assets-split" id="assets-split" hidden>
           <div class="assets-split__bar" aria-hidden="true">
-            <span class="assets-split__banks" id="assets-split-banks"></span>
+            <span class="assets-split__liquid" id="assets-split-liquid"></span>
+            <span class="assets-split__epf" id="assets-split-epf"></span>
             <span class="assets-split__funds" id="assets-split-funds"></span>
           </div>
           <div class="assets-split__legend">
-            <span><i class="assets-split__dot assets-split__dot--banks"></i> Banks <strong id="ns-banks">RM 0</strong> <em id="ns-bank-count">0 accounts</em></span>
+            <span><i class="assets-split__dot assets-split__dot--banks"></i> Spendable <strong id="ns-banks">RM 0</strong> <em id="ns-bank-count">0 accounts</em></span>
+            <span><i class="assets-split__dot assets-split__dot--epf"></i> EPF <strong id="ns-epf">RM 0</strong></span>
             <span><i class="assets-split__dot assets-split__dot--funds"></i> Funds <strong id="ns-ut">RM 0</strong> <em id="ns-ut-count">0 holdings</em></span>
             <span id="assets-split-debt" hidden><i class="assets-split__dot assets-split__dot--debt"></i> Debts <strong id="ns-debt">RM 0</strong></span>
           </div>
         </div>
-        <div class="assets-portfolio__chart">
-          <div class="assets-chart-toolbar">
-            <span class="assets-chart-toolbar__title" id="assets-chart-title">History</span>
-            <div class="assets-chart-modes" role="group" aria-label="Chart scale">
-              <button type="button" class="assets-chart-mode active" data-nw-mode="change">Change</button>
-              <button type="button" class="assets-chart-mode" data-nw-mode="total">Total</button>
+        <div class="assets-runway" id="assets-runway" hidden></div>
+        <div class="assets-todo" id="assets-todo" hidden></div>
+        <details class="assets-hist-fold">
+          <summary>Net worth history</summary>
+          <div class="assets-portfolio__chart">
+            <div class="assets-chart-toolbar">
+              <span class="assets-chart-toolbar__title" id="assets-chart-title">History</span>
+              <div class="assets-chart-modes" role="group" aria-label="Chart scale">
+                <button type="button" class="assets-chart-mode active" data-nw-mode="change">Change</button>
+                <button type="button" class="assets-chart-mode" data-nw-mode="total">Total</button>
+              </div>
             </div>
+            <div id="assets-networth-chart"></div>
+            <p class="ft-note" id="assets-chart-caption">Change view zooms into movement so a large total does not flatten the line.</p>
           </div>
-          <div id="assets-networth-chart"></div>
-          <p class="ft-note" id="assets-chart-caption">Change view zooms into movement so a large total does not flatten the line.</p>
-        </div>
+        </details>
         <div id="ns-net" hidden aria-hidden="true"></div>
       </section>
 
       <div id="nw-snapshot-hint-assets" class="ft-inline-hint ft-nw-hint mb-5" style="display:none" role="status"></div>
 
       <div class="assets-tabs" role="tablist" aria-label="Asset type">
-        <button type="button" class="assets-tab active" role="tab" aria-selected="true" data-assets-tab="cash" id="assets-tab-cash">Cash</button>
-        <button type="button" class="assets-tab" role="tab" aria-selected="false" data-assets-tab="invest" id="assets-tab-invest">Investments</button>
+        <button type="button" class="assets-tab active" role="tab" aria-selected="true" data-assets-tab="cash" id="assets-tab-cash">Accounts</button>
+        <button type="button" class="assets-tab" role="tab" aria-selected="false" data-assets-tab="invest" id="assets-tab-invest">Funds</button>
+        <button type="button" class="assets-tab" role="tab" aria-selected="false" data-assets-tab="debt" id="assets-tab-debt">Debts</button>
       </div>
 
       <div class="assets-layout">
@@ -592,11 +601,13 @@
         </section>
 
         <section class="card assets-section mb-5" id="assets-pane-cash-log" data-assets-pane="cash">
-          <div class="panel-hd"><span class="panel-title">Balance history</span></div>
-          <div class="panel-bd" id="bank-balance-log"></div>
+          <details class="assets-hist-fold assets-hist-fold--plain">
+            <summary>Account balance log</summary>
+            <div class="panel-bd" id="bank-balance-log"></div>
+          </details>
         </section>
 
-        <section class="card assets-section mb-5" id="assets-pane-debts" data-assets-pane="cash">
+        <section class="card assets-section mb-5" id="assets-pane-debts" data-assets-pane="debt">
           <div class="panel-hd"><span class="panel-title">Debts</span></div>
           <div class="panel-bd">
             <p class="ft-note">Loans and cards are subtracted from net worth. They are not bank accounts.</p>
@@ -1257,7 +1268,7 @@
           <div class="card">
             <div class="panel-bd">
               <div style="font-size:var(--f-sm);color:var(--ink2);line-height:1.5">
-                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v153 · 2026-10-29 18:00</span>
+                <strong>Finance Tracker</strong> · extension <span id="ft-build-stamp" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace">v154 · 2026-10-29 18:06</span>
               </div>
               <details class="sync-help-details" style="margin-top:12px">
                 <summary class="sync-help-summary">Privacy &amp; offline</summary>
@@ -1569,7 +1580,7 @@
 
 
 <div class="toast" id="toast"></div>
-<script src="../build-id.js?v=153"></script>
+<script src="../build-id.js?v=154"></script>
 <script>
 (function syncBuildStamp_(){
   if (!window.FT_BUILD) return;
@@ -1578,13 +1589,13 @@
   if (el) el.textContent = s;
 })();
 </script>
-<script type="module" src="../shared/main.js?v=153"></script>
-<script defer src="../shared/app.js?v=153"></script>
-<script defer src="../shared/sync-auth.js?v=153"></script>
-<script defer src="../shared/sync-transport.js?v=153"></script>
-<script defer src="../shared/sync.js?v=153"></script>
-<script defer src="../shared/features.js?v=153"></script>
-<script defer src="../shared/receipts.js?v=153"></script>
-<script defer src="../shared/extras.js?v=153"></script>
+<script type="module" src="../shared/main.js?v=154"></script>
+<script defer src="../shared/app.js?v=154"></script>
+<script defer src="../shared/sync-auth.js?v=154"></script>
+<script defer src="../shared/sync-transport.js?v=154"></script>
+<script defer src="../shared/sync.js?v=154"></script>
+<script defer src="../shared/features.js?v=154"></script>
+<script defer src="../shared/receipts.js?v=154"></script>
+<script defer src="../shared/extras.js?v=154"></script>
 </body>
 </html>

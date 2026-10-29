@@ -864,7 +864,7 @@ function addUtHolding() {
 }
 
 function setAssetsTab_(tab) {
-  const which = tab === 'invest' ? 'invest' : 'cash';
+  const which = (tab === 'invest' || tab === 'debt') ? tab : 'cash';
   try { sessionStorage.setItem('ft_assets_tab', which); } catch (e) {}
   document.querySelectorAll('.assets-tab').forEach(btn => {
     const on = btn.getAttribute('data-assets-tab') === which;
@@ -2667,13 +2667,166 @@ function renderIncomePanel_(t) {
   }
 }
 
+function assetsKindTotals_() {
+  let liquid = 0;
+  let epf = 0;
+  (banks || []).forEach(function(b) {
+    const v = bankBalanceInBase(b);
+    if (bankKind_(b) === 'epf') epf += v;
+    else liquid += v;
+  });
+  const funds = typeof computeUtTotalMarketValue === 'function' ? computeUtTotalMarketValue() : 0;
+  const debt = typeof totalLiabBase === 'function' ? totalLiabBase() : 0;
+  const gross = liquid + epf + funds;
+  return { liquid: liquid, epf: epf, funds: funds, debt: debt, gross: gross, net: gross - debt };
+}
+
+function assetsAvgMonthSpend_() {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 3);
+  const cutStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
+  let sum = 0;
+  (expenses || []).forEach(function(e) {
+    if (!e || e.transfer) return;
+    if (String(e.date) < cutStr) return;
+    sum += Number(e.amount) || 0;
+  });
+  return sum / 3;
+}
+
+function ymdDaysAgo_(ymd) {
+  const d = typeof parseTxDate === 'function' ? parseTxDate(ymd) : null;
+  if (!d) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function bankLastLog_(bankId) {
+  let last = null;
+  (bankBalanceLog || []).forEach(function(r) {
+    if (r && r.bankId === bankId) last = r;
+  });
+  return last;
+}
+
+function nwDeltaLastDays_(days) {
+  const hist = (typeof networthHist !== 'undefined' && networthHist) ? networthHist : [];
+  if (hist.length < 2) return null;
+  const last = hist[hist.length - 1];
+  const cutD = new Date();
+  cutD.setDate(cutD.getDate() - (days || 30));
+  const cut = cutD.getFullYear() + '-' + String(cutD.getMonth() + 1).padStart(2, '0') + '-' + String(cutD.getDate()).padStart(2, '0');
+  let base = hist[0];
+  hist.forEach(function(h) {
+    if (h && h.date <= cut) base = h;
+  });
+  return { delta: last.total - base.total, base: base.total, last: last.total };
+}
+
+function assetsFundsPnlBase_() {
+  let pnl = 0;
+  let any = false;
+  (utHoldings || []).forEach(function(h) {
+    const cost = typeof utCostBasis === 'function' ? utCostBasis(h) : null;
+    if (cost == null) return;
+    any = true;
+    pnl += utHoldingMvBase(h) - cost * fxRateToBase(h.currency);
+  });
+  return any ? pnl : null;
+}
+
+function renderAssetsDesk_(mix) {
+  const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
+  const mixEl = document.getElementById('assets-mix');
+  if (mixEl) {
+    const denom = Math.max(mix.gross, 1);
+    function card(tab, title, val, hint) {
+      const pct = mix.gross > 0 ? Math.round((val / denom) * 100) : 0;
+      return (
+        '<button type="button" class="assets-mix__card" data-assets-jump="' + tab + '">' +
+        '<span class="assets-mix__lbl">' + esc(title) + '</span>' +
+        '<strong>' + esc(compact(val)) + '</strong>' +
+        '<span class="assets-mix__hint">' + esc(hint || (pct + '% of assets')) + '</span>' +
+        '</button>'
+      );
+    }
+    mixEl.innerHTML =
+      card('cash', 'Spendable', mix.liquid, (banks.filter(function(b) { return bankKind_(b) !== 'epf'; }).length) + ' liquid acct · tap to update') +
+      card('cash', 'EPF / KWSP', mix.epf, mix.epf > 0 ? 'Locked until withdrawal' : 'Add as account type EPF') +
+      card('invest', 'Funds', mix.funds, (function() {
+        const pnl = assetsFundsPnlBase_();
+        return pnl == null ? (utHoldings.length + ' holding' + (utHoldings.length === 1 ? '' : 's')) : ('P&L ' + compact(pnl, { signed: true }));
+      })()) +
+      card('debt', 'Debts', mix.debt, mix.gross > 0 ? Math.round((mix.debt / denom) * 100) + '% of assets' : 'Add loans here');
+    mixEl.querySelectorAll('[data-assets-jump]').forEach(function(btn) {
+      btn.addEventListener('click', function() { setAssetsTab_(btn.getAttribute('data-assets-jump')); });
+    });
+  }
+
+  const runEl = document.getElementById('assets-runway');
+  if (runEl) {
+    const avg = assetsAvgMonthSpend_();
+    if (mix.liquid > 0 && avg > 0) {
+      const months = mix.liquid / avg;
+      runEl.hidden = false;
+      runEl.innerHTML = '<strong>' + months.toFixed(months >= 10 ? 0 : 1) + ' months</strong> of typical spend in spendable cash (last 3 months average ' + esc(fmt(avg)) + '/mo). EPF is not counted.';
+    } else if (mix.liquid > 0) {
+      runEl.hidden = false;
+      runEl.textContent = 'Spendable cash is ' + fmt(mix.liquid) + '. Log a few months of expenses to see runway.';
+    } else {
+      runEl.hidden = true;
+      runEl.innerHTML = '';
+    }
+  }
+
+  const todoEl = document.getElementById('assets-todo');
+  if (todoEl) {
+    const items = [];
+    const today = todayStr();
+    (banks || []).forEach(function(b) {
+      const last = bankLastLog_(b.id);
+      const days = last ? ymdDaysAgo_(last.date) : 99;
+      if (days != null && days > 14) {
+        items.push({ tab: 'cash', text: (b.name || 'Account') + ' last updated ' + days + ' days ago' });
+      }
+    });
+    (utHoldings || []).forEach(function(h) {
+      const last = typeof utLastManualNavEntry_ === 'function' ? utLastManualNavEntry_(h.id) : null;
+      const days = last && last.date ? ymdDaysAgo_(last.date) : 99;
+      if (days != null && days > 14) {
+        items.push({ tab: 'invest', text: 'NAV for ' + (h.name || 'fund') + ' is ' + days + ' days old' });
+      }
+    });
+    const hist = (typeof networthHist !== 'undefined' && networthHist) ? networthHist : [];
+    const lastSnap = hist.length ? hist[hist.length - 1].date : '';
+    if (lastSnap !== today && (banks.length || utHoldings.length)) {
+      items.push({ tab: '', text: 'No portfolio snapshot today — tap Save snapshot' });
+    }
+    if (!items.length) {
+      todoEl.hidden = true;
+      todoEl.innerHTML = '';
+    } else {
+      todoEl.hidden = false;
+      todoEl.innerHTML = '<div class="assets-todo__title">Do next</div>' + items.slice(0, 5).map(function(it) {
+        return '<button type="button" class="assets-todo__item" data-assets-jump="' + esc(it.tab) + '">' + esc(it.text) + '</button>';
+      }).join('');
+      todoEl.querySelectorAll('[data-assets-jump]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const tab = btn.getAttribute('data-assets-jump');
+          if (tab) setAssetsTab_(tab);
+        });
+      });
+    }
+  }
+}
+
 function renderAssetsSummaries_(t) {
   t = t || monthTotals_();
+  const mix = assetsKindTotals_();
   const totalBanksVal = t.totalBanks;
-  const utMv = computeUtTotalMarketValue();
-  const debtVal = typeof totalLiabBase === 'function' ? totalLiabBase() : 0;
-  const portfolioGross = totalBanksVal + utMv;
-  const portfolioTotal = portfolioGross - debtVal;
+  const utMv = mix.funds;
+  const debtVal = mix.debt;
+  const portfolioGross = mix.gross;
+  const portfolioTotal = mix.net;
 
   const compact = typeof ftFmtCompact_ === 'function' ? ftFmtCompact_ : fmt;
   const nsPortfolio = document.getElementById('ns-portfolio');
@@ -2689,26 +2842,34 @@ function renderAssetsSummaries_(t) {
   }
   const nsBanksVal = document.getElementById('ns-banks');
   if (nsBanksVal) {
-    nsBanksVal.textContent = compact(totalBanksVal);
-    nsBanksVal.title = fmt(totalBanksVal);
+    nsBanksVal.textContent = compact(mix.liquid);
+    nsBanksVal.title = fmt(mix.liquid);
+  }
+  const nsEpf = document.getElementById('ns-epf');
+  if (nsEpf) {
+    nsEpf.textContent = compact(mix.epf);
+    nsEpf.title = fmt(mix.epf);
   }
   const nsBankCount = document.getElementById('ns-bank-count');
   if (nsBankCount) {
-    nsBankCount.textContent = banks.length + ' account' + (banks.length === 1 ? '' : 's');
+    const nLiq = banks.filter(function(b) { return bankKind_(b) !== 'epf'; }).length;
+    nsBankCount.textContent = nLiq + ' account' + (nLiq === 1 ? '' : 's');
   }
   const nsUtCount = document.getElementById('ns-ut-count');
   if (nsUtCount) {
     nsUtCount.textContent = utHoldings.length + ' holding' + (utHoldings.length === 1 ? '' : 's');
   }
   const splitEl = document.getElementById('assets-split');
-  const splitBanks = document.getElementById('assets-split-banks');
+  const splitLiq = document.getElementById('assets-split-liquid');
+  const splitEpf = document.getElementById('assets-split-epf');
   const splitFunds = document.getElementById('assets-split-funds');
-  if (splitEl && splitBanks && splitFunds) {
-    const showSplit = portfolioGross > 0 || totalBanksVal > 0 || utMv > 0 || debtVal > 0;
+  if (splitEl && splitLiq && splitFunds) {
+    const showSplit = portfolioGross > 0 || utMv > 0 || debtVal > 0;
     splitEl.hidden = !showSplit;
-    const denom = Math.max(portfolioGross, totalBanksVal + utMv, 1);
-    splitBanks.style.width = (100 * totalBanksVal / denom) + '%';
-    splitFunds.style.width = (100 * utMv / denom) + '%';
+    const denom = Math.max(portfolioGross, 1);
+    splitLiq.style.width = (100 * mix.liquid / denom) + '%';
+    if (splitEpf) splitEpf.style.width = (100 * mix.epf / denom) + '%';
+    splitFunds.style.width = (100 * mix.funds / denom) + '%';
   }
   const nsDebt = document.getElementById('ns-debt');
   if (nsDebt) {
@@ -2717,10 +2878,6 @@ function renderAssetsSummaries_(t) {
   }
   const debtRow = document.getElementById('assets-split-debt');
   if (debtRow) debtRow.hidden = !(debtVal > 0);
-  const heroLbl = document.querySelector('.assets-hero__label');
-  if (heroLbl && heroLbl.parentElement && heroLbl.parentElement.classList.contains('assets-hero__main')) {
-    heroLbl.textContent = debtVal > 0 ? 'Net worth' : 'Total';
-  }
   const lastSnap = document.getElementById('assets-last-snap');
   if (lastSnap) {
     const hist = (typeof networthHist !== 'undefined' && networthHist.length)
@@ -2731,18 +2888,15 @@ function renderAssetsSummaries_(t) {
   const chgEl = document.getElementById('assets-period-chg');
   const pctEl = document.getElementById('assets-period-pct');
   if (chgEl) {
-    const hist = (typeof networthHist !== 'undefined') ? networthHist : [];
-    if (hist.length >= 2) {
-      const first = hist[0].total;
-      const last = hist[hist.length - 1].total;
-      const delta = last - first;
-      chgEl.textContent = compact(delta, { signed: true });
-      chgEl.title = fmt(delta);
-      chgEl.className = 'assets-portfolio__chg-val ' + (delta >= 0 ? 'pos' : 'neg');
+    const d30 = nwDeltaLastDays_(30);
+    if (d30) {
+      chgEl.textContent = compact(d30.delta, { signed: true });
+      chgEl.title = fmt(d30.delta);
+      chgEl.className = 'assets-portfolio__chg-val ' + (d30.delta >= 0 ? 'pos' : 'neg');
       if (pctEl) {
-        const pct = first ? (delta / first) * 100 : 0;
+        const pct = d30.base ? (d30.delta / d30.base) * 100 : 0;
         pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(Math.abs(pct) < 1 ? 2 : 1) + '%';
-        pctEl.className = 'assets-portfolio__chg-pct ' + (delta >= 0 ? 'pos' : 'neg');
+        pctEl.className = 'assets-portfolio__chg-pct ' + (d30.delta >= 0 ? 'pos' : 'neg');
       }
     } else {
       chgEl.textContent = 'Need 2+ snapshots';
@@ -2750,6 +2904,7 @@ function renderAssetsSummaries_(t) {
       if (pctEl) pctEl.textContent = '';
     }
   }
+  renderAssetsDesk_(mix);
 
   const nnet = document.getElementById('ns-net');
   if (nnet) {
@@ -3252,7 +3407,10 @@ function renderBankList() {
     const meta = document.createElement('div');
     meta.className = 'assets-acct-row__meta';
     const kindLbl = bankKindLabel_(bankKind_(b));
-    meta.textContent = (b.acct || 'Account') + (bankKind_(b) !== 'bank' ? ' · ' + kindLbl : '');
+    const lastLog = bankLastLog_(b.id);
+    const days = lastLog ? ymdDaysAgo_(lastLog.date) : null;
+    const updated = days == null ? 'no balance log yet' : (days === 0 ? 'updated today' : ('updated ' + days + 'd ago'));
+    meta.textContent = (b.acct || 'Account') + (bankKind_(b) !== 'bank' ? ' · ' + kindLbl : '') + ' · ' + updated;
     body.appendChild(nameEl);
     body.appendChild(meta);
 
