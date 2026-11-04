@@ -1433,32 +1433,36 @@ body.dark .assets-hero-v2 {
   align-items: start;
 }
 .ut-fund__vs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px 12px;
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 11rem;
 }
-.ut-fund__vs-col span {
-  display: block;
+.ut-fund__vs-row {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+.ut-fund__vs-row span {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink3);
 }
-.ut-fund__vs-col strong {
-  display: block;
-  margin-top: 2px;
-  font-size: var(--f-sm);
+.ut-fund__vs-row strong {
+  font-size: var(--f-md);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.02em;
+  text-align: right;
 }
-.ut-fund__vs-col strong.pos { color: var(--green); }
-.ut-fund__vs-col strong.neg { color: var(--red); }
-.ut-fund__vs-col small {
-  display: block;
-  margin-top: 2px;
+.ut-fund__vs-row strong.pos { color: var(--green); }
+.ut-fund__vs-row strong.neg { color: var(--red); }
+.ut-fund__vs-row small {
+  grid-column: 2;
+  text-align: right;
   font-size: var(--f-xs);
   font-weight: 600;
   color: var(--ink3);
@@ -1547,7 +1551,8 @@ body.dark .assets-hero-v2 {
       "quote"
       "nav";
   }
-  .ut-fund__vs { text-align: left; }
+  .ut-fund__vs-row strong,
+  .ut-fund__vs-row small { text-align: right; }
 }
 .ut-holding summary.assets-acct-row {
   list-style: none;

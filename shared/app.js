@@ -1048,8 +1048,8 @@ function renderUtDashboard_() {
 
   el.innerHTML =
     '<div class="ut-board">' +
-    '<div class="ut-board__stat"><span>Cost</span><strong>' + (costAny ? esc(compact(totalCost)) : '—') + '</strong></div>' +
-    '<div class="ut-board__stat"><span>Price now</span><strong>' + esc(compact(totalMv)) + '</strong></div>' +
+    '<div class="ut-board__stat"><span>Initial cost</span><strong>' + (costAny ? esc(fmt(totalCost)) : '—') + '</strong></div>' +
+    '<div class="ut-board__stat"><span>Price now</span><strong>' + esc(fmt(totalMv)) + '</strong></div>' +
     '<div class="ut-board__stat"><span>P&amp;L</span><strong class="' + (pnlAny ? (totalPnl >= 0 ? 'pos' : 'neg') : '') + '">' +
     (pnlAny ? esc(compact(totalPnl, { signed: true })) : '—') + '</strong></div>' +
     '<div class="ut-board__save">' +
@@ -1127,10 +1127,6 @@ function renderUnitTrustPanel() {
     const pnlTxt = pnl == null ? '' : ((pnl >= 0 ? '+' : '') + fmtBankAmount(pnl, curCode));
     const costTxt = costBasis != null ? fmtBankAmount(costBasis, curCode) : '—';
     const nowTxt = mv != null ? fmtBankAmount(mv, curCode) : '—';
-    const unitLine =
-      (avgCost != null ? avgCost.toFixed(4) : '—') +
-      ' → ' +
-      (last ? last.nav.toFixed(4) : '—');
 
     const card = document.createElement('div');
     card.className = 'ut-fund' + (todayLogged ? ' ut-fund--ok' : '') + (chgCls ? ' ut-fund--' + chgCls : '');
@@ -1146,13 +1142,15 @@ function renderUnitTrustPanel() {
       utSparkHtml_(h.id) +
       '</div>' +
       '<div class="ut-fund__quote ut-fund__vs">' +
-      '<div class="ut-fund__vs-col"><span>Cost</span><strong>' + esc(costTxt) + '</strong></div>' +
-      '<div class="ut-fund__vs-col"><span>Price now</span><strong>' + esc(nowTxt) + '</strong>' +
+      '<div class="ut-fund__vs-row"><span>Initial cost</span><strong>' + esc(costTxt) + '</strong>' +
+      (avgCost != null ? '<small>' + esc(avgCost.toFixed(4)) + ' / unit</small>' : '') +
+      '</div>' +
+      '<div class="ut-fund__vs-row"><span>Price now</span><strong>' + esc(nowTxt) + '</strong>' +
+      (last ? '<small>NAV ' + esc(last.nav.toFixed(4)) + '</small>' : '') +
       (mv != null && curCode !== 'MYR' ? '<small>≈ ' + esc(fmt(utHoldingMvBase(h))) + '</small>' : '') +
       '</div>' +
-      '<div class="ut-fund__vs-col"><span>Per unit</span><strong class="' + chgCls + '">' + esc(unitLine) + '</strong>' +
-      (pnlTxt ? '<small class="ut-fund__pnl ' + (pnl >= 0 ? 'pos' : 'neg') + '">' + esc(pnlTxt) + '</small>' : '<small class="ut-fund__pnl muted">No cost</small>') +
-      '</div>' +
+      '<div class="ut-fund__vs-row"><span>Gain / loss</span><strong class="' + chgCls + '">' +
+      (pnlTxt ? esc(pnlTxt) : '—') + '</strong></div>' +
       '</div>' +
       '<div class="ut-fund__nav">' +
       '<label class="lbl">NAV / unit</label>' +
