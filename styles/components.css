@@ -1424,13 +1424,44 @@ body.dark .assets-hero-v2 {
 .ut-fund--ok { box-shadow: inset 3px 0 0 var(--green); }
 .ut-fund__face {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) auto minmax(7rem, 0.7fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
   grid-template-areas:
-    "who quote value"
-    "nav nav nav";
+    "who quote"
+    "nav nav";
   gap: 10px 16px;
   padding: 14px 16px;
   align-items: start;
+}
+.ut-fund__vs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  text-align: right;
+}
+.ut-fund__vs-col span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.ut-fund__vs-col strong {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--f-sm);
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.ut-fund__vs-col strong.pos { color: var(--green); }
+.ut-fund__vs-col strong.neg { color: var(--red); }
+.ut-fund__vs-col small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--f-xs);
+  font-weight: 600;
+  color: var(--ink3);
 }
 .ut-fund__who { grid-area: who; min-width: 0; }
 .ut-fund__who strong {
@@ -1510,13 +1541,13 @@ body.dark .assets-hero-v2 {
   .ut-board { grid-template-columns: 1fr 1fr; }
   .ut-board__save { grid-column: 1 / -1; }
   .ut-fund__face {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "who quote"
-      "value value"
-      "nav nav";
+      "who"
+      "quote"
+      "nav";
   }
-  .ut-fund__value { text-align: left; }
+  .ut-fund__vs { text-align: left; }
 }
 .ut-holding summary.assets-acct-row {
   list-style: none;
